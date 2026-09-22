@@ -1,0 +1,35 @@
+---
+title: "Lesson diary"
+subtitle: "For every lesson: a summary, the blackboard notes, the recording and exactly what to study. Reference codes such as [Rawlings_2017] are listed in [References](references.qmd)."
+toc-title: "Lessons"
+---
+
+<!--
+HOW TO ADD A LESSON: copy the block below, paste it ABOVE the previous lesson if you prefer
+newest-first, or BELOW it for oldest-first (this page is oldest-first), and fill it in.
+
+## Lesson N (dd/mm/2026): Title {#lesson-N}
+
+[MPC]{.part .part-mpc}   <- or [RL]{.part .part-rl} / [ID]{.part .part-id} / [Intro]{.part .part-gen}
+
+Summary of the lesson.
+
+- [Blackboard notes](LINK)
+- [Recording of the lesson](LINK)
+- Study ...
+-->
+
+## Lesson 1 (23/09/2026): Introduction to the course and to MPC {#lesson-1}
+
+[Intro]{.part .part-gen} [MPC]{.part .part-mpc}
+
+We discussed the course logistics, study materials and the exam. We then gave a high-level overview of the whole course: process control via Model Predictive Control (MPC) and Reinforcement Learning (RL), both seen as ways to approximate the ideal infinite-horizon constrained optimal control problem, and process identification, i.e., how to obtain from data the models and state estimates that controllers need.
+
+In the second part we started the technical content: the receding horizon principle, nominal MPC and its three main properties (optimality, recursive feasibility, stability), robust, stochastic and probabilistic MPC, centralized versus decentralized MPC, and the MPC pseudo-code with the two-time-index notation.
+
+- Blackboard notes (link will be added after the lesson).
+- Recording of the lesson (link will be added after the lesson).
+- Read chapter 1 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016].
+- Read [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
+- Read slides 1–26 of [Prof. Bemporad's presentation on linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
+- Before Lesson 4 (30/09): install Julia, JuMP and HiGHS following the [software setup page](setup.qmd).

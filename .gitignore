@@ -1,0 +1,9 @@
+/.quarto/
+/_site/
+**/*.quarto_ipynb
+
+# File operativi, solo locali
+/README.md
+/files/README.md
+/CLAUDE.md
+/.claude/

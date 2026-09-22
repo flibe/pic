@@ -1,0 +1,78 @@
+---
+title: "References and study materials"
+subtitle: "For each lesson, the lesson diary indicates exactly what to study. The books and papers below are free and openly accessible whenever possible; advanced books are used only for specific sections."
+---
+
+## Model Predictive Control [MPC]{.part .part-mpc}
+
+**Books**
+
+- **[Rawlings_2017]** J. B. Rawlings, D. Q. Mayne, M. Diehl. *Model Predictive Control: Theory, Computation, and Design*, 2nd ed. Nob Hill Publishing, 2017. [Free PDF from the authors](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf).
+- **[Cannon_2016]** B. Kouvaritakis, M. Cannon. *Model Predictive Control: Classical, Robust and Stochastic*. Springer, 2016.
+- **[Borrelli_2017]** F. Borrelli, A. Bemporad, M. Morari. *Predictive Control for Linear and Hybrid Systems*. Cambridge University Press, 2017. Useful for hybrid (MLD) systems and explicit MPC.
+
+**Slides**
+
+- [My slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC).
+- A. Bemporad, [Linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
+
+**Papers**
+
+- **[Mayne_2000]** D. Q. Mayne, J. B. Rawlings, C. V. Rao, P. O. M. Scokaert. "Constrained model predictive control: Stability and optimality." *Automatica* 36(6), 789–814, 2000. [Journal](https://www.sciencedirect.com/science/article/pii/S0005109899002149).
+- **[Bemporad_1999]** A. Bemporad, M. Morari. "Control of systems integrating logic, dynamics, and constraints." *Automatica* 35(3), 407–427, 1999. [Author's PDF](https://cse.lab.imtlucca.it/~bemporad/publications/papers/automatica-mld.pdf).
+
+**Integer programming and logical constraints**
+
+- **[MIT_2003]** MIT course 15.053 *Optimization Methods in Management Science*, [lecture 11](https://ocw.mit.edu/courses/sloan-school-of-management/15-053-optimization-methods-in-management-science-spring-2013/lecture-notes/MIT15_053S13_lec11.pdf) (see also lectures 10 and 11) and the [IP reference guide](https://ocw.mit.edu/courses/15-053-optimization-methods-in-management-science-spring-2013/resources/mit15_053s13_iprefguide/).
+- **[Hax_1977]** S. P. Bradley, A. C. Hax, T. L. Magnanti. [*Applied Mathematical Programming*](http://web.mit.edu/15.053/www/AMP.htm). Addison-Wesley, 1977. Chapter 9.
+- [Presentation on logical constraints and integer programming](https://www.math.cuhk.edu.hk/course_builder/1415/math3220/L2%20%28without%20solution%29.pdf).
+
+**Applications**
+
+- **[Liberati_2020]** F. Liberati. "Model predictive control of a road junction." *Smart Cities* 3(3), 806–817, 2020. [Open access](https://www.mdpi.com/2624-6511/3/3/41).
+- **[Liberati_2021]** F. Liberati. "Task execution control in an assembly line via shrinking horizon model predictive control." Confidential: available only on Google Class, for personal study, not to be shared.
+- **[Di Giorgio_2014]** A. Di Giorgio, F. Liberati. "Near real time load shifting control for residential electricity prosumers under designed and market indexed pricing models." *Applied Energy* 128, 119–132, 2014. [Journal](https://www.sciencedirect.com/science/article/abs/pii/S0306261914003857).
+- **[Liberati_2018]** F. Liberati, A. Di Giorgio. "Economic model predictive and feedback control of a smart grid prosumer node." *Energies* 11(1), 48, 2018. [Open access](https://www.mdpi.com/1996-1073/11/1/48).
+- **[Liberati_2019]** F. Liberati et al. "Joint model predictive control of electric and heating resources in a smart building." *IEEE Transactions on Industry Applications* 55(6), 7015–7027, 2019. [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8786121/).
+
+## Reinforcement Learning [RL]{.part .part-rl}
+
+- **[Sutton_Barto]** R. S. Sutton, A. G. Barto. *Reinforcement Learning: An Introduction*, 2nd ed. MIT Press, 2018. [Free online](http://incompleteideas.net/book/the-book-2nd.html).
+- **[Bertsekas_2024]** D. Bertsekas. *A Course in Reinforcement Learning*. Athena Scientific. [Free PDF](https://www.mit.edu/~dimitrib/RLCOURSECOMPLETE%202ndEDITION.pdf). Strong connections with MPC. More books and video lectures on [Prof. Bertsekas' homepage](https://www.mit.edu/~dimitrib/home.html).
+- **[Bertsekas_2022]** D. Bertsekas. *Lessons from AlphaZero for Optimal, Model Predictive, and Adaptive Control*. Athena Scientific, 2022. Free PDF on the author's homepage.
+- **[Reiter_2025]** R. Reiter et al. "Synthesis of model predictive control and reinforcement learning: survey and classification." [arXiv:2502.02133](https://arxiv.org/abs/2502.02133).
+- **[Gros_2020]** S. Gros, M. Zanon. "Data-driven economic NMPC using reinforcement learning." *IEEE Transactions on Automatic Control* 65(2), 2020. Preprint on arXiv.
+- **[Recht_2019]** B. Recht. "A tour of reinforcement learning: the view from continuous control." *Annual Review of Control, Robotics, and Autonomous Systems*, 2019. [arXiv:1806.09460](https://arxiv.org/abs/1806.09460).
+- **DDPG:** [Spinning Up documentation](https://spinningup.openai.com/en/latest/algorithms/ddpg.html) and the original paper, [arXiv:1509.02971](https://arxiv.org/abs/1509.02971).
+
+## Process identification and state estimation [ID]{.part .part-id}
+
+**Main references**
+
+- **[Diehl_MSI]** M. Diehl. *Lecture Notes on Modelling and System Identification*, University of Freiburg, 2025. [Free PDF](https://www.syscop.de/files/2025ws/MSI/msi.pdf). Main text for the identification part: chapters 1–8 and appendix C.
+- **[Schoukens_2013]** J. Schoukens. [*System Identification*](https://www.syscop.de/files/2015ws/msi/Schoukens_sysid_2013.pdf), lecture notes, VUB, 2013.
+- **[Soderstrom_1989]** T. Söderström, P. Stoica. *System Identification*. Prentice Hall, 1989. Prediction error methods, experiment design, model validation.
+- **[Ljung_1999]** L. Ljung. *System Identification: Theory for the User*, 2nd ed. Prentice Hall, 1999. For consultation (not open access).
+
+**State estimation**
+
+- **[Sarkka_2023]** S. Särkkä, L. Svensson. *Bayesian Filtering and Smoothing*, 2nd ed. Cambridge University Press, 2023. Free PDF on the author's homepage.
+
+**Data-driven control and learning-based methods**
+
+- **[Coulson_2019]** J. Coulson, J. Lygeros, F. Dörfler. "Data-enabled predictive control: in the shallows of the DeePC." *European Control Conference*, 2019. Preprint on arXiv.
+- **[Markovsky_2021]** I. Markovsky, F. Dörfler. "Behavioral systems theory in data-driven analysis, signal processing, and control." *Annual Reviews in Control* 52, 2021.
+- **[Hewing_2020]** L. Hewing, K. P. Wabersich, M. Menner, M. N. Zeilinger. "Learning-based model predictive control: toward safe learning in control." *Annual Review of Control, Robotics, and Autonomous Systems*, 2020.
+- **[Pillonetto_2022]** G. Pillonetto, T. Chen, A. Chiuso, G. De Nicolao, L. Ljung. *Regularized System Identification*. Springer, 2022. Open access.
+
+**Time series**
+
+- **[Hyndman_2021]** R. J. Hyndman, G. Athanasopoulos. *Forecasting: Principles and Practice*, 3rd ed. [Free online](https://otexts.com/fpp3/).
+- [Time series decomposition](https://online.stat.psu.edu/stat510/book/export/html/685), Penn State STAT 510.
+
+## Software and data
+
+- [Julia](https://julialang.org), [JuMP](https://jump.dev), [HiGHS](https://highs.dev).
+- [ControlSystemIdentification.jl](https://baggepinnen.github.io/ControlSystemIdentification.jl/dev/) for system identification in Julia.
+- [Gymnasium](https://gymnasium.farama.org) and [Stable-Baselines3](https://stable-baselines3.readthedocs.io) for RL in Python.
+- Benchmark datasets: [nonlinearbenchmark.org](https://www.nonlinearbenchmark.org).

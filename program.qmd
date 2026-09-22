@@ -1,0 +1,46 @@
+---
+title: "Program"
+---
+
+## Introduction
+
+Process modelling, identification and control. The ideal infinite-horizon constrained optimal control problem as the common thread of the course.
+
+## Part 1. Process control with Model Predictive Control [MPC]{.part .part-mpc}
+
+- MPC formulation: stage cost, terminal cost, model, state and input constraints, terminal constraints.
+- Infinite-horizon constrained control; unconstrained LQR and the Riccati equation; dual-mode control.
+- Main properties of MPC: optimality, recursive feasibility, stability (Lyapunov theory).
+- Value function interpretation of MPC and explicit MPC.
+- Economic MPC.
+- MPC with mixed-integer variables and logical-dynamical constraints (MLD systems).
+- Applications: smart charging of electric vehicles, building energy management, task scheduling in assembly lines, traffic control.
+- Beyond the nominal case: unmeasured states and offset-free MPC; robust and stochastic MPC (overview).
+- Implementation of MPC algorithms in Julia (JuMP).
+
+## Part 2. Process control with Reinforcement Learning [RL]{.part .part-rl}
+
+- From MPC to dynamic programming: Bellman's principle.
+- The RL setting: Markov decision processes, policies, returns, value functions.
+- Bellman equations and Bellman optimality equations.
+- Dynamic programming: policy evaluation, policy iteration, value iteration.
+- Monte Carlo and temporal-difference methods; SARSA and Q-learning.
+- Function approximation and deep RL (DDPG, overview of policy-gradient methods).
+- Hybrid MPC–RL algorithms and similarities between MPC and RL.
+
+## Part 3. Process identification and state estimation [ID]{.part .part-id}
+
+::: {.callout-note}
+The identification part of the program may be subject to changes.
+:::
+
+- Problem definition: white-, grey- and black-box models; the identification loop.
+- Statistical estimators and their properties; Cramér–Rao bound.
+- Linear and weighted least squares; regularization; maximum likelihood and Bayesian (MAP) estimation; nonlinear least squares.
+- Recursive least squares and forgetting.
+- Dynamic models: ARX, output error, ARMAX, Box–Jenkins; one-step and multi-step predictors; prediction error methods.
+- Experiment design (persistency of excitation, PRBS and multisine inputs) and model validation (residual analysis, cross-validation, order selection).
+- State estimation: Kalman filter, extended Kalman filter, moving horizon estimation as the dual of MPC.
+- Data-driven predictive control: Willems' fundamental lemma and DeePC.
+- Time series for forecasting exogenous inputs; overview of advanced methods (grey-box ODE models, learning-based MPC).
+- Implementation examples in Julia and Python.

@@ -1,0 +1,43 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Process Identification and Control 2026"
+  description: "Sapienza University of Rome, DIAG. Prof. Francesco Liberati."
+  page-navigation: true
+  search: true
+  navbar:
+    left:
+      - text: Home
+        href: index.qmd
+      - text: Program
+        href: program.qmd
+      - text: Schedule
+        href: schedule.qmd
+      - text: Lessons
+        href: lessons.qmd
+      - text: References
+        href: references.qmd
+      - text: Exams
+        href: exams.qmd
+      - text: Software setup
+        href: setup.qmd
+  page-footer:
+    left: "© Francesco Liberati 2026"
+    right: "Contact: [liberati@diag.uniroma1.it](mailto:liberati@diag.uniroma1.it)"
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles.scss]
+      dark: [darkly, styles-dark.scss]
+    toc: true
+    toc-depth: 2
+    html-math-method: mathjax
+    code-copy: true
+    anchor-sections: true
+    link-external-newwindow: true
+    smooth-scroll: false
+
+lang: en

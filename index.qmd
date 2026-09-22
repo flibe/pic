@@ -1,0 +1,38 @@
+---
+title: "Process Identification and Control"
+subtitle: "Sapienza University of Rome · DIAG · Academic year 2026/2027 · Prof. Francesco Liberati"
+toc: false
+---
+
+::: {.news}
+**News**
+
+- First lesson on **Wednesday 23/09/2026**, 13:00–16:00, classroom 29, San Pietro in Vincoli (Via Eudossiana).
+- Please join the [Google Class of the course](https://classroom.google.com/c/ODcwNjE0OTgyMTgz?cjc=4ae3h4ly) using only your Sapienza email (@studenti.uniroma1.it).
+:::
+
+## About the course
+
+How do we control a process optimally while respecting its constraints, and where do the models we need come from? The course answers in three steps:
+
+- **Model Predictive Control (MPC):** we know a model and solve a finite-horizon optimal control problem at every step, as an approximation of the ideal infinite-horizon constrained problem.
+- **Reinforcement Learning (RL):** we learn value functions and policies from data, approximating the same ideal problem.
+- **Process identification:** we build models and estimate states from measured data, closing the loop with the controllers seen in the first two parts.
+
+Theory is always paired with examples and numerical experiments in Julia and Python. See the [program](program.qmd) and the [schedule](schedule.qmd).
+
+## Logistics
+
+**Lessons** ([official schedule](https://docs.google.com/spreadsheets/d/1gXoxe_1CFoddlDXjJZFgZs1YUv9akKHv/edit?gid=573159642#gid=573159642))
+
+| Day | Time | Classroom |
+|---|---|---|
+| Monday | 16:00–19:00 | 28, San Pietro in Vincoli |
+| Wednesday | 13:00–16:00 | 29, San Pietro in Vincoli |
+| Thursday | 16:00–19:00 | 7, San Pietro in Vincoli |
+
+**Office hours:** Thursdays, 14:00–16:00, in presence or online ([meet.google.com/zob-fhvk-bsz](https://meet.google.com/zob-fhvk-bsz)). Please send an email in advance to book an appointment.
+
+**Contact:** [liberati@diag.uniroma1.it](mailto:liberati@diag.uniroma1.it)
+
+**Study materials:** for every lesson, the [lesson diary](lessons.qmd) lists the blackboard notes, the recording and the exact sections to study. Materials of past editions remain available on the [previous course website](https://sites.google.com/diag.uniroma1.it/liberati/home/teaching). All references are free and openly accessible whenever possible.

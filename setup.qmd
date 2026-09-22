@@ -1,0 +1,73 @@
+---
+title: "Software setup"
+subtitle: "Complete these steps before Lesson 4 (30/09/2026). All required software is free and open source."
+---
+
+## Julia (MPC and identification)
+
+1. Install Julia using the official installer `juliaup`, following the instructions at [julialang.org/downloads](https://julialang.org/downloads/).
+2. Open the Julia REPL and install the packages used in the course:
+
+```julia
+using Pkg
+Pkg.add(["JuMP", "HiGHS", "Plots"])
+```
+
+3. Check that everything works by solving a tiny optimization problem:
+
+```julia
+using JuMP, HiGHS
+model = Model(HiGHS.Optimizer)
+@variable(model, 0 <= x <= 4)
+@variable(model, y >= 0, Int)
+@constraint(model, x + y <= 5)
+@objective(model, Max, 2x + 3y)
+optimize!(model)
+println(value(x), " ", value(y))   # expected: 0.0 5.0
+```
+
+[JuMP](https://jump.dev) is the modelling language we use to write MPC problems; [HiGHS](https://highs.dev) is an open-source solver for linear, quadratic and mixed-integer problems. HiGHS is enough for the whole course. Students who want to try Gurobi can follow the optional instructions below.
+
+Packages for the identification part (such as `ControlSystemIdentification`) will be installed later in the course.
+
+## Optional: Gurobi with a free academic licence
+
+[Gurobi](https://www.gurobi.com) is a commercial solver, often faster than HiGHS on large mixed-integer problems. It is free for students.
+
+1. Register on [gurobi.com](https://www.gurobi.com) with your Sapienza email and request a free **Named-User Academic** licence from the [academic program page](https://www.gurobi.com/academia/academic-program-and-licenses/). You will get a licence key of the form `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
+2. Activate the key while connected to the **university network** (for example the campus Wi-Fi): Gurobi checks that the request comes from an academic domain. In Julia, run:
+
+```julia
+import Pkg
+Pkg.add(["Gurobi", "Gurobi_jll"])
+import Gurobi_jll
+key = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"   # replace with your key
+run(`$(Gurobi_jll.grbgetkey()) $key`)
+```
+
+When asked where to save `gurobi.lic`, accept the default location (your home directory). `Pkg.add("Gurobi")` also downloads the Gurobi binaries, so you do not need to install Gurobi separately.
+
+3. Test it by solving the same problem as above with Gurobi:
+
+```julia
+using JuMP, Gurobi
+model = Model(Gurobi.Optimizer)
+@variable(model, 0 <= x <= 4)
+@variable(model, y >= 0, Int)
+@constraint(model, x + y <= 5)
+@objective(model, Max, 2x + 3y)
+optimize!(model)
+println(value(x), " ", value(y))   # expected: 0.0 5.0
+```
+
+In the course code you can switch solver by changing a single line: `Model(HiGHS.Optimizer)` or `Model(Gurobi.Optimizer)`.
+
+**If Julia does not find the licence**, set the environment variable `GRB_LICENSE_FILE` to the full path of the file itself (for example `C:\Users\name\gurobi.lic`), not to its folder, and restart Julia. More details in the [Gurobi.jl documentation](https://jump.dev/JuMP.jl/stable/packages/Gurobi/).
+
+## Python (reinforcement learning)
+
+For the deep RL experiments we use Python with [Gymnasium](https://gymnasium.farama.org) and [Stable-Baselines3](https://stable-baselines3.readthedocs.io). Instructions will be given before the RL part starts (26/10).
+
+## Editor
+
+Any editor works. [Visual Studio Code](https://code.visualstudio.com) with the Julia and Python extensions is a good choice.

@@ -1,0 +1,48 @@
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap');
+
+$font-family-sans-serif: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+$headings-font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+$font-size-root: 17px;
+
+$sapienza: #8a1c2f;
+$ink: #1f2a36;
+$mpc: #2f6690;
+$rl: #a86a12;
+$idn: #3a7d44;
+
+$body-color: $ink;
+$link-color: $sapienza;
+$primary: $sapienza;
+$navbar-bg: $ink;
+$navbar-fg: #e8edf2;
+$navbar-hl: #ffffff;
+
+/*-- scss:rules --*/
+main.content { max-width: 52rem; }
+h1, h2, h3 { letter-spacing: -0.005em; }
+h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba($ink, .12); padding-bottom: .25rem; }
+
+.part { display: inline-block; padding: .05rem .5rem; border-radius: 3px;
+        font-size: .82em; font-weight: 600; color: #fff; white-space: nowrap; }
+.part-mpc { background: $mpc; }
+.part-rl  { background: $rl; }
+.part-id  { background: $idn; }
+.part-gen { background: #5b6672; }
+
+/* course map strip on the schedule page */
+.course-strip { display: flex; width: 100%; height: 2.6rem; border-radius: 4px;
+                overflow: hidden; margin: 1rem 0 .4rem; }
+.course-strip > div { display: flex; align-items: center; justify-content: center;
+                      color: #fff; font-weight: 600; font-size: .9rem; }
+.course-strip .s-mpc { background: $mpc; flex: 14; }
+.course-strip .s-rl  { background: $rl;  flex: 6; }
+.course-strip .s-id  { background: $idn; flex: 9; }
+.course-strip .s-end { background: #5b6672; flex: 1; }
+.strip-dates { position: relative; height: 1.3rem; font-size: .8rem; opacity: .75; margin-bottom: 1.2rem; }
+.strip-dates span { position: absolute; top: 0; white-space: nowrap; }
+.strip-dates span:last-child { transform: translateX(-60%); }
+
+table.schedule td:first-child { font-variant-numeric: tabular-nums; }
+.lesson-meta { font-size: .9em; opacity: .8; }
+.news { border-left: 4px solid $sapienza; padding: .6rem 1rem; background: rgba($sapienza, .05); }
