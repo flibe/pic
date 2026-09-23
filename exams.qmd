@@ -10,6 +10,14 @@ Written exam with exercises and open questions. **Closed book:** students can us
 
 ## Exam dates
 
+::: {.callout-important}
+## Extraordinary exam: Friday 23/10/2026
+
+**Friday 23 October 2026, 14:00–17:00, classroom A3, DIAG.**
+
+This is an **extraordinary exam date, reserved to students of the past edition of the course**. Students attending the current edition cannot take it. Eligibility and the documents to be sent in advance are set by the University: see [Extraordinary exam dates also open to working students](https://www.uniroma1.it/en/notizia/extraordinary-exam-dates-also-open-working-students). As for any other exam, booking on Infostud is required.
+:::
+
 See the official calendar (link to be added).
 
 | Date | Time | Classroom |
