@@ -29,7 +29,6 @@ In the second part we started the technical content: the receding horizon princi
 
 - Blackboard notes (link will be added after the lesson).
 - Recording of the lesson (link will be added after the lesson).
-- Read chapter 1 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016].
+- Read sections 1.1 and 1.2 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016] (the book can be found online).
 - Read [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
 - Read slides 1–26 of [Prof. Bemporad's presentation on linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
-- Before Lesson 4 (30/09): install Julia, JuMP and HiGHS following the [software setup page](setup.qmd).
