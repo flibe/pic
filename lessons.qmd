@@ -25,10 +25,22 @@ Summary of the lesson.
 
 We discussed the course logistics, study materials and the exam. We then gave a high-level overview of the whole course: process control via Model Predictive Control (MPC) and Reinforcement Learning (RL), both seen as ways to approximate the ideal infinite-horizon constrained optimal control problem, and process identification, i.e., how to obtain from data the models and state estimates that controllers need.
 
-In the second part we started the technical content: the receding horizon principle, nominal MPC and its three main properties (optimality, recursive feasibility, stability), robust, stochastic and probabilistic MPC, centralized versus decentralized MPC, and the MPC pseudo-code.
+In the second part we started the technical content: the receding horizon principle and the MPC pseudo-code, nominal MPC and its three main properties (optimality, recursive feasibility, stability), the classes of optimization problems behind MPC (continuous versus mixed-integer programming), and robust and probabilistic MPC.
 
-- Blackboard notes (link will be added after the lesson).
+- [Blackboard notes](files/notes/lesson-01-notes.pdf)
 - Recording of the lesson (link will be added after the lesson).
 - Read sections 1.1 and 1.2 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016] (the book can be found online).
 - Read [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
 - Read slides 1–26 of [Prof. Bemporad's presentation on linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
+
+## Lesson 2 (24/09/2026): MPC in practice and the first MPC problem {#lesson-2}
+
+[MPC]{.part .part-mpc}
+
+We compared centralized and decentralized/distributed MPC, and we went through the advantages and disadvantages of MPC: on the one hand an optimization-based, constrained-control technique whose goals map directly into the objective function and that is simple to explain to industry, on the other hand its computational cost (the solution time must be much smaller than the sampling time) and the need for a model of the system. We then described briefly the application examples that we will study during the course, such as the optimization of the energy flows of a building and the coordinated charging of electric vehicles, and we discussed hard versus soft constraints.
+
+In the second part we introduced the two time indices used throughout the course, the absolute time $k$ at which the MPC problem is solved and the relative time $i$ inside the prediction window, and we used them to write our first complete MPC problem: the regulation of the water volume of a tank, with box constraints on state and control, the dynamics of the system as equality constraints and a target function that trades off the state cost against the control effort. We closed with an introduction to state space models of dynamical systems, in continuous and discrete time, linear and nonlinear.
+
+- [Blackboard notes](files/notes/lesson-02-notes.pdf)
+- Recording of the lesson (link will be added after the lesson).
+- Study only [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
