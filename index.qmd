@@ -35,4 +35,4 @@ Theory is always paired with examples and numerical experiments in Julia and Pyt
 
 **Contact:** [liberati@diag.uniroma1.it](mailto:liberati@diag.uniroma1.it)
 
-**Study materials:** for every lesson, the [lesson diary](lessons.qmd) lists the blackboard notes, the recording and the exact sections to study. Materials of past editions remain available on the [previous course website](https://sites.google.com/diag.uniroma1.it/liberati/home/teaching). All references are free and openly accessible whenever possible.
+**Study materials:** for every lesson, the [lesson diary](lessons.qmd) lists the blackboard notes and the exact sections to study. The lessons of this edition are not recorded, but the recordings of the previous edition, and the other materials of past editions, remain available on the [previous course website](https://sites.google.com/diag.uniroma1.it/liberati/home/teaching). All references are free and openly accessible whenever possible.

@@ -1,6 +1,6 @@
 ---
 title: "Lesson diary"
-subtitle: "For every lesson: a summary, the blackboard notes, the recording and exactly what to study. Reference codes such as [Rawlings_2017] are listed in [References](references.qmd)."
+subtitle: "For every lesson: a summary, the blackboard notes and exactly what to study. Reference codes such as [Rawlings_2017] are listed in [References](references.qmd)."
 toc-title: "Lessons"
 ---
 
@@ -15,9 +15,12 @@ newest-first, or BELOW it for oldest-first (this page is oldest-first), and fill
 Summary of the lesson.
 
 - [Blackboard notes](LINK)
-- [Recording of the lesson](LINK)
 - Study ...
 -->
+
+::: {.news}
+**Recordings.** The lessons of this edition are not recorded. The recordings of the previous edition of the course remain available, and cover most of the same topics: you can find them on the [previous course website](https://sites.google.com/diag.uniroma1.it/liberati/home/teaching).
+:::
 
 ## Lesson 1 (23/09/2026): Introduction to the course and to MPC {#lesson-1}
 
@@ -28,7 +31,6 @@ We discussed the course logistics, study materials and the exam. We then gave a 
 In the second part we started the technical content: the receding horizon principle and the MPC pseudo-code, nominal MPC and its three main properties (optimality, recursive feasibility, stability), the classes of optimization problems behind MPC (continuous versus mixed-integer programming), and robust and probabilistic MPC.
 
 - [Blackboard notes](files/notes/lesson-01-notes.pdf)
-- Recording of the lesson (link will be added after the lesson).
 - Read sections 1.1 and 1.2 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016] (the book can be found online).
 - Read [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
 - Read slides 1–26 of [Prof. Bemporad's presentation on linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
@@ -42,5 +44,4 @@ We compared centralized and decentralized/distributed MPC, and we went through t
 In the second part we introduced the two time indices used throughout the course, the absolute time $k$ at which the MPC problem is solved and the relative time $i$ inside the prediction window, and we used them to write our first complete MPC problem: the regulation of the water volume of a tank, with box constraints on state and control, the dynamics of the system as equality constraints and a target function that trades off the state cost against the control effort. We closed with an introduction to state space models of dynamical systems, in continuous and discrete time, linear and nonlinear.
 
 - [Blackboard notes](files/notes/lesson-02-notes.pdf)
-- Recording of the lesson (link will be added after the lesson).
 - Study only [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
