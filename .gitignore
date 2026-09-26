@@ -2,6 +2,9 @@
 /_site/
 **/*.quarto_ipynb
 
+# Codice non ancora pubblicato (lezione dedicata più avanti)
+/files/code/tank_mpc.jl
+
 # File operativi, solo locali
 /README.md
 /files/README.md
