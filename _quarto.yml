@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - files/sim/fonts/**
 
 website:
   title: "Process Identification and Control 2026"
@@ -34,7 +36,8 @@ format:
       dark: [darkly, styles-dark.scss]
     toc: true
     toc-depth: 2
-    html-math-method: mathjax
+    html-math-method: mathml
+    include-in-header: head-security.html
     code-copy: true
     anchor-sections: true
     link-external-newwindow: true
