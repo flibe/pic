@@ -31,7 +31,7 @@ Theory is always paired with examples and numerical experiments in Julia and Pyt
 | Wednesday | 13:00–16:00 | 29, San Pietro in Vincoli |
 | Thursday | 16:00–19:00 | 7, San Pietro in Vincoli |
 
-**Office hours:** Thursdays, 14:00–16:00, in presence or online ([meet.google.com/zob-fhvk-bsz](https://meet.google.com/zob-fhvk-bsz)). Please send an email in advance to book an appointment.
+**Office hours:** Thursdays, 14:00–16:00, in presence or online. Send me an email in advance to book an appointment; for an online meeting I will reply with the link.
 
 **Contact:** [liberati@diag.uniroma1.it](mailto:liberati@diag.uniroma1.it)
 
