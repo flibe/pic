@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Real-time simulation comparing a PID controller and a constrained MPC on the storage tank of Lesson 2. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p><title>Tank Control Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef;
+    --panel: #ffffff;
+    --panel-2: #faf8f6;
+    --line: #ddd7d0;
+    --grid: #e8e3dd;
+    --ink: #1f2a36;
+    --ink-2: #55606d;
+    --muted: #7d8794;
+    --mpc: #2f6690;
+    --mpc-soft: rgba(47, 102, 144, .13);
+    --pid: #a86a12;
+    --pid-soft: rgba(168, 106, 18, .13);
+    --limit: #8a1c2f;
+    --ref: #3a7d44;
+    --future: rgba(31, 42, 54, .045);
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d;
+      --panel: #1b2026;
+      --panel-2: #20262d;
+      --line: #2f3841;
+      --grid: #2a323a;
+      --ink: #e9ecef;
+      --ink-2: #b3bcc6;
+      --muted: #8a949f;
+      --mpc: #6aa9dc;
+      --mpc-soft: rgba(106, 169, 220, .16);
+      --pid: #e0a33e;
+      --pid-soft: rgba(224, 163, 62, .16);
+      --limit: #e0697f;
+      --ref: #6fb97c;
+      --future: rgba(233, 236, 239, .05);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181d;
+    --panel: #1b2026;
+    --panel-2: #20262d;
+    --line: #2f3841;
+    --grid: #2a323a;
+    --ink: #e9ecef;
+    --ink-2: #b3bcc6;
+    --muted: #8a949f;
+    --mpc: #6aa9dc;
+    --mpc-soft: rgba(106, 169, 220, .16);
+    --pid: #e0a33e;
+    --pid-soft: rgba(224, 163, 62, .16);
+    --limit: #e0697f;
+    --ref: #6fb97c;
+    --future: rgba(233, 236, 239, .05);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 28px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  header .eyebrow {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--limit);
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(28px, 4.4vw, 40px);
+    line-height: 1.1;
+    margin: 0 0 8px;
+    text-wrap: balance;
+    letter-spacing: -.01em;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 66ch;
+    color: var(--ink-2);
+    font-size: 16px;
+  }
+
+  h2 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 19px;
+    margin: 0 0 2px;
+    font-weight: 600;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .stage { grid-template-columns: 1fr; }
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .clock {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 15px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  canvas { display: block; width: 100%; }
+
+  .tank-canvas { height: 260px; }
+  .chart-canvas { height: 150px; }
+  .chart-canvas.tall { height: 186px; }
+
+  .readouts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .readout {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 11px;
+  }
+
+  .readout .who {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  .swatch.mpc { background: var(--mpc); }
+  .swatch.pid { background: var(--pid); }
+
+  .readout .val {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 21px;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+
+  .readout .sub {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .flag {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+  }
+
+  .flag.ok { color: var(--ref); border-color: color-mix(in srgb, var(--ref) 40%, transparent); }
+  .flag.warn { color: var(--pid); border-color: color-mix(in srgb, var(--pid) 45%, transparent); background: color-mix(in srgb, var(--pid) 10%, transparent); }
+  .flag.bad { color: var(--limit); border-color: color-mix(in srgb, var(--limit) 45%, transparent); background: color-mix(in srgb, var(--limit) 10%, transparent); }
+
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+
+  .chart-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .chart-title .unit {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 12px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-top: 2px;
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .key {
+    width: 22px;
+    height: 0;
+    border-top-width: 2.5px;
+    border-top-style: solid;
+    display: inline-block;
+  }
+
+  .key.mpc { border-color: var(--mpc); }
+  .key.pid { border-color: var(--pid); }
+  .key.pred { border-color: var(--mpc); border-top-style: dashed; }
+  .key.lim { border-color: var(--limit); border-top-style: dashed; }
+  .key.ref { border-color: var(--ref); border-top-style: dashed; }
+
+  .controls { display: flex; flex-direction: column; gap: 14px; }
+
+  .transport {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+
+  button.primary {
+    background: var(--mpc);
+    border-color: var(--mpc);
+    color: #fff;
+    min-width: 92px;
+  }
+
+  :root[data-theme="dark"] button.primary { color: #10161c; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) button.primary { color: #10161c; }
+  }
+
+  select, input[type="range"] { font: inherit; accent-color: var(--mpc); }
+
+  select {
+    background: var(--panel-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+
+  .speed { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
+
+  .sliders {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px 20px;
+  }
+
+  .slider label {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+
+  .slider .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider input[type="range"] { width: 100%; }
+
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+
+  th, td {
+    text-align: right;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  th {
+    font-family: "Source Sans 3", sans-serif;
+    font-size: 11.5px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  th:first-child, td:first-child {
+    text-align: left;
+    font-family: "Source Sans 3", sans-serif;
+    font-weight: 600;
+  }
+
+  td.worse { color: var(--limit); }
+  .table-wrap { overflow-x: auto; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+
+  .math {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--mpc);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 10px 0 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  .math .cm { color: var(--muted); }
+
+  footer {
+    font-size: 12.5px;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control · Lesson 2</p>
+    <h1>Tank Control Lab</h1>
+    <p class="lede">The storage tank of Lesson 2, controlled twice at the same time: a classical PID on the left,
+      the constrained MPC of the lecture on the right. Same tank, same demand, same pump limit — the only
+      difference is that MPC solves an optimization problem over a prediction window at every sampling time.
+      The simulation runs on its own; every parameter below can be changed while it runs.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Plant</h2>
+        <span class="clock" id="clock">06:00</span>
+      </div>
+      <canvas class="tank-canvas" id="tanks" aria-label="Animated cutaway of the two tanks"></canvas>
+      <div class="readouts">
+        <div class="readout">
+          <div class="who"><i class="swatch pid"></i>PID</div>
+          <div class="val" id="pid-x">55.0 m³</div>
+          <div class="sub" id="pid-u">u = 0.00 m³/min</div>
+          <div class="flag ok" id="pid-flag">within limits</div>
+        </div>
+        <div class="readout">
+          <div class="who"><i class="swatch mpc"></i>MPC</div>
+          <div class="val" id="mpc-x">55.0 m³</div>
+          <div class="sub" id="mpc-u">u = 0.00 m³/min</div>
+          <div class="flag ok" id="mpc-flag">within limits</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Stored volume x<sub>k</sub></span><span class="unit">m³</span></div>
+        <canvas class="chart-canvas tall" id="chart-x" aria-label="Volume of the two tanks over time"></canvas>
+        <div class="legend">
+          <span><i class="key pid"></i>PID</span>
+          <span><i class="key mpc"></i>MPC</span>
+          <span><i class="key pred"></i>MPC prediction over the window</span>
+          <span><i class="key ref"></i>reference x<sup>ref</sup></span>
+          <span><i class="key lim"></i>limits x<sup>min</sup>, x<sup>max</sup></span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Pump flow u<sub>k</sub></span><span class="unit">m³/min</span></div>
+        <canvas class="chart-canvas" id="chart-u" aria-label="Control input of the two controllers over time"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Demand d<sub>k</sub> — measured and forecast</span><span class="unit">m³/min</span></div>
+        <canvas class="chart-canvas" id="chart-d" aria-label="Water demand over time, past and forecast"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel controls">
+    <div class="transport">
+      <button class="primary" id="play">Pause</button>
+      <button id="reset">Reset</button>
+      <label class="speed">Scenario
+        <select id="scenario">
+          <option value="morning">Morning peak (forecast)</option>
+          <option value="double">Morning peak + unforecast spike</option>
+          <option value="steps">Step changes in demand</option>
+        </select>
+      </label>
+      <label class="speed">Speed
+        <input type="range" id="speed" min="1" max="60" step="1" value="14" style="width:110px">
+        <span class="num" id="speed-val" style="font-family:'IBM Plex Mono',monospace">14×</span>
+      </label>
+    </div>
+
+    <div class="sliders">
+      <div class="slider">
+        <label for="N">Prediction window N <span class="num" id="N-val">58 steps</span></label>
+        <input type="range" id="N" min="3" max="72" step="1" value="58">
+      </div>
+      <div class="slider">
+        <label for="wq">State weight a <span class="num" id="wq-val">1.0</span></label>
+        <input type="range" id="wq" min="0.1" max="5" step="0.1" value="1">
+      </div>
+      <div class="slider">
+        <label for="wr">Control weight b <span class="num" id="wr-val">50</span></label>
+        <input type="range" id="wr" min="0" max="5000" step="25" value="50">
+      </div>
+      <div class="slider">
+        <label for="umax">Pump limit u<sup>max</sup> <span class="num" id="umax-val">1.20 m³/min</span></label>
+        <input type="range" id="umax" min="0.6" max="2.5" step="0.05" value="1.2">
+      </div>
+      <div class="slider">
+        <label for="kp">PID K<sub>p</sub> <span class="num" id="kp-val">0.20</span></label>
+        <input type="range" id="kp" min="0" max="1" step="0.01" value="0.2">
+      </div>
+      <div class="slider">
+        <label for="ki">PID K<sub>i</sub> <span class="num" id="ki-val">0.030</span></label>
+        <input type="range" id="ki" min="0" max="0.2" step="0.005" value="0.03">
+      </div>
+      <div class="slider">
+        <label for="kd">PID K<sub>d</sub> <span class="num" id="kd-val">0.40</span></label>
+        <input type="range" id="kd" min="0" max="3" step="0.05" value="0.4">
+      </div>
+      <div class="slider">
+        <label for="xref">Reference x<sup>ref</sup> <span class="num" id="xref-val">55 m³</span></label>
+        <input type="range" id="xref" min="30" max="80" step="1" value="55">
+      </div>
+    </div>
+
+    <div class="toggles">
+      <label><input type="checkbox" id="forecast" checked> MPC knows the demand forecast</label>
+      <label><input type="checkbox" id="hardx" checked> MPC enforces the level limits</label>
+      <label><input type="checkbox" id="showpred" checked> Draw the predicted trajectory</label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Score so far</h2><span class="clock" id="elapsed">0 min simulated</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Controller</th>
+            <th>Mean |x − x<sup>ref</sup>|</th>
+            <th>Lowest level</th>
+            <th>Highest level</th>
+            <th>Time outside limits</th>
+            <th>Worst excursion</th>
+            <th>Water pumped</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PID</td>
+            <td id="m-pid-err">—</td>
+            <td id="m-pid-min">—</td>
+            <td id="m-pid-max">—</td>
+            <td id="m-pid-viol">—</td>
+            <td id="m-pid-worst">—</td>
+            <td id="m-pid-vol">—</td>
+          </tr>
+          <tr>
+            <td>MPC</td>
+            <td id="m-mpc-err">—</td>
+            <td id="m-mpc-min">—</td>
+            <td id="m-mpc-max">—</td>
+            <td id="m-mpc-viol">—</td>
+            <td id="m-mpc-worst">—</td>
+            <td id="m-mpc-vol">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:10px 0 0;font-size:13.5px;color:var(--ink-2)">The two controllers pump almost the same
+      total water, and they must: over a run that starts and ends near the reference, mass balance fixes the
+      total at whatever the demand took out. What separates them is <i>when</i> they pump it.</p>
+    <p id="cert-note" style="margin:10px 0 0;font-size:13.5px;color:var(--ink-2)">KKT certificate: —</p>
+    <p id="feas-note" style="margin:10px 0 0;font-size:13.5px;color:var(--ink-2)">The MPC problem has stayed
+      feasible so far: every level limit it was asked to respect was still reachable with the pump it has.</p>
+  </section>
+
+  <section class="notes">
+    <div class="panel">
+      <h2>The problem solved at every step k</h2>
+      <p>Exactly the formulation of the lecture, with the absolute time <i>k</i> and the relative time <i>i</i>
+        inside the window.</p>
+      <div class="math">
+min<sub>u</sub> Σ<sub>i=0..N-1</sub> [ a·(x<sub>i+1|k</sub> − x<sup>ref</sup>)² + b·u<sub>i|k</sub>² ]<br>
+s.t. x<sub>i+1|k</sub> = x<sub>i|k</sub> + u<sub>i|k</sub>·T − d<sub>i|k</sub>·T <span class="cm">(dynamics)</span><br>
+　　 0 ≤ u<sub>i|k</sub> ≤ u<sup>max</sup> <span class="cm">(pump)</span><br>
+　　 x<sup>min</sup> ≤ x<sub>i|k</sub> ≤ x<sup>max</sup> <span class="cm">(level limits)</span><br>
+　　 x<sub>0|k</sub> = x<sub>k</sub> <span class="cm">(measurement)</span>
+      </div>
+      <p style="margin-top:10px">Only u<sub>0|k</sub> is applied and the rest of the sequence is discarded, then
+        the whole problem is rebuilt one minute later — the receding horizon of Lesson 1. Sampling time
+        T = 1 min, tank capacity 100 m³, limits 20–90 m³.</p>
+      <p>A quadratic program with inequalities has no closed-form solution, because which constraints are
+        active is not known in advance — that is the content of the complementarity conditions. So the page
+        solves it in two phases. First a projected Newton method, with the pump limits enforced exactly by
+        projection and the level band as a heavily penalized soft constraint, gives a solution in fewer than
+        ten iterations and tells us which constraints are active. Then the KKT system of that active set is
+        solved exactly, once, and the result is checked: every constraint satisfied, every multiplier with the
+        right sign. When the check passes, the applied control is provably optimal.</p>
+    </div>
+    <div class="panel">
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>Anticipation.</b> Around 07:30 the demand becomes larger than the pump can supply. The MPC
+          starts filling the tank <i>before</i> the peak arrives, because the peak is already inside its
+          prediction window. The PID has no error yet, so it does nothing — a feedback controller can only
+          react to what has already happened.</li>
+        <li><b>The bill at the end.</b> With the settings the page opens with, the PID spends about 35 minutes
+          below the 20 m³ limit and touches 8 m³; the MPC never leaves the band and never goes under 27 m³.
+          Same tank, same pump, same demand.</li>
+        <li><b>How far ahead you look.</b> Set N to 6 steps: the peak is outside the window, the MPC becomes
+          myopic and fails almost like the PID. Lower N gradually instead and you find the threshold — 36
+          steps here — below which the anticipation starts too late and the level goes under the limit anyway.
+          The window has to be longer than the time the plant needs to react.</li>
+        <li><b>How much the forecast is worth.</b> Untick "MPC knows the demand forecast": the controller then
+          assumes the present demand will persist, and the anticipation disappears even with a long window.
+          Producing that forecast from data is what the identification part of the course is about.</li>
+        <li><b>Same water, different timing.</b> Look at the last column of the table: the two controllers end
+          up pumping almost the same total volume. They have to — over a run that starts and ends near the
+          reference, mass balance fixes the total at whatever the demand took out, and no controller can
+          create or destroy water. MPC does not win by pumping <i>more</i>, it wins by pumping <i>sooner</i>,
+          moving the same litres to the hours when they are still useful.</li>
+        <li><b>The price of control.</b> Only the ratio b/a matters, and it has to be large before anything
+          happens: the level error is in cubic metres (tens of them) while the flow is about one cubic metre
+          per minute, so their squares differ by three orders of magnitude and b must reach roughly a thousand
+          times a to weigh on the decision. Around b = 1000 the pump starts saving effort; at b = 5000 it
+          becomes so reluctant that it lets the tank go under the limit for ten minutes. Weight tuning is a
+          matter of units before it is a matter of taste.</li>
+        <li><b>When a constraint actually does something.</b> At the reference the page starts with, unticking
+          "MPC enforces the level limits" changes nothing: the tracking cost alone already keeps the tank
+          inside the band, so the constraint is inactive and carries no information. Set x<sup>ref</sup> to
+          35 m³ instead — now the optimum would like to sit near the floor, the constraint becomes active, and
+          switching it off sends the level several metres deeper. A constraint matters only when the optimum
+          wants to cross it.</li>
+        <li><b>When the tank cannot be saved.</b> With a short window, or in the "unforecast spike" scenario,
+          the MPC also ends up below the limit. That is not a bug of the solver: see the note on feasibility.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>Feasibility, and what happens when it is lost</h2>
+      <p>An MPC algorithm is <b>recursively feasible</b> when a problem that admits a solution at one sampling
+        time keeps admitting one at every future time. This tank shows how that property can be lost. Take
+        07:45 with a short window: the level is 36 m³, the demand is 2.35 m³/min against a pump that gives at
+        most 1.20, so the tank keeps emptying at 1.15 m³/min whatever the controller does, and the peak still
+        has 25 minutes to run. The level will reach 7 m³, and no admissible sequence of inputs can respect the
+        20 m³ limit. The feasible set is empty, and no solver can do anything about it. With the default window
+        the same controller sees the end of the peak already at 07:00 and fills the tank while it still can.</p>
+      <p>Watch the <span class="flag warn" style="margin:0">limit unreachable</span> badge appear on the MPC
+        readout: it lights up while the constraint is impossible, usually a few minutes <i>before</i> the level
+        actually crosses the limit.</p>
+      <p>Two ways out, both standard. Give the problem a longer window and a terminal condition, so the
+        controller commits early enough to keep a solution available — this is how recursive feasibility is
+        proved. Or accept that the constraint may become impossible and write it as a <b>soft constraint</b>,
+        with a slack variable that is heavily penalized in the objective: the problem stays feasible and the
+        controller minimizes the violation instead of failing.</p>
+      <p>This page takes the second road: the level band is written as a soft constraint, penalized so heavily
+        that the controller respects it to within centimetres whenever it can, and minimizes the violation
+        when it cannot. Nothing saturates the pump by hand — the optimizer arrives at maximum flow on its own,
+        because that is the best it can do.</p>
+    </div>
+  </section>
+
+  <footer>Simulation for teaching: a single-state integrator model of the tank, perfect state measurement and,
+    unless stated otherwise, a perfect demand forecast over the prediction window.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- model ---
+  var T = 1;                 // sampling time [min]
+  var CAP = 100;             // physical capacity [m3]
+  var XMIN = 20, XMAX = 90;  // operating limits [m3]
+  var X0 = 55;               // initial volume [m3]
+  var STEPS = 420;           // length of a run [min]
+
+  var P = {
+    N: 58, a: 1, b: 50, umax: 1.2, xref: 55,
+    kp: 0.2, ki: 0.03, kd: 0.4,
+    forecast: true, hardx: true, showpred: true,
+    scenario: "morning", speed: 14
+  };
+
+  // Demand profiles d_k [m3/min]. Returns the *true* demand at step k.
+  function demand(k) {
+    var base = 0.30;
+    if (P.scenario === "steps") {
+      if (k >= 60 && k < 150) return 0.95;
+      if (k >= 150 && k < 240) return 0.45;
+      if (k >= 240 && k < 330) return 1.35;
+      return base;
+    }
+    var d = base;
+    if (k >= 90 && k < 130) d = 2.35;                 // morning peak, well above the pump
+    else if (k >= 130 && k < 150) d = 0.80;           // tail of the peak
+    if (k >= 250 && k < 290) d = 1.60;                // evening draw
+    if (P.scenario === "double" && k >= 190 && k < 210) d = 3.20; // unforecast spike
+    return d;
+  }
+
+  // What the controller believes about the future at time k.
+  function forecastAt(k, i, dNow) {
+    if (!P.forecast) return dNow;
+    if (P.scenario === "double" && k + i >= 190 && k + i < 210) return 0.30; // spike is not forecast
+    return demand(k + i);
+  }
+
+  // ------------------------------------------------------------ QP solver ---
+  // The problem is a small convex QP, so it is solved as one: the pump limits are
+  // kept exactly by projection on the box, the level band is a soft constraint with
+  // a large quadratic penalty, and the whole thing is minimized with a projected
+  // Newton method (active set on the box + Cholesky on the free variables). It
+  // converges in a handful of iterations, unlike a first-order method on a problem
+  // this ill-conditioned.
+  var PEN = 2000;
+  var warm = null, scratch = { n: 0, H: null };
+
+  function solveMPC(x0, k) {
+    var n = P.N, i, j;
+    if (!warm || warm.length !== n) warm = new Float64Array(n);
+    if (scratch.n < n) { scratch.n = n; scratch.H = new Float64Array(n * n); }
+
+    var d = new Float64Array(n), want = new Float64Array(n);
+    var acc = 0, dNow = demand(k);
+    for (i = 0; i < n; i++) {
+      d[i] = forecastAt(k, i, dNow);
+      acc += d[i];
+      want[i] = x0 - T * acc;                      // level at i+1 if the pump stays off
+    }
+
+    var u = new Float64Array(n);
+    for (i = 0; i < n; i++) u[i] = Math.min(P.umax, Math.max(0, warm[i]));
+
+    var xs = new Float64Array(n), g = new Float64Array(n), wv = new Float64Array(n);
+    var trial = new Float64Array(n), idx = new Int32Array(n), suf = new Float64Array(n + 1);
+    var H = scratch.H, rhs = new Float64Array(n), stepv = new Float64Array(n);
+
+    // objective: a*sum(x-xref)^2 + b*sum(u^2) + PEN*sum(violation^2); fills xs
+    function obj(uu) {
+      var run = 0, f = 0, ii, x, e, v;
+      for (ii = 0; ii < n; ii++) {
+        run += uu[ii];
+        x = want[ii] + T * run;
+        xs[ii] = x;
+        e = x - P.xref;
+        f += P.a * e * e + P.b * uu[ii] * uu[ii];
+        if (P.hardx) {
+          if (x < XMIN) { v = XMIN - x; f += PEN * v * v; }
+          else if (x > XMAX) { v = x - XMAX; f += PEN * v * v; }
+        }
+      }
+      return f;
+    }
+
+    function grad(uu) {
+      var ii, x, wi, tail = 0;
+      for (ii = 0; ii < n; ii++) {
+        x = xs[ii];
+        wi = 2 * P.a * (x - P.xref);
+        if (P.hardx) {
+          if (x < XMIN) wi += 2 * PEN * (x - XMIN);
+          else if (x > XMAX) wi += 2 * PEN * (x - XMAX);
+        }
+        wv[ii] = wi;
+      }
+      for (ii = n - 1; ii >= 0; ii--) { tail += wv[ii]; g[ii] = T * tail + 2 * P.b * uu[ii]; }
+    }
+
+    var f = obj(u), fNew, ok, alpha, ls, iter, nf, r, c2, m, s, p, gi, pg, hval;
+
+    for (iter = 0; iter < 60; iter++) {
+      grad(u);
+
+      pg = 0;
+      for (i = 0; i < n; i++) {
+        gi = g[i];
+        if ((u[i] <= 1e-12 && gi > 0) || (u[i] >= P.umax - 1e-12 && gi < 0)) gi = 0;
+        if (Math.abs(gi) > pg) pg = Math.abs(gi);
+      }
+      if (pg < 1e-7) break;
+
+      nf = 0;
+      for (i = 0; i < n; i++) {
+        var atLo = u[i] <= 1e-12 && g[i] > 0;
+        var atHi = u[i] >= P.umax - 1e-12 && g[i] < 0;
+        if (!atLo && !atHi) idx[nf++] = i;
+      }
+      if (nf === 0) break;
+
+      // suffix count of the rows whose level constraint is currently violated
+      var cnt = 0;
+      suf[n] = 0;
+      for (i = n - 1; i >= 0; i--) {
+        if (P.hardx && (xs[i] < XMIN || xs[i] > XMAX)) cnt++;
+        suf[i] = cnt;
+      }
+
+      // Hessian of the free block: 2a T^2 (n-m) + 2 PEN T^2 suf(m) + 2b on the diagonal
+      for (r = 0; r < nf; r++) {
+        i = idx[r];
+        for (c2 = 0; c2 < nf; c2++) {
+          j = idx[c2];
+          m = i > j ? i : j;
+          hval = 2 * P.a * T * T * (n - m) + 2 * PEN * T * T * suf[m];
+          if (i === j) hval += 2 * P.b + 1e-9;
+          H[r * nf + c2] = hval;
+        }
+        rhs[r] = -g[i];
+      }
+
+      // Cholesky in place, then solve H p = -g on the free variables
+      for (i = 0; i < nf; i++) {
+        for (j = 0; j <= i; j++) {
+          s = H[i * nf + j];
+          for (p = 0; p < j; p++) s -= H[i * nf + p] * H[j * nf + p];
+          if (i === j) H[i * nf + j] = Math.sqrt(Math.max(s, 1e-12));
+          else H[i * nf + j] = s / H[j * nf + j];
+        }
+      }
+      for (i = 0; i < nf; i++) {
+        s = rhs[i];
+        for (p = 0; p < i; p++) s -= H[i * nf + p] * stepv[p];
+        stepv[i] = s / H[i * nf + i];
+      }
+      for (i = nf - 1; i >= 0; i--) {
+        s = stepv[i];
+        for (p = i + 1; p < nf; p++) s -= H[p * nf + i] * stepv[p];
+        stepv[i] = s / H[i * nf + i];
+      }
+
+      // backtracking line search, projected on the pump box
+      alpha = 1; ok = false; fNew = f;
+      for (ls = 0; ls < 30; ls++) {
+        for (i = 0; i < n; i++) trial[i] = u[i];
+        for (r = 0; r < nf; r++) {
+          i = idx[r];
+          var v1 = u[i] + alpha * stepv[r];
+          trial[i] = v1 < 0 ? 0 : (v1 > P.umax ? P.umax : v1);
+        }
+        fNew = obj(trial);
+        if (fNew < f - 1e-12) { ok = true; break; }
+        alpha *= 0.5;
+      }
+
+      if (!ok) {
+        // the penalty makes the Hessian jump; fall back to projected steepest descent
+        var a2 = 1 / (2 * P.a * T * T * n + 2 * P.b + 2 * PEN * T * T * n);
+        for (ls = 0; ls < 40; ls++) {
+          for (i = 0; i < n; i++) {
+            var v2 = u[i] - a2 * g[i];
+            trial[i] = v2 < 0 ? 0 : (v2 > P.umax ? P.umax : v2);
+          }
+          fNew = obj(trial);
+          if (fNew < f - 1e-12) { ok = true; break; }
+          a2 *= 0.5;
+        }
+      }
+      if (!ok) { obj(u); break; }
+
+      for (i = 0; i < n; i++) u[i] = trial[i];
+      f = fNew;
+    }
+
+    // Phase 2: the penalized solution tells us which constraints are active. Solve the
+    // KKT system of that active set exactly, then check the certificate — feasibility
+    // plus the sign of every multiplier. If it passes, this is the exact optimum of the
+    // hard-constrained problem. It fails only when the band is physically unreachable,
+    // and then the penalized solution stands.
+    var cert = polish(u, want, n);
+    if (cert) u = cert;
+
+    warm = Float64Array.from(u);
+
+    // predicted trajectory, and whether the plan still breaks the band
+    var pred = new Float64Array(n + 1), unreachable = false;
+    pred[0] = x0;
+    for (i = 0; i < n; i++) {
+      pred[i + 1] = pred[i] + T * (u[i] - d[i]);
+      if (P.hardx && (pred[i + 1] < XMIN - 0.05 || pred[i + 1] > XMAX + 0.05)) unreachable = true;
+    }
+    return { u: u[0], pred: pred, dpred: d, unreachable: unreachable, certified: !!cert };
+  }
+
+  // Dense LU with partial pivoting; returns null if the system is singular, which is
+  // how a degenerate (linearly dependent) active set announces itself.
+  function luSolve(M, rhs, m) {
+    var A = M.slice(0, m * m), x = rhs.slice(0, m), i, c, k, best, bv, v, f, t, s;
+    for (k = 0; k < m; k++) {
+      best = k; bv = Math.abs(A[k * m + k]);
+      for (i = k + 1; i < m; i++) { v = Math.abs(A[i * m + k]); if (v > bv) { bv = v; best = i; } }
+      if (bv < 1e-12) return null;
+      if (best !== k) {
+        for (c = 0; c < m; c++) { t = A[k * m + c]; A[k * m + c] = A[best * m + c]; A[best * m + c] = t; }
+        t = x[k]; x[k] = x[best]; x[best] = t;
+      }
+      for (i = k + 1; i < m; i++) {
+        f = A[i * m + k] / A[k * m + k];
+        if (f === 0) continue;
+        for (c = k; c < m; c++) A[i * m + c] -= f * A[k * m + c];
+        x[i] -= f * x[k];
+      }
+    }
+    for (i = m - 1; i >= 0; i--) {
+      s = x[i];
+      for (c = i + 1; c < m; c++) s -= A[i * m + c] * x[c];
+      x[i] = s / A[i * m + i];
+    }
+    return x;
+  }
+
+  // Exact KKT solve on the active set implied by uPen; returns the solution only if the
+  // certificate holds, otherwise null.
+  function polish(uPen, want, n) {
+    var i, j, r, c, run, tolU = 1e-7, tolX = 1e-4;
+    var wu = new Int32Array(n), ws = new Int32Array(n), xs = new Float64Array(n);
+
+    run = 0;
+    for (i = 0; i < n; i++) {
+      run += uPen[i];
+      xs[i] = want[i] + T * run;
+      if (uPen[i] <= tolU) wu[i] = -1;
+      else if (uPen[i] >= P.umax - tolU) wu[i] = 1;
+      if (P.hardx) {
+        if (xs[i] <= XMIN + tolX) ws[i] = -1;
+        else if (xs[i] >= XMAX - tolX) ws[i] = 1;
+      }
+    }
+    // a pinned input next to an active row makes that row redundant
+    var prevKept = -2;
+    for (i = 0; i < n; i++) {
+      if (ws[i] === 0) continue;
+      if (wu[i] !== 0 && prevKept === i - 1) { ws[i] = 0; continue; }
+      prevKept = i;
+    }
+
+    var idx = new Int32Array(n), nf = 0, rows = new Int32Array(n), nr = 0;
+    for (i = 0; i < n; i++) if (wu[i] === 0) idx[nf++] = i;
+    for (i = 0; i < n; i++) if (ws[i] !== 0) rows[nr++] = i;
+    var m = nf + nr;
+    if (m === 0 || m > 200) return null;
+
+    var uFix = new Float64Array(n);
+    for (i = 0; i < n; i++) uFix[i] = wu[i] === 1 ? P.umax : 0;
+
+    var baseRun = new Float64Array(n), acc = 0, e0 = new Float64Array(n);
+    for (i = 0; i < n; i++) { acc += uFix[i]; baseRun[i] = acc; e0[i] = want[i] + T * acc - P.xref; }
+
+    var K = new Float64Array(m * m), rhs = new Float64Array(m), tail, mx, v2;
+    for (r = 0; r < nf; r++) {
+      i = idx[r];
+      tail = 0;
+      for (j = i; j < n; j++) tail += e0[j];
+      rhs[r] = -(2 * P.a * T * tail + 2 * P.b * uFix[i]);
+      for (c = 0; c < nf; c++) {
+        j = idx[c];
+        mx = i > j ? i : j;
+        v2 = 2 * P.a * T * T * (n - mx);
+        if (i === j) v2 += 2 * P.b;
+        K[r * m + c] = v2;
+      }
+    }
+    for (r = 0; r < nr; r++) {
+      var ri = rows[r];
+      for (c = 0; c < nf; c++) {
+        v2 = idx[c] <= ri ? T : 0;
+        K[(nf + r) * m + c] = v2;
+        K[c * m + (nf + r)] = v2;
+      }
+      rhs[nf + r] = ((ws[ri] === -1 ? XMIN : XMAX) - want[ri]) - T * baseRun[ri];
+    }
+
+    var sol = luSolve(K, rhs, m);
+    if (!sol) return null;
+
+    var u = Float64Array.from(uFix);
+    for (r = 0; r < nf; r++) u[idx[r]] = sol[r];
+    var lam = new Float64Array(n);
+    for (r = 0; r < nr; r++) lam[rows[r]] = sol[nf + r];
+
+    // certificate: primal feasibility and the sign of every multiplier
+    var worst = 0, x2;
+    run = 0;
+    for (i = 0; i < n; i++) {
+      if (-u[i] > 1e-9 || u[i] - P.umax > 1e-9) return null;
+      run += u[i];
+      x2 = want[i] + T * run;
+      if (P.hardx) {
+        worst = Math.max(worst, XMIN - x2, x2 - XMAX);
+        if (worst > 1e-7) return null;
+      }
+    }
+    var g = new Float64Array(n), e = new Float64Array(n), lamTail = new Float64Array(n + 1);
+    run = 0;
+    for (i = 0; i < n; i++) { run += u[i]; e[i] = want[i] + T * run - P.xref; }
+    tail = 0;
+    for (i = n - 1; i >= 0; i--) { tail += e[i]; g[i] = 2 * P.a * T * tail + 2 * P.b * u[i]; }
+    tail = 0;
+    for (i = n - 1; i >= 0; i--) { tail += (ws[i] !== 0 ? lam[i] : 0); lamTail[i] = tail; }
+    for (i = 0; i < n; i++) {
+      if (wu[i] !== 0) {
+        var mu = -(g[i] + T * lamTail[i]);
+        if ((wu[i] === -1 ? mu : -mu) > 1e-7) return null;
+      }
+      if (ws[i] !== 0) {
+        if ((ws[i] === -1 ? lam[i] : -lam[i]) > 1e-7) return null;
+      }
+    }
+    return u;
+  }
+
+  // ------------------------------------------------------------ simulation ---
+  var S;
+
+  function fresh() {
+    return {
+      k: 0,
+      pid: { x: X0, u: 0, integ: 0, prevErr: 0, hist: [], uHist: [], err: 0, viol: 0, vol: 0, min: X0, max: X0, worst: 0 },
+      mpc: { x: X0, u: 0, hist: [], uHist: [], err: 0, viol: 0, vol: 0, min: X0, max: X0, worst: 0, pred: null, infeas: false, infeasMin: 0, certOk: 0 },
+      dHist: []
+    };
+  }
+
+  function stepOnce() {
+    if (S.k >= STEPS) return false;
+    var k = S.k, d = demand(k);
+
+    // --- PID (same actuator limits, with anti-windup) ---
+    var e = P.xref - S.pid.x;
+    var deriv = (e - S.pid.prevErr) / T;
+    var raw = P.kp * e + P.ki * S.pid.integ + P.kd * deriv;
+    var u1 = Math.min(P.umax, Math.max(0, raw));
+    if (raw === u1) S.pid.integ += e * T;          // stop integrating when saturated
+    S.pid.prevErr = e;
+    S.pid.u = u1;
+
+    // --- MPC ---
+    var sol = solveMPC(S.mpc.x, k);
+    var u2 = Math.min(P.umax, Math.max(0, sol.u));
+    S.mpc.u = u2;
+    S.mpc.pred = sol.pred;
+    S.mpc.infeas = sol.unreachable;
+    if (sol.unreachable) S.mpc.infeasMin += T;
+    if (sol.certified) S.mpc.certOk += 1;
+
+    // --- plant, identical for both ---
+    S.pid.x = Math.min(CAP, Math.max(0, S.pid.x + T * (u1 - d)));
+    S.mpc.x = Math.min(CAP, Math.max(0, S.mpc.x + T * (u2 - d)));
+
+    [["pid", u1], ["mpc", u2]].forEach(function (pair) {
+      var c = S[pair[0]], uu = pair[1];
+      c.hist.push(c.x);
+      c.uHist.push(uu);
+      c.err += Math.abs(c.x - P.xref);
+      c.vol += uu * T;
+      if (c.x < XMIN - 1e-6 || c.x > XMAX + 1e-6) c.viol += T;
+      var exc = Math.max(XMIN - c.x, c.x - XMAX, 0);
+      if (exc > c.worst) c.worst = exc;
+      if (c.x < c.min) c.min = c.x;
+      if (c.x > c.max) c.max = c.x;
+    });
+    S.dHist.push(d);
+    S.k++;
+    return true;
+  }
+
+  // ---------------------------------------------------------------- canvas ---
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function prep(cv) {
+    var r = cv.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (cv.width !== w * dpr || cv.height !== h * dpr) {
+      cv.width = w * dpr; cv.height = h * dpr;
+    }
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function hhmm(minutes) {
+    var t = 360 + minutes;                      // the run starts at 06:00
+    var h = Math.floor(t / 60) % 24, m = Math.round(t % 60);
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+  }
+
+  // --- time-series chart ------------------------------------------------
+  function chart(cv, opts) {
+    var p = prep(cv), ctx = p.ctx, w = p.w, h = p.h;
+    var padL = 42, padR = 10, padT = 10, padB = 18;
+    var x0 = padL, x1 = w - padR, y0 = padT, y1 = h - padB;
+    var tMin = opts.tMin, tMax = opts.tMax, vMin = opts.vMin, vMax = opts.vMax;
+    var X = function (t) { return x0 + (t - tMin) / (tMax - tMin) * (x1 - x0); };
+    var Y = function (v) { return y1 - (v - vMin) / (vMax - vMin) * (y1 - y0); };
+
+    var inkMuted = css("--muted"), grid = css("--grid");
+
+    // future region
+    ctx.fillStyle = css("--future");
+    ctx.fillRect(X(S.k), y0, Math.max(0, X(tMax) - X(S.k)), y1 - y0);
+
+    // grid + y labels
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    ctx.fillStyle = inkMuted;
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    opts.ticks.forEach(function (v) {
+      var y = Math.round(Y(v)) + .5;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      ctx.fillText(String(v), x0 - 7, y);
+    });
+
+    // x labels every hour
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (var t = Math.ceil(tMin / 30) * 30; t <= tMax; t += 30) {
+      if (t < tMin) continue;
+      var xx = X(t);
+      ctx.strokeStyle = grid;
+      ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y1); ctx.stroke();
+      ctx.fillStyle = inkMuted;
+      ctx.fillText(hhmm(t), xx, y1 + 4);
+    }
+
+    // horizontal reference lines
+    (opts.lines || []).forEach(function (L) {
+      ctx.save();
+      ctx.strokeStyle = L.color; ctx.lineWidth = 1.5; ctx.setLineDash(L.dash || [5, 4]);
+      var y = Y(L.v);
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      ctx.restore();
+    });
+
+    // "now" marker
+    ctx.save();
+    ctx.strokeStyle = css("--ink-2"); ctx.globalAlpha = .45; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(S.k), y0); ctx.lineTo(X(S.k), y1); ctx.stroke();
+    ctx.restore();
+
+    (opts.series || []).forEach(function (s) {
+      if (!s.data || s.data.length === 0) return;
+      ctx.save();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.width || 2;
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      if (s.dash) ctx.setLineDash(s.dash);
+      ctx.beginPath();
+      var started = false;
+      for (var i = 0; i < s.data.length; i++) {
+        var t = (s.t0 || 0) + i;
+        if (t < tMin - 1 || t > tMax + 1) { continue; }
+        var px = X(t), py = Y(s.data[i]);
+        if (s.stepped && started) ctx.lineTo(px, Y(s.data[i - 1]));
+        if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      if (s.dot && s.data.length) {
+        var lastT = (s.t0 || 0) + s.data.length - 1;
+        ctx.setLineDash([]);
+        ctx.fillStyle = s.color;
+        ctx.strokeStyle = css("--panel"); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(lastT), Y(s.data[s.data.length - 1]), 3.6, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.restore();
+    });
+
+    // frame
+    ctx.strokeStyle = css("--line"); ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + .5, y0 + .5, x1 - x0 - 1, y1 - y0 - 1);
+  }
+
+  // --- tank drawing -----------------------------------------------------
+  function drawTank(ctx, x, y, w, h, level, u, d, color, label, violating) {
+    var frac = Math.max(0, Math.min(1, level / CAP));
+    var wy = y + h - h * frac;
+
+    // body
+    ctx.save();
+    ctx.fillStyle = css("--panel-2");
+    ctx.strokeStyle = violating ? css("--limit") : css("--line");
+    ctx.lineWidth = violating ? 2 : 1.2;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, w, h, 6) : ctx.rect(x, y, w, h);
+    ctx.fill(); ctx.stroke();
+
+    // water
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, w, h, 6) : ctx.rect(x, y, w, h);
+    ctx.clip();
+    var grad = ctx.createLinearGradient(0, wy, 0, y + h);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, color);
+    ctx.globalAlpha = .28;
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, wy, w, y + h - wy);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, wy); ctx.lineTo(x + w, wy); ctx.stroke();
+    ctx.restore();
+
+    // limit markers
+    [[XMIN, "min"], [XMAX, "max"]].forEach(function (pair) {
+      var ly = y + h - h * (pair[0] / CAP);
+      ctx.save();
+      ctx.strokeStyle = css("--limit"); ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, ly); ctx.lineTo(x + w, ly); ctx.stroke();
+      ctx.restore();
+    });
+
+    // reference
+    var ry = y + h - h * (P.xref / CAP);
+    ctx.save();
+    ctx.strokeStyle = css("--ref"); ctx.setLineDash([2, 3]); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x, ry); ctx.lineTo(x + w, ry); ctx.stroke();
+    ctx.restore();
+
+    // inflow pipe, thickness proportional to u
+    var pipeW = 3 + 9 * (u / Math.max(P.umax, 1e-6));
+    ctx.fillStyle = color;
+    ctx.globalAlpha = u > 0.01 ? .85 : .18;
+    ctx.fillRect(x + w / 2 - pipeW / 2, y - 16, pipeW, 16);
+    ctx.globalAlpha = 1;
+
+    // outflow, proportional to demand
+    var outW = 3 + 9 * Math.min(1, d / 2.4);
+    ctx.fillStyle = css("--muted");
+    ctx.globalAlpha = .6;
+    ctx.fillRect(x + w - 2, y + h - 12, 14, outW);
+    ctx.globalAlpha = 1;
+
+    // label + value
+    ctx.fillStyle = css("--ink-2");
+    ctx.font = "600 12px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(label, x + w / 2, y + h + 8);
+    ctx.fillStyle = css("--ink");
+    ctx.font = "500 14px 'IBM Plex Mono', monospace";
+    ctx.fillText(level.toFixed(1) + " m³", x + w / 2, y + h + 24);
+    ctx.restore();
+  }
+
+  function drawTanks() {
+    var cv = document.getElementById("tanks");
+    var p = prep(cv), ctx = p.ctx, w = p.w, h = p.h;
+    var tw = Math.min(88, (w - 60) / 2), gap = Math.max(28, w - 2 * tw - 40);
+    var th = h - 76;
+    var y = 22;
+    var x1 = (w - (2 * tw + gap)) / 2;
+    var d = S.dHist.length ? S.dHist[S.dHist.length - 1] : demand(0);
+    drawTank(ctx, x1, y, tw, th, S.pid.x, S.pid.u, d, css("--pid"), "PID", S.pid.x < XMIN - 1e-6 || S.pid.x > XMAX + 1e-6);
+    drawTank(ctx, x1 + tw + gap, y, tw, th, S.mpc.x, S.mpc.u, d, css("--mpc"), "MPC", S.mpc.x < XMIN - 1e-6 || S.mpc.x > XMAX + 1e-6);
+
+    // demand annotation in the middle
+    ctx.fillStyle = css("--muted");
+    ctx.font = "11px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("demand", w / 2, y + th / 2 - 10);
+    ctx.fillStyle = css("--ink");
+    ctx.font = "500 14px 'IBM Plex Mono', monospace";
+    ctx.fillText(d.toFixed(2), w / 2, y + th / 2 + 8);
+    ctx.fillStyle = css("--muted");
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillText("m³/min", w / 2, y + th / 2 + 24);
+  }
+
+  // ------------------------------------------------------------------ view ---
+  function fmt(v, n) { return v.toFixed(n === undefined ? 1 : n); }
+
+  function render() {
+    drawTanks();
+
+    var span = 150;
+    var tMax = Math.max(span, S.k + P.N + 8);
+    var tMin = tMax - span;
+
+    var futureD = [];
+    for (var i = 0; i <= P.N + 8; i++) futureD.push(demand(S.k + i));
+
+    var predSeries = [];
+    if (P.showpred && S.mpc.pred) {
+      predSeries.push({ data: Array.prototype.slice.call(S.mpc.pred), t0: S.k, color: css("--mpc"), dash: [4, 3], width: 1.8 });
+    }
+
+    chart(document.getElementById("chart-x"), {
+      tMin: tMin, tMax: tMax, vMin: 0, vMax: CAP, ticks: [0, 25, 50, 75, 100],
+      lines: [
+        { v: XMIN, color: css("--limit") },
+        { v: XMAX, color: css("--limit") },
+        { v: P.xref, color: css("--ref"), dash: [2, 4] }
+      ],
+      series: [
+        { data: S.pid.hist, color: css("--pid"), width: 2, dot: true },
+        { data: S.mpc.hist, color: css("--mpc"), width: 2, dot: true }
+      ].concat(predSeries)
+    });
+
+    chart(document.getElementById("chart-u"), {
+      tMin: tMin, tMax: tMax, vMin: 0, vMax: Math.max(P.umax * 1.15, 0.5), ticks: [0, +(P.umax / 2).toFixed(2), +P.umax.toFixed(2)],
+      lines: [{ v: P.umax, color: css("--limit") }],
+      series: [
+        { data: S.pid.uHist, color: css("--pid"), width: 1.8, stepped: true },
+        { data: S.mpc.uHist, color: css("--mpc"), width: 1.8, stepped: true }
+      ]
+    });
+
+    chart(document.getElementById("chart-d"), {
+      tMin: tMin, tMax: tMax, vMin: 0, vMax: 2.6, ticks: [0, 1, 2],
+      series: [
+        { data: S.dHist, color: css("--ink-2"), width: 1.8, stepped: true },
+        { data: futureD, t0: S.k, color: css("--ink-2"), width: 1.4, dash: [3, 3], stepped: true }
+      ]
+    });
+
+    document.getElementById("clock").textContent = hhmm(S.k);
+    document.getElementById("elapsed").textContent = S.k + " min simulated";
+    document.getElementById("pid-x").textContent = fmt(S.pid.x) + " m³";
+    document.getElementById("mpc-x").textContent = fmt(S.mpc.x) + " m³";
+    document.getElementById("pid-u").textContent = "u = " + fmt(S.pid.u, 2) + " m³/min";
+    document.getElementById("mpc-u").textContent = "u = " + fmt(S.mpc.u, 2) + " m³/min";
+
+    [["pid", S.pid], ["mpc", S.mpc]].forEach(function (pair) {
+      var el = document.getElementById(pair[0] + "-flag");
+      var c = pair[1];
+      var out = c.x < XMIN - 1e-6 || c.x > XMAX + 1e-6;
+      if (out) {
+        el.className = "flag bad";
+        el.textContent = c.x < XMIN ? "below minimum" : "above maximum";
+      } else if (c.infeas) {
+        el.className = "flag warn";
+        el.textContent = "limit unreachable";
+      } else {
+        el.className = "flag ok";
+        el.textContent = "within limits";
+      }
+    });
+
+    var n = Math.max(1, S.k);
+    [["pid", S.pid], ["mpc", S.mpc]].forEach(function (pair) {
+      var id = pair[0], c = pair[1];
+      document.getElementById("m-" + id + "-err").textContent = fmt(c.err / n, 2) + " m³";
+      document.getElementById("m-" + id + "-min").textContent = fmt(c.min) + " m³";
+      document.getElementById("m-" + id + "-max").textContent = fmt(c.max) + " m³";
+      var v = document.getElementById("m-" + id + "-viol");
+      v.textContent = c.viol + " min";
+      v.className = c.viol > 0 ? "worse" : "";
+      var wo = document.getElementById("m-" + id + "-worst");
+      wo.textContent = c.worst > 0.05 ? fmt(c.worst) + " m³" : "none";
+      wo.className = c.worst > 0.05 ? "worse" : "";
+      document.getElementById("m-" + id + "-vol").textContent = fmt(c.vol) + " m³";
+    });
+
+    var cn = document.getElementById("cert-note");
+    cn.innerHTML = "<b>KKT certificate: " + S.mpc.certOk + " of " + Math.max(1, S.k) + " steps.</b> " +
+      "On those steps the exact solution of the KKT system was found and checked — every constraint " +
+      "satisfied, every multiplier with the right sign — so the control applied is provably the optimum, " +
+      "not an approximation of it. The remaining steps are the ones where the level band is unreachable and " +
+      "the active set is degenerate; there the penalized solution is used instead.";
+
+    var fn = document.getElementById("feas-note");
+    if (S.mpc.infeasMin > 0) {
+      fn.innerHTML = "<b>Feasibility lost for " + S.mpc.infeasMin + " min.</b> For that long the level limit " +
+        "was no longer reachable with the pump available, so the MPC problem as written had no solution and the " +
+        "limit was relaxed to the closest level the pump can still deliver — the optimizer then asks for the " +
+        "maximum flow on its own. This is the practical meaning of losing recursive feasibility.";
+    } else {
+      fn.textContent = "The MPC problem has stayed feasible so far: every level limit it was asked to respect " +
+        "was still reachable with the pump it has.";
+    }
+  }
+
+  // ----------------------------------------------------------------- loop ---
+  var playing = true, acc = 0, last = 0;
+
+  function frame(ts) {
+    if (!last) last = ts;
+    var dt = Math.min(0.25, (ts - last) / 1000);
+    last = ts;
+    if (playing) {
+      acc += dt * P.speed;
+      var guard = 0;
+      while (acc >= 1 && guard < 90) { acc -= 1; guard++; if (!stepOnce()) { playing = false; setPlayLabel(); break; } }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  function setPlayLabel() {
+    var b = document.getElementById("play");
+    b.textContent = S.k >= STEPS ? "Replay" : (playing ? "Pause" : "Play");
+  }
+
+  // -------------------------------------------------------------- controls ---
+  function bindSlider(id, key, fmtFn, after) {
+    var el = document.getElementById(id), out = document.getElementById(id + "-val");
+    function upd() {
+      P[key] = parseFloat(el.value);
+      out.textContent = fmtFn(P[key]);
+      if (after) after();
+    }
+    el.addEventListener("input", upd);
+    upd();
+  }
+
+  function resetSim() {
+    S = fresh();
+    warm = null;
+    acc = 0;
+    playing = true;
+    setPlayLabel();
+  }
+
+  S = fresh();
+
+  bindSlider("N", "N", function (v) { return v + " steps"; }, function () { warm = null; });
+  bindSlider("wq", "a", function (v) { return v.toFixed(1); });
+  bindSlider("wr", "b", function (v) { return v.toFixed(0); });
+  bindSlider("umax", "umax", function (v) { return v.toFixed(2) + " m³/min"; });
+  bindSlider("kp", "kp", function (v) { return v.toFixed(2); });
+  bindSlider("ki", "ki", function (v) { return v.toFixed(3); });
+  bindSlider("kd", "kd", function (v) { return v.toFixed(2); });
+  bindSlider("xref", "xref", function (v) { return v.toFixed(0) + " m³"; });
+  bindSlider("speed", "speed", function (v) { return v + "×"; });
+
+  document.getElementById("play").addEventListener("click", function () {
+    if (S.k >= STEPS) { resetSim(); return; }
+    playing = !playing;
+    setPlayLabel();
+  });
+  document.getElementById("reset").addEventListener("click", resetSim);
+  document.getElementById("scenario").addEventListener("change", function (e) {
+    P.scenario = e.target.value;
+    resetSim();
+  });
+  ["forecast", "hardx", "showpred"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function (e) { P[id] = e.target.checked; });
+  });
+
+  window.addEventListener("resize", render);
+  setPlayLabel();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

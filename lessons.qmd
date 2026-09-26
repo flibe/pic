@@ -45,3 +45,4 @@ In the second part we introduced the two time indices used throughout the course
 
 - [Blackboard notes](files/notes/lesson-02-notes.pdf)
 - Study only [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
+- Play with the [Tank Control Lab](files/sim/tank-lab.html): the tank of this lesson, controlled at the same time by a PID and by the constrained MPC we wrote on the blackboard, with the prediction window drawn as it moves. The quadratic program is built and solved in your browser at every sampling time; the [source of the page](https://github.com/flibe/pic/blob/main/files/sim/tank-lab.html) is the whole simulation, solver included.
