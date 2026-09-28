@@ -7,7 +7,6 @@ toc: false
 ::: {.news}
 **News**
 
-- First lesson on **Wednesday 23/09/2026**, 13:00–16:00, classroom 29, San Pietro in Vincoli (Via Eudossiana).
 - Please join the [Google Class of the course](https://classroom.google.com/c/ODcwNjE0OTgyMTgz?cjc=4ae3h4ly) using only your Sapienza email (@studenti.uniroma1.it).
 :::
 
