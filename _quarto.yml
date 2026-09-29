@@ -3,6 +3,7 @@ project:
   output-dir: _site
   resources:
     - files/sim/fonts/**
+    - img/**
 
 website:
   title: "Process Identification and Control 2026"
