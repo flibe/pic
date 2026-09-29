@@ -21,3 +21,11 @@ h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba(255,255,255,.15); padding
 .strip-dates span:last-child { transform: translateX(-60%); }
 .lesson-meta { font-size: .9em; opacity: .8; }
 .news { border-left: 4px solid #c24d62; padding: .6rem 1rem; background: rgba(194,77,98,.08); }
+
+/* home page figure, dark variant: lighter part colours and an inverted process pill */
+.hero-figure svg { color: #dfe5ea; }
+.hero-figure .s-id { color: #6fbb7d; } .hero-figure .s-mpc { color: #6aa9dc; } .hero-figure .s-rl { color: #dfa53f; }
+.hero-figure .f-id { fill: #6fbb7d; } .hero-figure .f-mpc { fill: #6aa9dc; } .hero-figure .f-rl { fill: #dfa53f; }
+.hero-figure .limit { stroke: #e0697f; }
+.hero-figure .process { fill: #dfe5ea; }
+.hero-figure .t-process { fill: #12171c; }

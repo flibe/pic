@@ -1,0 +1,99 @@
+<figure class="hero-figure">
+<svg viewBox="0 0 960 360" role="img" xmlns="http://www.w3.org/2000/svg"
+     aria-label="The three parts of the course around one process: identification turns measured data into a model, model predictive control turns the model into an optimal plan over a prediction window, reinforcement learning turns experience into a policy. All three produce the control applied to the process, whose measurements feed back into the loop.">
+  <defs>
+    <marker id="hArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+    <marker id="hArrowId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="f-id"/>
+    </marker>
+    <marker id="hArrowMpc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="f-mpc"/>
+    </marker>
+    <marker id="hArrowRl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="f-rl"/>
+    </marker>
+  </defs>
+
+  <!-- ============ 1. identification: from data, a model ============ -->
+  <g class="panel">
+    <rect x="8" y="8" width="296" height="196" rx="10" class="card"/>
+    <text x="28" y="40" class="t-title s-id">Identification</text>
+    <text x="28" y="62" class="t-sub">from measured data, a model</text>
+
+    <g class="s-id">
+      <!-- axes -->
+      <path d="M 44 176 L 44 84 M 44 176 L 272 176" class="axis"/>
+      <!-- scattered measurements -->
+      <circle cx="66" cy="160" r="3.4" class="dot"/><circle cx="88" cy="150" r="3.4" class="dot"/>
+      <circle cx="108" cy="136" r="3.4" class="dot"/><circle cx="130" cy="140" r="3.4" class="dot"/>
+      <circle cx="150" cy="122" r="3.4" class="dot"/><circle cx="172" cy="112" r="3.4" class="dot"/>
+      <circle cx="194" cy="118" r="3.4" class="dot"/><circle cx="216" cy="102" r="3.4" class="dot"/>
+      <circle cx="238" cy="96" r="3.4" class="dot"/><circle cx="258" cy="100" r="3.4" class="dot"/>
+      <!-- the fitted model -->
+      <path d="M 56 166 C 110 148, 150 126, 200 112 S 244 100, 266 94" class="curve"/>
+    </g>
+    <text x="196" y="86" class="t-note s-id">fitted model</text>
+  </g>
+
+  <!-- ============ 2. MPC: from a model, an optimal plan ============ -->
+  <g class="panel">
+    <rect x="332" y="8" width="296" height="196" rx="10" class="card"/>
+    <text x="352" y="40" class="t-title s-mpc">Model Predictive Control</text>
+    <text x="352" y="62" class="t-sub">from a model, an optimal plan</text>
+
+    <g class="s-mpc">
+      <!-- prediction window -->
+      <rect x="486" y="82" width="110" height="96" class="window"/>
+      <!-- constraint band -->
+      <path d="M 368 92 L 596 92 M 368 170 L 596 170" class="limit"/>
+      <!-- reference -->
+      <path d="M 368 132 L 596 132" class="ref"/>
+      <!-- past trajectory, then the predicted one -->
+      <path d="M 368 158 C 396 150, 420 118, 444 126 S 474 146, 486 140" class="curve"/>
+      <path d="M 486 140 C 508 134, 528 120, 550 126 S 580 134, 594 132" class="curve dashed"/>
+      <!-- now -->
+      <path d="M 486 78 L 486 182" class="now"/>
+      <circle cx="486" cy="140" r="4" class="mark"/>
+    </g>
+    <text x="492" y="76" class="t-note s-mpc">prediction window</text>
+  </g>
+
+  <!-- ============ 3. RL: from experience, a policy ============ -->
+  <g class="panel">
+    <rect x="656" y="8" width="296" height="196" rx="10" class="card"/>
+    <text x="676" y="40" class="t-title s-rl">Reinforcement Learning</text>
+    <text x="676" y="62" class="t-sub">from experience, a policy</text>
+
+    <g class="s-rl">
+      <rect x="688" y="96" width="98" height="46" rx="6" class="box"/>
+      <text x="737" y="124" class="t-box" text-anchor="middle">agent</text>
+      <rect x="836" y="96" width="98" height="46" rx="6" class="box"/>
+      <text x="885" y="124" class="t-box" text-anchor="middle">world</text>
+      <!-- action out, reward and state back -->
+      <path d="M 786 112 L 830 112" class="link" marker-end="url(#hArrowRl)"/>
+      <path d="M 836 132 L 792 132" class="link" marker-end="url(#hArrowRl)"/>
+      <text x="808" y="105" class="t-note" text-anchor="middle">action</text>
+      <text x="812" y="152" class="t-note" text-anchor="middle">reward, state</text>
+      <path d="M 737 142 L 737 172 L 885 172 L 885 142" class="link dashed"/>
+      <text x="811" y="190" class="t-note" text-anchor="middle">value function, policy</text>
+    </g>
+  </g>
+
+  <!-- ============ the loop they all close ============ -->
+  <path d="M 156 204 L 156 262 L 436 262" class="link" marker-end="url(#hArrowId)"/>
+  <path d="M 480 204 L 480 262" class="link" marker-end="url(#hArrowMpc)"/>
+  <path d="M 804 204 L 804 262 L 524 262" class="link" marker-end="url(#hArrowRl)"/>
+
+  <rect x="392" y="262" width="176" height="52" rx="26" class="process"/>
+  <text x="480" y="294" class="t-process" text-anchor="middle">process</text>
+
+  <text x="332" y="252" class="t-note" text-anchor="end">control</text>
+  <text x="628" y="252" class="t-note">control</text>
+
+  <!-- measurements back to the data -->
+  <path d="M 568 288 L 640 288 L 640 336 L 60 336 L 60 226" class="link feedback" marker-end="url(#hArrow)"/>
+  <text x="350" y="330" class="t-note">measurements</text>
+</svg>
+</figure>

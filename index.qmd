@@ -4,6 +4,8 @@ subtitle: "Sapienza University of Rome · DIAG · Academic year 2026/2027 · Pro
 toc: false
 ---
 
+{{< include _hero.html >}}
+
 ::: {.news}
 **News**
 
