@@ -1,6 +1,6 @@
 ---
 title: "Schedule"
-subtitle: "30 lessons of 3 hours, from 23/09 to 30/11/2026. The plan is indicative and may shift by a few lessons."
+subtitle: "30 lessons of 3 hours, from 23/09 to 30/11/2026. This page is the plan: topics move between lessons as the course goes on, and the table is not updated after every change. What a lesson actually covered is written in the [lesson diary](lessons.qmd)."
 toc: false
 ---
 

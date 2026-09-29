@@ -46,3 +46,19 @@ In the second part we introduced the two time indices used throughout the course
 - [Blackboard notes](files/notes/lesson-02-notes.pdf)
 - Study only [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
 - Play with the [Tank Control Lab](files/sim/tank-lab.html): the tank of this lesson, controlled at the same time by a PID and by the constrained MPC we wrote on the blackboard, with the prediction window drawn as it moves. The quadratic program is built and solved at every sampling time while the simulation runs.
+
+## Lesson 3 (28/09/2026): State space models and the general MPC problem {#lesson-3}
+
+[MPC]{.part .part-mpc}
+
+We began with a modelling exercise, in three steps: write the physical equations that describe the system, choose the state variables together with the input and the output, and rewrite everything in state space form. We did it in full for a mass connected to a spring and a damper and pushed by a force, where Newton's law gives a linear, single-input single-output model with two states, position and velocity. A pendulum driven by a torque and an RLC circuit served as the examples of a nonlinear and of a linear model.
+
+In the second part we wrote the general formulation of the problem $\mathcal{P}_k$ that MPC solves at every sampling time: minimize the sum of the stage costs over the prediction window plus a terminal cost, subject to the dynamics of the system, the measured state as initial condition, admissible states and controls, and a terminal constraint. We then went through its ingredients one at a time. The horizon $N$ buys performance at the price of computation time. The stage cost $\ell$ encodes the control goal, and for regulation problems it is quadratic, $\ell(x,u) = x^\top Q x + u^\top R u$ with $R$ positive definite and $Q$ positive definite or, when only some states are penalized, positive semi-definite. The terminal cost $V_f$ has a strong effect on how far MPC lands from the optimum. The terminal set $\mathcal{X}_f$ has to be chosen carefully, because it is what guarantees recursive feasibility. The model, and the sets of admissible states and controls, come from the application.
+
+We closed on two points. The first control of the optimal sequence is a function of the measured state, $u^{*}_{0|k} = \kappa(x_k)$: MPC is a feedback technique, not an open-loop plan computed once. And behind the whole construction there is the ideal problem we would like to solve, the infinite-horizon constrained optimal control problem, which specialized to a linear model and a quadratic cost gives the constrained LQR problem — the subject of the next lesson.
+
+- [Blackboard notes](files/notes/lesson-03-notes.pdf)
+- Study [[Cannon_2016]](references.qmd) section 2.1, "Problem Description" (pp. 13–15): the same problem, the same notation we use in class.
+- Read [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.2, "Model Predictive Control" (pp. 91–106), for the general formulation with stage cost, terminal cost and terminal set.
+- For the modelling part, [Rawlings_2017] section 1.2, "Models and Modeling" (pp. 1–10).
+- Looking ahead, on the terminal set and recursive feasibility: [Cannon_2016] sections 2.4 and 2.5 (pp. 21–28).

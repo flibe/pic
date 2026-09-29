@@ -7,8 +7,8 @@ subtitle: "For each lesson, the lesson diary indicates exactly what to study. Th
 
 **Books**
 
+- **[Cannon_2016]** B. Kouvaritakis, M. Cannon. *Model Predictive Control: Classical, Robust and Stochastic*. Springer, 2016. Main reference of the course: chapter 2 follows the same route, and the same notation, as the lessons.
 - **[Rawlings_2017]** J. B. Rawlings, D. Q. Mayne, M. Diehl. *Model Predictive Control: Theory, Computation, and Design*, 2nd ed. Nob Hill Publishing, 2017. [Free PDF from the authors](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf).
-- **[Cannon_2016]** B. Kouvaritakis, M. Cannon. *Model Predictive Control: Classical, Robust and Stochastic*. Springer, 2016.
 - **[Borrelli_2017]** F. Borrelli, A. Bemporad, M. Morari. *Predictive Control for Linear and Hybrid Systems*. Cambridge University Press, 2017. Useful for hybrid (MLD) systems and explicit MPC.
 
 **Slides**
