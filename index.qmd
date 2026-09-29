@@ -5,8 +5,8 @@ toc: false
 ---
 
 ::: {.hero-figure}
-![The three parts of the course around one process: identification turns measured data into a model, model predictive control turns the model into an optimal plan over a prediction window, and reinforcement learning turns experience into a policy. All three produce the control applied to the process, whose measurements feed the loop back.](img/hero-light.svg?v=2){.hero-light}
-![](img/hero-dark.svg?v=2){.hero-dark}
+![The three parts of the course around one process: identification turns measured data into a model, model predictive control turns the model into an optimal plan over a prediction window, and reinforcement learning turns experience into a policy. All three produce the control applied to the process, whose measurements feed all three back: data to identify with, state to decide on, state and reward to learn from.](img/hero-light.svg?v=3){.hero-light}
+![](img/hero-dark.svg?v=3){.hero-dark}
 :::
 
 ::: {.news}
