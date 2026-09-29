@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Figura della home: le tre parti del corso attorno allo stesso processo.
+     Generato da hero-light.svg, non modificarlo a mano.
+       sed -e 's/#dfe5ea/#dfe5ea/g' -e 's/#6fbb7d/#6fbb7d/g' -e 's/#6aa9dc/#6aa9dc/g' \
+           -e 's/#dfa53f/#dfa53f/g' -e 's/#e0697f/#e0697f/g' -e 's/#12171c/#12171c/g' \
+           img/hero-light.svg > img/hero-dark.svg
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360"
+     font-family="'Source Sans 3','Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="aInk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dfe5ea" fill-opacity=".45"/>
+    </marker>
+    <marker id="aId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6fbb7d"/>
+    </marker>
+    <marker id="aMpc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6aa9dc"/>
+    </marker>
+    <marker id="aRl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dfa53f"/>
+    </marker>
+  </defs>
+
+  <!-- ===================== identification ===================== -->
+  <rect x="8" y="8" width="296" height="196" rx="10" fill="none" stroke="#dfe5ea" stroke-opacity=".16"/>
+  <text x="28" y="40" font-size="17" font-weight="700" fill="#6fbb7d">Identification</text>
+  <text x="28" y="61" font-size="13" fill="#dfe5ea" fill-opacity=".72">from measured data, a model</text>
+  <path d="M 44 180 L 44 88 M 44 180 L 274 180" fill="none" stroke="#dfe5ea" stroke-opacity=".35"/>
+  <g fill="#6fbb7d" fill-opacity=".6">
+    <circle cx="68" cy="164" r="3.6"/><circle cx="92" cy="152" r="3.6"/><circle cx="114" cy="140" r="3.6"/>
+    <circle cx="136" cy="144" r="3.6"/><circle cx="158" cy="126" r="3.6"/><circle cx="180" cy="116" r="3.6"/>
+    <circle cx="202" cy="122" r="3.6"/><circle cx="224" cy="106" r="3.6"/><circle cx="246" cy="100" r="3.6"/>
+    <circle cx="266" cy="104" r="3.6"/>
+  </g>
+  <path d="M 58 170 C 112 152, 152 130, 202 116 S 246 104, 270 98" fill="none" stroke="#6fbb7d" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="272" y="92" font-size="11.5" text-anchor="end" fill="#6fbb7d">model</text>
+
+  <!-- ===================== model predictive control ===================== -->
+  <rect x="332" y="8" width="296" height="196" rx="10" fill="none" stroke="#dfe5ea" stroke-opacity=".16"/>
+  <text x="352" y="40" font-size="17" font-weight="700" fill="#6aa9dc">Model Predictive Control</text>
+  <text x="352" y="61" font-size="13" fill="#dfe5ea" fill-opacity=".72">from a model, an optimal plan</text>
+  <rect x="492" y="86" width="108" height="96" fill="#6aa9dc" fill-opacity=".1"/>
+  <path d="M 366 96 L 604 96 M 366 176 L 604 176" fill="none" stroke="#e0697f" stroke-opacity=".5" stroke-dasharray="6 4"/>
+  <path d="M 366 136 L 604 136" fill="none" stroke="#dfe5ea" stroke-opacity=".4" stroke-dasharray="2 4"/>
+  <path d="M 366 162 C 396 154, 420 120, 446 130 S 478 150, 492 144" fill="none" stroke="#6aa9dc" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M 492 144 C 516 136, 536 122, 558 128 S 588 138, 602 136" fill="none" stroke="#6aa9dc" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="6 4"/>
+  <path d="M 492 82 L 492 186" stroke="#dfe5ea" stroke-opacity=".55" stroke-width="1.2"/>
+  <circle cx="492" cy="144" r="4.2" fill="#6aa9dc"/>
+  <text x="498" y="79" font-size="11.5" fill="#6aa9dc">prediction window</text>
+  <text x="370" y="192" font-size="11.5" fill="#e0697f" fill-opacity=".8">constraints</text>
+
+  <!-- ===================== reinforcement learning ===================== -->
+  <rect x="656" y="8" width="296" height="196" rx="10" fill="none" stroke="#dfe5ea" stroke-opacity=".16"/>
+  <text x="676" y="40" font-size="17" font-weight="700" fill="#dfa53f">Reinforcement Learning</text>
+  <text x="676" y="61" font-size="13" fill="#dfe5ea" fill-opacity=".72">from experience, a policy</text>
+  <rect x="684" y="98" width="96" height="44" rx="6" fill="none" stroke="#dfa53f" stroke-width="1.6"/>
+  <text x="732" y="126" font-size="13" font-weight="600" text-anchor="middle" fill="#dfa53f">agent</text>
+  <rect x="832" y="98" width="96" height="44" rx="6" fill="none" stroke="#dfa53f" stroke-width="1.6"/>
+  <text x="880" y="126" font-size="13" font-weight="600" text-anchor="middle" fill="#dfa53f">world</text>
+  <path d="M 780 112 L 826 112" fill="none" stroke="#dfa53f" stroke-width="1.6" marker-end="url(#aRl)"/>
+  <path d="M 832 130 L 786 130" fill="none" stroke="#dfa53f" stroke-width="1.6" marker-end="url(#aRl)"/>
+  <text x="803" y="105" font-size="11" text-anchor="middle" fill="#dfe5ea" fill-opacity=".72">action</text>
+  <text x="807" y="146" font-size="11" text-anchor="middle" fill="#dfe5ea" fill-opacity=".72">reward, state</text>
+  <path d="M 732 142 L 732 172 L 880 172 L 880 142" fill="none" stroke="#dfa53f" stroke-opacity=".55" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="806" y="190" font-size="11.5" text-anchor="middle" fill="#dfa53f">value function, policy</text>
+
+  <!-- ===================== the loop they all close ===================== -->
+  <path d="M 156 204 L 156 264 L 424 264" fill="none" stroke="#6fbb7d" stroke-opacity=".75" stroke-width="1.6" marker-end="url(#aId)"/>
+  <path d="M 480 204 L 480 258" fill="none" stroke="#6aa9dc" stroke-opacity=".75" stroke-width="1.6" marker-end="url(#aMpc)"/>
+  <path d="M 804 204 L 804 264 L 536 264" fill="none" stroke="#dfa53f" stroke-opacity=".75" stroke-width="1.6" marker-end="url(#aRl)"/>
+  <text x="330" y="256" font-size="11.5" text-anchor="end" fill="#dfe5ea" fill-opacity=".72">control</text>
+  <text x="630" y="256" font-size="11.5" fill="#dfe5ea" fill-opacity=".72">control</text>
+
+  <rect x="392" y="264" width="176" height="52" rx="26" fill="#dfe5ea"/>
+  <text x="480" y="296" font-size="15" font-weight="700" letter-spacing="1" text-anchor="middle" fill="#12171c">process</text>
+
+  <path d="M 568 290 L 648 290 L 648 338 L 60 338 L 60 230" fill="none" stroke="#dfe5ea" stroke-opacity=".45"
+        stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#aInk)"/>
+  <text x="344" y="332" font-size="11.5" fill="#dfe5ea" fill-opacity=".72">measurements</text>
+</svg>

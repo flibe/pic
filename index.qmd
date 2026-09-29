@@ -4,7 +4,10 @@ subtitle: "Sapienza University of Rome · DIAG · Academic year 2026/2027 · Pro
 toc: false
 ---
 
-{{< include _hero.html >}}
+::: {.hero-figure}
+![The three parts of the course around one process: identification turns measured data into a model, model predictive control turns the model into an optimal plan over a prediction window, and reinforcement learning turns experience into a policy. All three produce the control applied to the process, whose measurements feed the loop back.](img/hero-light.svg){.hero-light}
+![](img/hero-dark.svg){.hero-dark}
+:::
 
 ::: {.news}
 **News**
