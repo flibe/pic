@@ -1,5 +1,6 @@
 /*-- scss:defaults --*/
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap');
+// caratteri ospitati dal sito, vedi styles.scss
+$web-font-path: false;
 $font-family-sans-serif: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 $headings-font-family: "Source Serif 4", Georgia, serif;
 $font-size-root: 17px;
