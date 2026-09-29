@@ -22,8 +22,15 @@
         a.setAttribute("rel", "noopener");
       }
     }
-    // twice, because Quarto moves parts of the page around after it loads
     document.addEventListener("DOMContentLoaded", openInNewTab);
-    window.addEventListener("load", openInNewTab);
+    window.addEventListener("load", function () {
+      openInNewTab();
+      // Quarto rewrites some hrefs after the page loads, which drops the attribute:
+      // watch for that for a few seconds, then stop.
+      if (!window.MutationObserver) return;
+      var obs = new MutationObserver(openInNewTab);
+      obs.observe(document.body, { subtree: true, childList: true, attributeFilter: ["href"] });
+      setTimeout(function () { obs.disconnect(); openInNewTab(); }, 5000);
+    });
   })();
 </script>
