@@ -9,16 +9,21 @@
      Restano nella stessa scheda la navigazione (navbar, indice laterale, pie' di
      pagina), le ancore interne alla pagina e i mailto, che aprirebbero schede vuote. -->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var content = document.querySelector("main") || document.body;
-    var links = content.querySelectorAll("a[href]");
-    for (var i = 0; i < links.length; i++) {
-      var a = links[i], href = a.getAttribute("href");
-      if (!href || href.charAt(0) === "#") continue;
-      if (/^(mailto:|tel:|javascript:)/i.test(href)) continue;
-      if (a.closest("nav, .navbar, .quarto-title-banner, .nav-footer, .toc-actions, .quarto-secondary-nav")) continue;
-      a.setAttribute("target", "_blank");
-      a.setAttribute("rel", "noopener");
+  (function () {
+    var SKIP = "nav, .navbar, #TOC, .sidebar, .nav-footer, footer, .toc-actions, .quarto-secondary-nav";
+    function openInNewTab() {
+      var links = document.querySelectorAll("a[href]:not([target])");
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i], href = a.getAttribute("href");
+        if (!href || href.charAt(0) === "#") continue;
+        if (/^(mailto:|tel:|javascript:)/i.test(href)) continue;
+        if (a.closest(SKIP)) continue;
+        a.setAttribute("target", "_blank");
+        a.setAttribute("rel", "noopener");
+      }
     }
-  });
+    // twice, because Quarto moves parts of the page around after it loads
+    document.addEventListener("DOMContentLoaded", openInNewTab);
+    window.addEventListener("load", openInNewTab);
+  })();
 </script>
