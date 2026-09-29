@@ -3,3 +3,22 @@
      style, font or image, and no request leaves the reader's browser. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+
+<!-- Ogni link nel contenuto della pagina apre una scheda nuova: sia quelli esterni
+     (che Quarto gia' tratta cosi') sia i file del sito, come i PDF delle note.
+     Restano nella stessa scheda la navigazione (navbar, indice laterale, pie' di
+     pagina), le ancore interne alla pagina e i mailto, che aprirebbero schede vuote. -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var content = document.querySelector("main") || document.body;
+    var links = content.querySelectorAll("a[href]");
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i], href = a.getAttribute("href");
+      if (!href || href.charAt(0) === "#") continue;
+      if (/^(mailto:|tel:|javascript:)/i.test(href)) continue;
+      if (a.closest("nav, .navbar, .quarto-title-banner, .nav-footer, .toc-actions, .quarto-secondary-nav")) continue;
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener");
+    }
+  });
+</script>
