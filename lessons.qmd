@@ -61,3 +61,21 @@ We closed on two points. The first control of the optimal sequence is a function
 - Study [[Cannon_2016]](references.qmd) section 2.1, "Problem Description" (pp. 13–15): the same problem, the same notation we use in class.
 - Read [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.2, "Model Predictive Control" (pp. 91–106), for the general formulation with stage cost, terminal cost and terminal set.
 - For the modelling part, [Rawlings_2017] section 1.2, "Models and Modeling" (pp. 1–10).
+
+## Lesson 4 (30/09/2026): Why MPC is optimal: dual mode control and the value function {#lesson-4}
+
+[MPC]{.part .part-mpc}
+
+Working under three assumptions — a known and perfect model, a measurable state and no disturbances — we went back to the ideal problem behind everything, the infinite-horizon constrained problem, and to the reason it cannot be solved as it stands: infinitely many variables and constraints. Specializing it to a quadratic stage cost and a linear model gives the infinite-horizon constrained LQR, which is still out of reach because of the constraints.
+
+We then solved the problem that *can* be solved, the unconstrained one. Its solution is a feedback law $u^{*}_k = K x_k$ with the gain obtained from the Riccati equation, and we computed the cost that goes with it: propagating $x^{*}_k = (A+BK)^k x_0$ and $u^{*}_k = K(A+BK)^k x_0$ through the objective collapses an infinite sum into a single quadratic form, $J^{*}(x_0) = x_0^\top W x_0$, with $W$ from the Lyapunov equation. This is the quantity that will do all the work in the rest of the lesson.
+
+Back to the constrained problem, and to Bellman's principle of optimality. Under controllability and with the origin strictly feasible, an optimal solution exists and its cost is finite, so the state and the control must go to zero and the constraints can only be active in an initial phase. Therefore, after some finite time $N$, the unconstrained law $u = Kx$ becomes feasible — and by the principle of optimality, applied to the tail problem that starts at $x^{*}_{N}$, it is not merely feasible there but optimal. This is dual mode control: free moves in the first $N$ steps, the LQR gain afterwards.
+
+The consequence is the point of the whole lesson. The infinite tail can be replaced by its cost, $x_N^\top W x_N$, so the intractable problem becomes a finite-horizon problem with $N$ variables and a terminal cost — and the two have the same solution, $u^{*N}_k = u^{*\infty}_k$ for $k = 0,\dots,N-1$, provided $N$ is large enough. That terminal cost is the value function $V(x)$, the cost of controlling the system optimally from $x$ onwards, which for the LQR problem is exactly $x^\top W x$. Solving that finite problem again at every sampling time is MPC, and this is the sense in which MPC is optimal. The same value function is what dynamic programming computes, which is where reinforcement learning will come in.
+
+- [Blackboard notes](files/notes/lesson-04-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Cannon_2016]](references.qmd) section 2.2, "The Unconstrained Optimum" (pp. 15–18): the cost under a linear feedback law, the Lyapunov equation for $W$ and the Riccati equation for the optimal gain, in the notation we used on the blackboard.
+- Study [Cannon_2016] section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21). Theorem 2.2 is the formal version of the result of this lesson: there is a finite horizon, depending on the current state, beyond which the truncated problem returns the first $N$ controls of the infinite-horizon constrained optimum, with the same cost.
+- For the same material reached by dynamic programming, which is the road we will take again with reinforcement learning, [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) sections 1.3.3 and 1.3.4 (pp. 18–23), and section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function.
+- Studying the proofs of these results is optional: what you are expected to know is the statements, the assumptions they need and why they matter.
