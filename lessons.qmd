@@ -79,3 +79,20 @@ The consequence is the point of the whole lesson. The infinite tail can be repla
 - Study [Cannon_2016] section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21). Theorem 2.2 is the formal version of the result of this lesson: there is a finite horizon, depending on the current state, beyond which the truncated problem returns the first $N$ controls of the infinite-horizon constrained optimum, with the same cost.
 - For the same material reached by dynamic programming, which is the road we will take again with reinforcement learning, [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) sections 1.3.3 and 1.3.4 (pp. 18–23), and section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function.
 - Studying the proofs of these results is optional.
+
+## Lesson 5 (01/10/2026): The value function in practice, and a first case study {#lesson-5}
+
+[MPC]{.part .part-mpc}
+
+We closed the argument started last time. The infinite-horizon constrained problem and the finite-horizon problem with a terminal cost are equivalent when that terminal cost is the value function $V(x)$ — the cost of controlling the system optimally from $x$ onwards, which is infinite when the problem started at $x$ is not feasible at all. Comparing the two cost decompositions, before and after the junction at time $N$, shows that nothing is lost by truncating.
+
+The practical difficulty is that $V(x)$ is not known in general. The exception is the unconstrained LQR problem, where it is exactly $x^\top W x$ — which is why, in LQR-type MPC, we take $V_f(x) = x^\top W x$ and a horizon $N$ large enough, and we recover the solution of the problem we could not solve.
+
+With those ingredients in place we looked at what happens from one sampling time to the next. Under nominal conditions — perfect model, no noise, no disturbances — re-solving at $k+1$ returns the plan we already had, $u^{*}_{0|k+1} = u^{*}_{1|k}$: the controller confirms itself. Reality breaks exactly these assumptions, and that is why the plan is rebuilt at every step rather than computed once. We also wrote the cost actually paid by the MPC controller in closed loop, the sum of the stage costs along the trajectory it generates, and compared it with $V(x_0)$: the difference is the optimality gap, and it is zero in ideal conditions.
+
+The second half opened the first case study, the control of an electric vehicle charging area. Vehicles arrive wanting to recharge as fast as possible, so even a few of them produce a large power flow at the point of connection, which means expensive hardware and a heavier bill under capacity-based tariffs. The controller therefore has two goals: serve the users and keep the power at the point of connection as close to zero as possible, using an energy storage system. We set up the problem — the storage power as control variable, the stored energy as state, the power at the point of connection as controlled variable, the vehicle demand and the renewable generation as disturbances with a known forecast — fixed the consumer sign convention, wrote the objective with the weight on the state reference deliberately small, and wrote the global constraint that ties everything together, the power balance at the point of connection.
+
+- [Blackboard notes](files/notes/lesson-05-notes.pdf){target="_blank" rel="noopener"}
+- Re-read [[Cannon_2016]](references.qmd) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), now that the argument is complete: the terminal penalty there is exactly the cost-to-go we discussed.
+- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function and the relation between the finite and the infinite horizon problem.
+- The case study continues in the next lesson; there is nothing to read for it yet.
