@@ -80,7 +80,7 @@ The consequence is the point of the whole lesson. The infinite tail can be repla
 - For the same material reached by dynamic programming, which is the road we will take again with reinforcement learning, [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) sections 1.3.3 and 1.3.4 (pp. 18–23), and section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function.
 - Studying the proofs of these results is optional.
 
-## Lesson 5 (01/10/2026): Conclusions on optimality and dual mode control {#lesson-5}
+## Lesson 5 (01/10/2026): Conclusions on optimality and dual mode control; introduction to the first case study {#lesson-5}
 
 [MPC]{.part .part-mpc}
 
