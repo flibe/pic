@@ -1,0 +1,35 @@
+---
+title: "Service area control: the Julia code"
+subtitle: "The two files discussed in Lesson 6. The same problem runs in the browser in the [Service Area Lab](../sim/service-area-lab.html)."
+toc: true
+toc-depth: 2
+---
+
+The controller is split in two files, on purpose: `main.jl` is the simulation of the day, the receding
+horizon loop that measures, calls the optimizer and applies the first control; `MPC_iteration.jl` is the
+optimization problem alone, written in JuMP and handed to a solver. That is the separation we keep in every
+case study of the course: the loop belongs to the application, the optimization problem belongs to the
+controller.
+
+The problem solved at every step is the one of the lecture, with the consumer sign convention, so power
+consumed is positive and $u > 0$ charges the storage:
+
+$$
+\min \sum_{i=1}^{N}\Big[\alpha\, p_i^2 + \beta\,(x_i - x^{ref})^2\Big] + \beta_f\,(x_{N+1}-x^{ref})^2
+$$
+
+subject to the balance at the point of connection $p_i = u_i + p^{pev}_i - p^{res}_i$, the dynamics of the
+storage $x_{i+1} = x_i + (T/3600)\,u_i$, the measured state $x_1 = x_k$, and the bounds on $u$, $x$ and $p$.
+Both the charging demand $p^{pev}$ and the renewable generation $p^{res}$ are assumed known over the window.
+
+The code uses [HiGHS](https://highs.dev), which is open source and is installed in the
+[software setup](../../setup.qmd) of the course. Gurobi is one commented line away, and nothing else changes:
+that is the point of a modelling language like JuMP.
+
+## main.jl
+
+{{< include _main_jl.qmd >}}
+
+## MPC_iteration.jl
+
+{{< include _mpc_iteration_jl.qmd >}}

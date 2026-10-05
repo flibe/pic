@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Real-time simulation of the MPC controller of a charging service area: storage, photovoltaic generation and the power at the point of connection. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>Service Area Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef;
+    --panel: #ffffff;
+    --panel-2: #faf8f6;
+    --line: #ddd7d0;
+    --grid: #e8e3dd;
+    --ink: #1f2a36;
+    --ink-2: #55606d;
+    --muted: #7d8794;
+    --mpc: #2f6690;
+    --base: #8a939d;
+    --ess: #3a7d44;
+    --sun: #c8891a;
+    --limit: #8a1c2f;
+    --future: rgba(31, 42, 54, .045);
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --limit: #e0697f;
+      --future: rgba(233, 236, 239, .05);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+    --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+    --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --limit: #e0697f;
+    --future: rgba(233, 236, 239, .05);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+
+  .stage { display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .clock { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; color: var(--ink-2);
+           font-variant-numeric: tabular-nums; }
+
+  canvas { display: block; width: 100%; }
+  .site-canvas { height: 250px; }
+  .chart-canvas { height: 136px; }
+  .chart-canvas.tall { height: 168px; }
+
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .readout { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+  .readout .who { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: .07em;
+                  text-transform: uppercase; font-weight: 700; color: var(--muted); }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .swatch.mpc { background: var(--mpc); } .swatch.base { background: var(--base); }
+  .swatch.ess { background: var(--ess); } .swatch.sun { background: var(--sun); }
+  .readout .val { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 20px;
+                  font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .readout .sub { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px;
+                  color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .charts { display: flex; flex-direction: column; gap: 12px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.mpc { border-color: var(--mpc); } .key.base { border-color: var(--base); border-top-style: dashed; }
+  .key.ess { border-color: var(--ess); } .key.sun { border-color: var(--sun); }
+  .key.lim { border-color: var(--limit); border-top-style: dashed; }
+  .key.pred { border-color: var(--mpc); border-top-style: dashed; }
+
+  .controls { display: flex; flex-direction: column; gap: 14px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+  button.primary { background: var(--mpc); border-color: var(--mpc); color: #fff; min-width: 92px; }
+  :root[data-theme="dark"] button.primary { color: #10161c; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #10161c; } }
+
+  select, input[type="range"] { font: inherit; accent-color: var(--mpc); }
+  select { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 7px 10px; }
+  .speed { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  th:first-child, td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  td.worse { color: var(--limit); }
+  td.better { color: var(--ess); }
+  .table-wrap { overflow-x: auto; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  .math .cm { color: var(--muted); }
+
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control · Lesson 6</p>
+    <h1>Service Area Lab</h1>
+    <p class="lede">The charging area of the case study, run for a full day. Vehicles arrive and recharge, the
+      photovoltaic plant produces what it produces, and a storage system is the only thing the controller can
+      act on. The question is how much power ends up crossing the point of connection — which is what the
+      capacity part of the bill is paid on. Everything is computed in your browser while the day runs.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The service area</h2>
+        <span class="clock" id="clock">00:00</span>
+      </div>
+      <canvas class="site-canvas" id="site" aria-label="Diagram of the charging area with its power flows"></canvas>
+      <div class="readouts">
+        <div class="readout">
+          <div class="who"><i class="swatch mpc"></i>POC with MPC</div>
+          <div class="val" id="r-poc">0.0 kW</div>
+          <div class="sub" id="r-poc-base">without storage: 0.0</div>
+        </div>
+        <div class="readout">
+          <div class="who"><i class="swatch ess"></i>Storage</div>
+          <div class="val" id="r-x">30.0 kWh</div>
+          <div class="sub" id="r-u">u = 0.00 kW</div>
+        </div>
+        <div class="readout">
+          <div class="who">Charging demand</div>
+          <div class="val" id="r-pev">0.0 kW</div>
+          <div class="sub">p<sup>pev</sup>, known forecast</div>
+        </div>
+        <div class="readout">
+          <div class="who"><i class="swatch sun"></i>Renewables</div>
+          <div class="val" id="r-res">0.0 kW</div>
+          <div class="sub">p<sup>res</sup>, known forecast</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Power at the point of connection</span><span class="unit">kW</span></div>
+        <canvas class="chart-canvas tall" id="chart-p" aria-label="Power at the point of connection over the day"></canvas>
+        <div class="legend">
+          <span><i class="key mpc"></i>with MPC</span>
+          <span><i class="key base"></i>without storage</span>
+          <span><i class="key pred"></i>plan over the window</span>
+          <span><i class="key lim"></i>limits p<sup>min</sup>, p<sup>max</sup></span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Energy in the storage x<sub>k</sub></span><span class="unit">kWh</span></div>
+        <canvas class="chart-canvas" id="chart-x" aria-label="Energy stored over the day"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Storage power u<sub>k</sub></span><span class="unit">kW</span></div>
+        <canvas class="chart-canvas" id="chart-u" aria-label="Storage power over the day"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Disturbances: demand and renewables</span><span class="unit">kW</span></div>
+        <canvas class="chart-canvas" id="chart-w" aria-label="Charging demand and renewable generation over the day"></canvas>
+        <div class="legend">
+          <span><i class="key base"></i>p<sup>pev</sup> charging demand</span>
+          <span><i class="key sun"></i>p<sup>res</sup> renewables</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel controls">
+    <div class="transport">
+      <button class="primary" id="play">Pause</button>
+      <button id="reset">Reset</button>
+      <label class="speed">Day
+        <select id="scenario">
+          <option value="normal">Ordinary weekday</option>
+          <option value="cloudy">Cloudy day, same demand</option>
+          <option value="evening">Busy evening</option>
+        </select>
+      </label>
+      <label class="speed">Speed
+        <input type="range" id="speed" min="2" max="120" step="1" value="40" style="width:110px">
+        <span class="num" id="speed-val">40×</span>
+      </label>
+    </div>
+
+    <div class="sliders">
+      <div class="slider">
+        <label for="N">Prediction window N <span class="num" id="N-val">20 steps</span></label>
+        <input type="range" id="N" min="4" max="90" step="1" value="20">
+      </div>
+      <div class="slider">
+        <label for="alpha">Weight on POC power α <span class="num" id="alpha-val">1.0</span></label>
+        <input type="range" id="alpha" min="0.1" max="5" step="0.1" value="1">
+      </div>
+      <div class="slider">
+        <label for="beta">Weight on stored energy β <span class="num" id="beta-val">0.02</span></label>
+        <input type="range" id="beta" min="0" max="1" step="0.01" value="0.02">
+      </div>
+      <div class="slider">
+        <label for="umax">Storage power limit <span class="num" id="umax-val">10 kW</span></label>
+        <input type="range" id="umax" min="2" max="30" step="1" value="10">
+      </div>
+      <div class="slider">
+        <label for="xmax">Storage capacity <span class="num" id="xmax-val">100 kWh</span></label>
+        <input type="range" id="xmax" min="20" max="200" step="5" value="100">
+      </div>
+      <div class="slider">
+        <label for="xref">Energy reference x<sup>ref</sup> <span class="num" id="xref-val">50 kWh</span></label>
+        <input type="range" id="xref" min="0" max="100" step="1" value="50">
+      </div>
+      <div class="slider">
+        <label for="pmax">POC limit p<sup>max</sup> <span class="num" id="pmax-val">30 kW</span></label>
+        <input type="range" id="pmax" min="5" max="40" step="1" value="30">
+      </div>
+    </div>
+
+    <div class="toggles">
+      <label><input type="checkbox" id="forecast" checked> MPC knows the forecasts of p<sup>pev</sup> and p<sup>res</sup></label>
+      <label><input type="checkbox" id="showpred" checked> Draw the plan over the window</label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The day so far</h2><span class="clock" id="elapsed">0 min</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Operation</th>
+            <th>Peak |p| at the POC</th>
+            <th>Time beyond the limits</th>
+            <th>Energy taken from the grid</th>
+            <th>Energy sent back</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Without storage</td>
+            <td id="m-base-peak">—</td>
+            <td id="m-base-viol">—</td>
+            <td id="m-base-in">—</td>
+            <td id="m-base-out">—</td>
+          </tr>
+          <tr>
+            <td>With MPC</td>
+            <td id="m-mpc-peak">—</td>
+            <td id="m-mpc-viol">—</td>
+            <td id="m-mpc-in">—</td>
+            <td id="m-mpc-out">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p id="peak-note" style="margin:10px 0 0;font-size:13.5px;color:var(--ink-2)">The peak is the number that
+      sizes the connection and the capacity part of the bill, so it is the one to watch.</p>
+  </section>
+
+  <section class="notes">
+    <div class="panel">
+      <h2>The problem solved at every step k</h2>
+      <p>The same formulation written in class, and the same one in the Julia code: sign convention of the
+        consumer, so power consumed is positive and <i>u</i> &gt; 0 charges the storage.</p>
+      <div class="math">
+min Σ<sub>i=1..N</sub> [ α·p<sub>i</sub>² + β·(x<sub>i</sub> − x<sup>ref</sup>)² ] + β<sub>f</sub>·(x<sub>N+1</sub> − x<sup>ref</sup>)²<br>
+s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</sup><sub>i</sub> <span class="cm">(balance at the POC)</span><br>
+　　 x<sub>i+1</sub> = x<sub>i</sub> + (T/3600)·u<sub>i</sub> <span class="cm">(storage)</span><br>
+　　 x<sub>1</sub> = x<sub>k</sub> <span class="cm">(measurement)</span><br>
+　　 u<sup>min</sup> ≤ u<sub>i</sub> ≤ u<sup>max</sup>, x<sup>min</sup> ≤ x<sub>i</sub> ≤ x<sup>max</sup>, p<sup>min</sup> ≤ p<sub>i</sub> ≤ p<sup>max</sup>
+      </div>
+      <p style="margin-top:10px">Sampling time T = 60 s, one step per minute, 24 hours. Only u<sub>1</sub> is
+        applied, then the whole problem is rebuilt one minute later. Because p is an affine function of u, the
+        limits on the power at the point of connection are simple bounds on the control, and what is left is
+        the same quadratic program as in the tank lab.</p>
+    </div>
+    <div class="panel">
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>The peak, not the energy.</b> The storage does not create energy: over the day the area takes
+          from the grid roughly what it consumes either way. What changes is the <i>peak</i>, and that is what
+          the connection is sized on and what the capacity tariff charges.</li>
+        <li><b>Charging before the rush.</b> In the ordinary day the controller fills the storage during the
+          hours of sun and empties it in the evening, when the vehicles arrive and the photovoltaic is gone.
+          It can do that only because the forecasts are inside its window.</li>
+        <li><b>The window has to span the event.</b> With N = 20 steps the controller sees twenty minutes
+          ahead, which is not enough to prepare for an evening that lasts two hours. Push N up and watch the
+          preparation start earlier and the peak drop.</li>
+        <li><b>Without the forecast there is no anticipation.</b> Untick the forecast box: the controller then
+          assumes the present demand will persist, and reacts instead of preparing.</li>
+        <li><b>Storage size and power.</b> A larger capacity is useless if the power limit is small, and the
+          other way round: try moving the two sliders in opposite directions.</li>
+        <li><b>The energy reference is a soft wish.</b> β pulls the storage back towards x<sup>ref</sup> so it
+          is ready for the next event. Raise it too much and the controller stops shaving the peak to keep the
+          storage tidy; set it to zero and the storage ends the day wherever it happens to be.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Simulation for teaching: perfect model of the storage, perfect state measurement and, unless the box
+    is unticked, exact forecasts of the charging demand and of the renewable generation. The same problem in
+    Julia, with JuMP and a real solver, is in the code of the lesson.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- model ---
+  var T = 60;                 // sampling time [s]
+  var H = T / 3600;           // [h] energy gained by 1 kW in one step
+  var STEPS = 24 * 60;        // one day, one step per minute
+  var PEN = 4000;             // penalty on the storage band (soft constraint)
+
+  var P = {
+    N: 20, alpha: 1, beta: 0.02, beta_f: 0.02,
+    umax: 10, xmax: 100, xref: 50, pmax: 30,
+    xmin: 0, x0: 30,
+    forecast: true, showpred: true,
+    scenario: "normal", speed: 40
+  };
+
+  // charging demand [kW], known profile
+  function ppev(k) {
+    if (k < 0) k = 0;
+    var h = k / 60;
+    var v = 0;
+    if (h >= 8 && h < 9) v = 12;
+    else if (h >= 9 && h < 10) v = 22;
+    else if (h >= 12 && h < 13) v = 8;
+    else if (h >= 17 && h < 19) v = 20;
+    if (P.scenario === "evening") {
+      if (h >= 17 && h < 21) v = 28;
+      if (h >= 21 && h < 22) v = 14;
+    }
+    return v;
+  }
+
+  // renewable generation [kW], a bell between 07:00 and 18:00
+  function pres(k) {
+    if (k < 0) k = 0;
+    var h = k / 60;
+    var peak = P.scenario === "cloudy" ? 5 : 14;
+    var v = peak * Math.sin(Math.PI * (h - 7) / 11);
+    if (v < 0) v = 0;
+    if (P.scenario === "cloudy") {
+      // broken clouds: a slow flicker on top of the bell
+      v *= 0.6 + 0.4 * Math.sin(h * 2.3) * Math.sin(h * 0.7);
+      if (v < 0) v = 0;
+    }
+    return v;
+  }
+
+  function netLoad(k) { return ppev(k) - pres(k); }
+
+  // what the controller believes about the future
+  function forecastNet(k, i, nowValue) {
+    return P.forecast ? netLoad(k + i) : nowValue;
+  }
+
+  // ------------------------------------------------------------ QP solver ---
+  // Variables: u_0 ... u_{N-1}. States x_i = x_k + H * (u_0 + ... + u_{i-1}).
+  // Cost:  alpha * sum (u_i + w_i)^2 + sum c_i (x_i - xref)^2 , c_i = beta (beta_f at the end)
+  // Input box: umin <= u_i <= umax intersected with pmin <= u_i + w_i <= pmax.
+  // Storage band: xmin <= x_i <= xmax, as a heavily penalized soft constraint.
+  // Solved by projected Newton: active set on the box, Cholesky on the free part.
+  var warm = null, scratch = { n: 0, H: null };
+
+  function solveMPC(x0, k) {
+    var n = P.N, i, j;
+    if (!warm || warm.length !== n) warm = new Float64Array(n);
+    if (scratch.n < n) { scratch.n = n; scratch.H = new Float64Array(n * n); }
+
+    var w = new Float64Array(n), lo = new Float64Array(n), hi = new Float64Array(n);
+    var nowNet = netLoad(k);
+    var umin = -P.umax, pmin = -P.pmax;
+    for (i = 0; i < n; i++) {
+      w[i] = forecastNet(k, i, nowNet);
+      var a = Math.max(umin, pmin - w[i]);
+      var b = Math.min(P.umax, P.pmax - w[i]);
+      if (a > b) { a = b = 0.5 * (a + b); }       // limits in conflict: closest compromise
+      lo[i] = a; hi[i] = b;
+    }
+
+    // weights on the predicted states x_1 ... x_N (index 1..n here)
+    var c = new Float64Array(n + 1);
+    for (i = 1; i <= n; i++) c[i] = (i === n) ? P.beta_f : P.beta;
+    var cs = new Float64Array(n + 2);             // suffix sums of c
+    cs[n + 1] = 0;
+    for (i = n; i >= 1; i--) cs[i] = cs[i + 1] + c[i];
+
+    var u = new Float64Array(n);
+    for (i = 0; i < n; i++) u[i] = Math.min(hi[i], Math.max(lo[i], warm[i]));
+
+    var xs = new Float64Array(n + 1), g = new Float64Array(n), e = new Float64Array(n + 1);
+    var trial = new Float64Array(n), idx = new Int32Array(n), sufV = new Float64Array(n + 2);
+    var Hm = scratch.H, rhs = new Float64Array(n), stepv = new Float64Array(n);
+
+    function levels(uu) {
+      var run = x0;
+      xs[0] = x0;
+      for (var ii = 0; ii < n; ii++) { run += H * uu[ii]; xs[ii + 1] = run; }
+    }
+
+    function obj(uu) {
+      levels(uu);
+      var f = 0, ii, pw, dv;
+      for (ii = 0; ii < n; ii++) {
+        pw = uu[ii] + w[ii];
+        f += P.alpha * pw * pw;
+      }
+      for (ii = 1; ii <= n; ii++) {
+        dv = xs[ii] - P.xref;
+        f += c[ii] * dv * dv;
+        if (xs[ii] < P.xmin) { var v1 = P.xmin - xs[ii]; f += PEN * v1 * v1; }
+        else if (xs[ii] > P.xmax) { var v2 = xs[ii] - P.xmax; f += PEN * v2 * v2; }
+      }
+      return f;
+    }
+
+    function grad(uu) {
+      // e_i = 2 c_i (x_i - xref) + penalty, then g_j = 2 alpha (u_j + w_j) + H * suffix(e, j+1)
+      var ii, tail = 0;
+      for (ii = 1; ii <= n; ii++) {
+        var d = 2 * c[ii] * (xs[ii] - P.xref);
+        if (xs[ii] < P.xmin) d += 2 * PEN * (xs[ii] - P.xmin);
+        else if (xs[ii] > P.xmax) d += 2 * PEN * (xs[ii] - P.xmax);
+        e[ii] = d;
+      }
+      for (ii = n - 1; ii >= 0; ii--) {
+        tail += e[ii + 1];
+        g[ii] = 2 * P.alpha * (uu[ii] + w[ii]) + H * tail;
+      }
+    }
+
+    var f = obj(u), fNew, ok, alpha, ls, iter, nf, r, c2, m, s, p, gi, pg, hval, v;
+
+    for (iter = 0; iter < 50; iter++) {
+      grad(u);
+
+      pg = 0;
+      for (i = 0; i < n; i++) {
+        gi = g[i];
+        if ((u[i] <= lo[i] + 1e-12 && gi > 0) || (u[i] >= hi[i] - 1e-12 && gi < 0)) gi = 0;
+        if (Math.abs(gi) > pg) pg = Math.abs(gi);
+      }
+      if (pg < 1e-9) break;
+
+      nf = 0;
+      for (i = 0; i < n; i++) {
+        var atLo = u[i] <= lo[i] + 1e-12 && g[i] > 0;
+        var atHi = u[i] >= hi[i] - 1e-12 && g[i] < 0;
+        if (!atLo && !atHi) idx[nf++] = i;
+      }
+      if (nf === 0) break;
+
+      // suffix count of the states currently outside the band
+      var cnt = 0;
+      sufV[n + 1] = 0;
+      for (i = n; i >= 1; i--) {
+        if (xs[i] < P.xmin || xs[i] > P.xmax) cnt++;
+        sufV[i] = cnt;
+      }
+
+      // Hessian of the free block
+      for (r = 0; r < nf; r++) {
+        i = idx[r];
+        for (c2 = 0; c2 < nf; c2++) {
+          j = idx[c2];
+          m = (i > j ? i : j) + 1;
+          hval = 2 * H * H * (cs[m] + PEN * sufV[m]);
+          if (i === j) hval += 2 * P.alpha + 1e-9;
+          Hm[r * nf + c2] = hval;
+        }
+        rhs[r] = -g[i];
+      }
+
+      for (i = 0; i < nf; i++) {
+        for (j = 0; j <= i; j++) {
+          s = Hm[i * nf + j];
+          for (p = 0; p < j; p++) s -= Hm[i * nf + p] * Hm[j * nf + p];
+          if (i === j) Hm[i * nf + j] = Math.sqrt(Math.max(s, 1e-12));
+          else Hm[i * nf + j] = s / Hm[j * nf + j];
+        }
+      }
+      for (i = 0; i < nf; i++) {
+        s = rhs[i];
+        for (p = 0; p < i; p++) s -= Hm[i * nf + p] * stepv[p];
+        stepv[i] = s / Hm[i * nf + i];
+      }
+      for (i = nf - 1; i >= 0; i--) {
+        s = stepv[i];
+        for (p = i + 1; p < nf; p++) s -= Hm[p * nf + i] * stepv[p];
+        stepv[i] = s / Hm[i * nf + i];
+      }
+
+      alpha = 1; ok = false; fNew = f;
+      for (ls = 0; ls < 30; ls++) {
+        for (i = 0; i < n; i++) trial[i] = u[i];
+        for (r = 0; r < nf; r++) {
+          i = idx[r];
+          v = u[i] + alpha * stepv[r];
+          trial[i] = v < lo[i] ? lo[i] : (v > hi[i] ? hi[i] : v);
+        }
+        fNew = obj(trial);
+        if (fNew < f - 1e-12) { ok = true; break; }
+        alpha *= 0.5;
+      }
+
+      if (!ok) {
+        var a2 = 1 / (2 * P.alpha + 2 * H * H * (cs[1] + PEN * n));
+        for (ls = 0; ls < 40; ls++) {
+          for (i = 0; i < n; i++) {
+            v = u[i] - a2 * g[i];
+            trial[i] = v < lo[i] ? lo[i] : (v > hi[i] ? hi[i] : v);
+          }
+          fNew = obj(trial);
+          if (fNew < f - 1e-12) { ok = true; break; }
+          a2 *= 0.5;
+        }
+      }
+      if (!ok) { obj(u); break; }
+
+      for (i = 0; i < n; i++) u[i] = trial[i];
+      f = fNew;
+    }
+
+    warm = Float64Array.from(u);
+    levels(u);
+
+    var pred = new Float64Array(n), predX = new Float64Array(n + 1);
+    for (i = 0; i < n; i++) pred[i] = u[i] + w[i];
+    for (i = 0; i <= n; i++) predX[i] = xs[i];
+    return { u: u[0], p: u[0] + netLoad(k), predP: pred, predX: predX };
+  }
+
+  // ------------------------------------------------------------ simulation ---
+  var S;
+
+  function fresh() {
+    return {
+      k: 0, x: P.x0, u: 0, p: 0, predP: null,
+      hp: [], hx: [], hu: [], hpev: [], hres: [], hbase: [],
+      peak: 0, basePeak: 0, viol: 0, baseViol: 0,
+      inGrid: 0, outGrid: 0, baseIn: 0, baseOut: 0
+    };
+  }
+
+  function stepOnce() {
+    if (S.k >= STEPS) return false;
+    var k = S.k;
+    var pev = ppev(k), res = pres(k), net = pev - res;
+
+    var sol = solveMPC(S.x, k);
+    var u = Math.max(-P.umax, Math.min(P.umax, sol.u));
+    var p = u + net;
+    S.u = u; S.p = p; S.predP = sol.predP;
+
+    S.x = Math.max(0, Math.min(P.xmax, S.x + H * u));
+
+    S.hp.push(p); S.hx.push(S.x); S.hu.push(u);
+    S.hpev.push(pev); S.hres.push(res); S.hbase.push(net);
+
+    if (Math.abs(p) > S.peak) S.peak = Math.abs(p);
+    if (Math.abs(net) > S.basePeak) S.basePeak = Math.abs(net);
+    if (p > P.pmax + 1e-6 || p < -P.pmax - 1e-6) S.viol += 1;
+    if (net > P.pmax + 1e-6 || net < -P.pmax - 1e-6) S.baseViol += 1;
+    if (p > 0) S.inGrid += p * H; else S.outGrid -= p * H;
+    if (net > 0) S.baseIn += net * H; else S.baseOut -= net * H;
+
+    S.k++;
+    return true;
+  }
+
+  // ---------------------------------------------------------------- canvas ---
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function prep(cv) {
+    var r = cv.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+    if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function hhmm(step) {
+    var h = Math.floor(step / 60) % 24, m = Math.round(step % 60);
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+  }
+
+  function chart(cv, opts) {
+    var pz = prep(cv), ctx = pz.ctx, w = pz.w, h = pz.h;
+    var padL = 44, padR = 10, padT = 8, padB = 18;
+    var x0 = padL, x1 = w - padR, y0 = padT, y1 = h - padB;
+    var tMin = opts.tMin, tMax = opts.tMax, vMin = opts.vMin, vMax = opts.vMax;
+    var X = function (t) { return x0 + (t - tMin) / (tMax - tMin) * (x1 - x0); };
+    var Y = function (v) { return y1 - (v - vMin) / (vMax - vMin) * (y1 - y0); };
+
+    ctx.fillStyle = css("--future");
+    ctx.fillRect(X(S.k), y0, Math.max(0, X(tMax) - X(S.k)), y1 - y0);
+
+    ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1;
+    ctx.fillStyle = css("--muted");
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    opts.ticks.forEach(function (v) {
+      var y = Math.round(Y(v)) + .5;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      ctx.fillText(String(v), x0 - 7, y);
+    });
+
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (var t = Math.ceil(tMin / 120) * 120; t <= tMax; t += 120) {
+      if (t < tMin) continue;
+      var xx = X(t);
+      ctx.strokeStyle = css("--grid");
+      ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y1); ctx.stroke();
+      ctx.fillStyle = css("--muted");
+      ctx.fillText(hhmm(t), xx, y1 + 4);
+    }
+
+    (opts.lines || []).forEach(function (L) {
+      ctx.save();
+      ctx.strokeStyle = L.color; ctx.lineWidth = 1.4; ctx.setLineDash(L.dash || [5, 4]);
+      var y = Y(L.v);
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.strokeStyle = css("--ink-2"); ctx.globalAlpha = .45; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(S.k), y0); ctx.lineTo(X(S.k), y1); ctx.stroke();
+    ctx.restore();
+
+    (opts.series || []).forEach(function (sr) {
+      if (!sr.data || sr.data.length === 0) return;
+      ctx.save();
+      ctx.strokeStyle = sr.color;
+      ctx.lineWidth = sr.width || 2;
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      if (sr.dash) ctx.setLineDash(sr.dash);
+      ctx.beginPath();
+      var started = false;
+      for (var i = 0; i < sr.data.length; i++) {
+        var t = (sr.t0 || 0) + i;
+        if (t < tMin - 1 || t > tMax + 1) continue;
+        var px = X(t), py = Y(sr.data[i]);
+        if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.strokeStyle = css("--line"); ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + .5, y0 + .5, x1 - x0 - 1, y1 - y0 - 1);
+  }
+
+  // --- the service area picture ----------------------------------------
+  function drawSite() {
+    var pz = prep(document.getElementById("site")), ctx = pz.ctx, w = pz.w, h = pz.h;
+    var ink = css("--ink-2"), line = css("--line");
+    var pev = S.hpev.length ? S.hpev[S.hpev.length - 1] : ppev(0);
+    var res = S.hres.length ? S.hres[S.hres.length - 1] : pres(0);
+
+    var cx = w / 2, boxW = Math.min(230, w - 90), boxX = cx - boxW / 2;
+
+    // the area
+    ctx.strokeStyle = line; ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(boxX, 44, boxW, h - 96);
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--muted");
+    ctx.font = "11px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("service area", cx, h - 40);
+
+    // grid on the left, with the POC arrow
+    ctx.fillStyle = ink;
+    ctx.font = "600 12px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("grid", 8, 96);
+    var pNow = S.p;
+    var mag = Math.min(1, Math.abs(pNow) / Math.max(P.pmax, 1));
+    var arrowW = 3 + 10 * mag;
+    ctx.fillStyle = Math.abs(pNow) > P.pmax ? css("--limit") : css("--mpc");
+    var ax0 = 44, ax1 = boxX;
+    if (pNow >= 0) {
+      ctx.fillRect(ax0, 100 - arrowW / 2, ax1 - ax0 - 8, arrowW);
+      ctx.beginPath(); ctx.moveTo(ax1, 100); ctx.lineTo(ax1 - 10, 100 - arrowW - 2); ctx.lineTo(ax1 - 10, 100 + arrowW + 2); ctx.fill();
+    } else {
+      ctx.fillRect(ax0 + 8, 100 - arrowW / 2, ax1 - ax0 - 8, arrowW);
+      ctx.beginPath(); ctx.moveTo(ax0, 100); ctx.lineTo(ax0 + 10, 100 - arrowW - 2); ctx.lineTo(ax0 + 10, 100 + arrowW + 2); ctx.fill();
+    }
+    ctx.fillStyle = css("--ink");
+    ctx.font = "500 13px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(pNow.toFixed(1) + " kW", (ax0 + ax1) / 2, 84);
+    ctx.fillStyle = css("--muted");
+    ctx.font = "10.5px 'Source Sans 3', sans-serif";
+    ctx.fillText("POC", (ax0 + ax1) / 2, 118);
+
+    // chargers
+    var chargerY = 72;
+    ctx.fillStyle = css("--base");
+    ctx.globalAlpha = pev > 0 ? 1 : .35;
+    for (var i = 0; i < 3; i++) {
+      var bx = boxX + 24 + i * 26;
+      ctx.fillRect(bx, chargerY, 14, 26);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = css("--ink-2");
+    ctx.font = "11px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("charging  " + pev.toFixed(1) + " kW", boxX + 24, chargerY + 46);
+
+    // photovoltaic
+    var pvY = 142;
+    ctx.fillStyle = css("--sun");
+    ctx.globalAlpha = res > 0.2 ? .35 + .65 * Math.min(1, res / 14) : .25;
+    ctx.fillRect(boxX + 24, pvY, 64, 22);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = css("--ink-2");
+    ctx.fillText("sun  " + res.toFixed(1) + " kW", boxX + 24, pvY + 38);
+
+    // the battery
+    var bw = 54, bh = 92, bx2 = boxX + boxW - bw - 26, by = 60;
+    var frac = Math.max(0, Math.min(1, S.x / Math.max(P.xmax, 1)));
+    ctx.strokeStyle = css("--ess"); ctx.lineWidth = 1.8;
+    ctx.strokeRect(bx2, by, bw, bh);
+    ctx.fillStyle = css("--ess");
+    ctx.globalAlpha = .3;
+    ctx.fillRect(bx2 + 2, by + bh - 2 - (bh - 4) * frac, bw - 4, (bh - 4) * frac);
+    ctx.globalAlpha = 1;
+    // charging or discharging marker
+    ctx.fillStyle = css("--ess");
+    ctx.font = "600 14px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(S.u > 0.05 ? "▲" : (S.u < -0.05 ? "▼" : "•"), bx2 + bw / 2, by - 8);
+    ctx.fillStyle = css("--ink-2");
+    ctx.font = "11px 'Source Sans 3', sans-serif";
+    ctx.fillText(S.x.toFixed(1) + " kWh", bx2 + bw / 2, by + bh + 16);
+    ctx.fillText(S.u.toFixed(1) + " kW", bx2 + bw / 2, by + bh + 32);
+  }
+
+  // ------------------------------------------------------------------ view ---
+  function fmt(v, n) { return v.toFixed(n === undefined ? 1 : n); }
+
+  function render() {
+    drawSite();
+
+    var span = 24 * 60;
+    var tMin = 0, tMax = span;
+
+    var predSeries = [];
+    if (P.showpred && S.predP) {
+      predSeries.push({ data: Array.prototype.slice.call(S.predP), t0: S.k, color: css("--mpc"), dash: [4, 3], width: 1.6 });
+    }
+
+    var pLim = Math.max(P.pmax * 1.25, 10);
+    chart(document.getElementById("chart-p"), {
+      tMin: tMin, tMax: tMax, vMin: -pLim, vMax: pLim,
+      ticks: [-Math.round(P.pmax), 0, Math.round(P.pmax)],
+      lines: [{ v: P.pmax, color: css("--limit") }, { v: -P.pmax, color: css("--limit") }],
+      series: [
+        { data: S.hbase, color: css("--base"), width: 1.5, dash: [5, 4] },
+        { data: S.hp, color: css("--mpc"), width: 2 }
+      ].concat(predSeries)
+    });
+
+    chart(document.getElementById("chart-x"), {
+      tMin: tMin, tMax: tMax, vMin: 0, vMax: P.xmax,
+      ticks: [0, Math.round(P.xmax / 2), Math.round(P.xmax)],
+      lines: [{ v: P.xref, color: css("--ess"), dash: [2, 4] }],
+      series: [{ data: S.hx, color: css("--ess"), width: 2 }]
+    });
+
+    chart(document.getElementById("chart-u"), {
+      tMin: tMin, tMax: tMax, vMin: -P.umax * 1.2, vMax: P.umax * 1.2,
+      ticks: [-Math.round(P.umax), 0, Math.round(P.umax)],
+      lines: [{ v: P.umax, color: css("--limit") }, { v: -P.umax, color: css("--limit") }],
+      series: [{ data: S.hu, color: css("--sun"), width: 1.6 }]
+    });
+
+    chart(document.getElementById("chart-w"), {
+      tMin: tMin, tMax: tMax, vMin: 0, vMax: 32,
+      ticks: [0, 15, 30],
+      series: [
+        { data: S.hpev, color: css("--base"), width: 1.6, dash: [5, 4] },
+        { data: S.hres, color: css("--sun"), width: 1.6 }
+      ]
+    });
+
+    document.getElementById("clock").textContent = hhmm(S.k);
+    document.getElementById("elapsed").textContent = S.k + " min";
+    document.getElementById("r-poc").textContent = fmt(S.p) + " kW";
+    document.getElementById("r-poc-base").textContent = "without storage: " + fmt(S.hbase.length ? S.hbase[S.hbase.length - 1] : 0);
+    document.getElementById("r-x").textContent = fmt(S.x) + " kWh";
+    document.getElementById("r-u").textContent = "u = " + fmt(S.u, 2) + " kW";
+    document.getElementById("r-pev").textContent = fmt(S.hpev.length ? S.hpev[S.hpev.length - 1] : 0) + " kW";
+    document.getElementById("r-res").textContent = fmt(S.hres.length ? S.hres[S.hres.length - 1] : 0) + " kW";
+
+    var mp = document.getElementById("m-mpc-peak"), bp = document.getElementById("m-base-peak");
+    mp.textContent = fmt(S.peak) + " kW";
+    bp.textContent = fmt(S.basePeak) + " kW";
+    mp.className = S.peak < S.basePeak - 0.05 ? "better" : "";
+    bp.className = S.basePeak > S.peak + 0.05 ? "worse" : "";
+    var mv = document.getElementById("m-mpc-viol"), bv = document.getElementById("m-base-viol");
+    mv.textContent = S.viol + " min"; mv.className = S.viol > 0 ? "worse" : "";
+    bv.textContent = S.baseViol + " min"; bv.className = S.baseViol > 0 ? "worse" : "";
+    document.getElementById("m-mpc-in").textContent = fmt(S.inGrid) + " kWh";
+    document.getElementById("m-base-in").textContent = fmt(S.baseIn) + " kWh";
+    document.getElementById("m-mpc-out").textContent = fmt(S.outGrid) + " kWh";
+    document.getElementById("m-base-out").textContent = fmt(S.baseOut) + " kWh";
+  }
+
+  // ----------------------------------------------------------------- loop ---
+  var playing = true, acc = 0, last = 0;
+
+  function frame(ts) {
+    if (!last) last = ts;
+    var dt = Math.min(0.25, (ts - last) / 1000);
+    last = ts;
+    if (playing) {
+      acc += dt * P.speed;
+      var guard = 0;
+      while (acc >= 1 && guard < 200) { acc -= 1; guard++; if (!stepOnce()) { playing = false; setPlayLabel(); break; } }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  function setPlayLabel() {
+    var b = document.getElementById("play");
+    b.textContent = S.k >= STEPS ? "Replay" : (playing ? "Pause" : "Play");
+  }
+
+  // -------------------------------------------------------------- controls ---
+  function bindSlider(id, key, fmtFn, after) {
+    var el = document.getElementById(id), out = document.getElementById(id + "-val");
+    function upd() {
+      P[key] = parseFloat(el.value);
+      out.textContent = fmtFn(P[key]);
+      if (after) after();
+    }
+    el.addEventListener("input", upd);
+    upd();
+  }
+
+  function resetSim() { S = fresh(); warm = null; acc = 0; playing = true; setPlayLabel(); }
+
+  S = fresh();
+
+  bindSlider("N", "N", function (v) { return v + " steps"; }, function () { warm = null; });
+  bindSlider("alpha", "alpha", function (v) { return v.toFixed(1); });
+  bindSlider("beta", "beta", function (v) { P.beta_f = v; return v.toFixed(2); });
+  bindSlider("umax", "umax", function (v) { return v.toFixed(0) + " kW"; });
+  bindSlider("xmax", "xmax", function (v) { return v.toFixed(0) + " kWh"; });
+  bindSlider("xref", "xref", function (v) { return v.toFixed(0) + " kWh"; });
+  bindSlider("pmax", "pmax", function (v) { return v.toFixed(0) + " kW"; });
+  bindSlider("speed", "speed", function (v) { return v + "×"; });
+
+  document.getElementById("play").addEventListener("click", function () {
+    if (S.k >= STEPS) { resetSim(); return; }
+    playing = !playing;
+    setPlayLabel();
+  });
+  document.getElementById("reset").addEventListener("click", resetSim);
+  document.getElementById("scenario").addEventListener("change", function (e) { P.scenario = e.target.value; resetSim(); });
+  ["forecast", "showpred"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function (e) { P[id] = e.target.checked; });
+  });
+
+  window.addEventListener("resize", render);
+  setPlayLabel();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

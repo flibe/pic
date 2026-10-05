@@ -1,0 +1,73 @@
+```julia
+# =============================================================================
+#  Process Identification and Control - Sapienza, DIAG - Prof. Francesco Liberati
+#
+#  Service area control: one MPC iteration.
+#
+#  Everything the problem needs is passed in as an argument: no global variables,
+#  so changing a weight in main.jl always has the effect you expect.
+#
+#  Problem solved at time k, over the prediction window i = 1 ... N
+#  (i = 1 corresponds to the relative time i = 0 of the lecture notation):
+#
+#      min  sum_i [ alpha * p_i^2 + beta * (x_i - x_ref)^2 ] + beta_f * (x_{N+1} - x_ref)^2
+#      s.t. p_i = u_i + ppev_i - pres_i                  power balance at the POC
+#           x_{i+1} = x_i + (T/3600) * u_i               energy stored in the ESS
+#           x_1 = x_k                                    measured state
+#           u_min <= u_i <= u_max                        ESS power
+#           x_min <= x_i <= x_max                        ESS energy
+#           p_min <= p_i <= p_max                        power at the POC
+#
+#  Note on the first term of the sum: x_1 is fixed to the measured state, so
+#  beta*(x_1 - x_ref)^2 is a constant. It does not change the minimizer; it is
+#  kept because it is the stage cost l(x_{0|k}, u_{0|k}) of the lecture.
+# =============================================================================
+
+using JuMP
+
+"""
+    mpc_iteration(k, x_k, ppev, pres, par, optimizer)
+
+Build and solve the MPC problem at time step `k`, starting from the measured
+energy `x_k`. `ppev` and `pres` are the whole known profiles; the window reads
+the N values starting at k. Returns `(u1, p1, status)`: the first control to
+apply, the corresponding power at the point of connection, and the solver status.
+"""
+function mpc_iteration(k::Int, x_k::Float64,
+                       ppev::Vector{Float64}, pres::Vector{Float64},
+                       par::NamedTuple, optimizer)
+
+    N = par.N
+    h = par.T / 3600.0        # [h] energy gained by 1 kW over one sampling time
+
+    mdl = Model(optimizer)
+    set_silent(mdl)
+
+    # --- decision variables, with their simple bounds
+    @variable(mdl, par.u_min <= u[1:N]   <= par.u_max)      # P^ESS  [kW]
+    @variable(mdl, par.x_min <= x[1:N+1] <= par.x_max)      # energy [kWh]
+    @variable(mdl, par.p_min <= p[1:N]   <= par.p_max)      # P^POC  [kW]
+
+    # --- power balance at the point of connection
+    @constraint(mdl, balance[i = 1:N], p[i] == u[i] + ppev[k+i-1] - pres[k+i-1])
+
+    # --- dynamics of the storage, and the measured initial state
+    @constraint(mdl, dynamics[i = 1:N], x[i+1] == x[i] + h * u[i])
+    @constraint(mdl, x[1] == x_k)
+
+    # --- objective
+    @objective(mdl, Min,
+        sum(par.alpha * p[i]^2 + par.beta * (x[i] - par.x_ref)^2 for i in 1:N) +
+        par.beta_f * (x[N+1] - par.x_ref)^2)
+
+    optimize!(mdl)
+
+    # --- never read a solution the solver did not actually find
+    status = termination_status(mdl)
+    if status != MOI.OPTIMAL && status != MOI.LOCALLY_SOLVED
+        error("MPC iteration $k did not solve: $status")
+    end
+
+    return value(u[1]), value(p[1]), status
+end
+```

@@ -96,3 +96,15 @@ The second half opened the first case study, the control of an electric vehicle 
 - Re-read [[Cannon_2016]](references.qmd) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), now that the argument is complete: the terminal penalty there is exactly the cost-to-go we discussed.
 - [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function and the relation between the finite and the infinite horizon problem.
 - The case study continues in the next lesson; there is nothing to read for it yet.
+
+## Lesson 6 (05/10/2026): The service area controller: final formulation and code {#lesson-6}
+
+[MPC]{.part .part-mpc}
+
+We finished the formulation of the charging area problem and then went through the code that solves it. The controller acts on one variable, the power of the storage system, and watches another, the power at the point of connection, which is tied to the first by the balance $p^{poc}_i = p^{pev}_i + u_i - p^{res}_i$. Both the charging demand and the renewable generation are treated as known disturbances over the prediction window. The objective weighs the square of the power at the point of connection against the deviation of the stored energy from its reference, with a terminal term on the last predicted state, and the constraints are the bounds on the storage power, on the stored energy and on the power at the point of connection.
+
+The second part was the code, in two files on purpose. `main.jl` is the application: it holds the parameters, builds the profiles of demand and generation, and runs the receding horizon loop — measure the state, call the optimizer, apply the first control only, simulate one step of the plant, repeat. `MPC_iteration.jl` is the controller: it builds the optimization problem in [JuMP](https://jump.dev), the modelling language we use to write optimization problems the way we write them on the blackboard, and hands it to a solver. Changing solver is one line — the code runs on [HiGHS](https://highs.dev), which is open source and part of the course setup, and on Gurobi with an academic licence — and the model itself does not change. That separation between how the problem is written and how it is solved is the reason we use a modelling language at all.
+
+- [Service Area Lab](files/sim/service-area-lab.html): the same controller running over a full day in your browser, against the same area operated without storage. The peak at the point of connection, which is what the capacity tariff is paid on, halves.
+- [The Julia code of the lesson](files/code/service-area-code.qmd): `main.jl` and `MPC_iteration.jl`, with the formulation they implement. The files themselves: [main.jl](files/code/main.jl) and [MPC_iteration.jl](files/code/MPC_iteration.jl).
+- Install Julia, JuMP and HiGHS following the [software setup](setup.qmd) page if you have not done it yet, and run the code yourself: changing the weights and the horizon and watching what happens is the exercise.
