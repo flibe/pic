@@ -36,12 +36,24 @@ const OPTIMIZER = HiGHS.Optimizer
 # const OPTIMIZER = Gurobi.Optimizer
 
 # ----------------------------------------------------------------- parameters
+h     = 60.0 / 3600.0   # [h] energy gained by 1 kW over one sampling time
+alpha = 1.0             # weight on the power at the POC
+beta  = 0.1             # weight on the stored energy reference
+
+# Terminal cost, from the theory of Lesson 4: V_f(x) = W (x - x_ref)^2, with W the
+# value function of the unconstrained problem min sum alpha*u^2 + beta*(x-x_ref)^2.
+# For this scalar system the Riccati equation h^2 W^2 - beta h^2 W - alpha beta = 0
+# gives the expression below. Using beta as terminal weight instead would leave a
+# controller with a 20-step window myopic: it would see no value in the state it
+# leaves behind, and the storage would drift away from its reference.
+beta_f = beta / 2 + sqrt(beta^2 / 4 + alpha * beta / h^2)
+
 par = (
     T      = 60.0,      # sampling time [s]
     N      = 20,        # prediction horizon [steps]
-    alpha  = 1.0,       # weight on the power at the POC
-    beta   = 0.02,      # weight on the stored energy reference
-    beta_f = 0.02,      # terminal weight
+    alpha  = alpha,     # weight on the power at the POC
+    beta   = beta,      # weight on the stored energy reference
+    beta_f = beta_f,    # terminal weight, from the Riccati equation above
     u_min  = -10.0,     # ESS power [kW], negative = discharging
     u_max  =  10.0,
     x_min  =   0.0,     # stored energy [kWh]

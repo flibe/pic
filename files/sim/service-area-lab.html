@@ -278,8 +278,8 @@
         <input type="range" id="alpha" min="0.1" max="5" step="0.1" value="1">
       </div>
       <div class="slider">
-        <label for="beta">Weight on stored energy β <span class="num" id="beta-val">0.02</span></label>
-        <input type="range" id="beta" min="0" max="1" step="0.01" value="0.02">
+        <label for="beta">Weight on stored energy β <span class="num" id="beta-val">0.10</span></label>
+        <input type="range" id="beta" min="0" max="2" step="0.02" value="0.1">
       </div>
       <div class="slider">
         <label for="umax">Storage power limit <span class="num" id="umax-val">10 kW</span></label>
@@ -301,7 +301,8 @@
 
     <div class="toggles">
       <label><input type="checkbox" id="forecast" checked> MPC knows the forecasts of p<sup>pev</sup> and p<sup>res</sup></label>
-      <label><input type="checkbox" id="showpred" checked> Draw the plan over the window</label>
+      <label><input type="checkbox" id="riccati" checked> Terminal cost from the Riccati equation <span class="num" id="riccati-val" style="font-family:'IBM Plex Mono',monospace"></span></label>
+      <label><input type="checkbox" id="showpred" checked> Draw the plan and the forecasts over the window</label>
     </div>
   </section>
 
@@ -373,9 +374,20 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
           assumes the present demand will persist, and reacts instead of preparing.</li>
         <li><b>Storage size and power.</b> A larger capacity is useless if the power limit is small, and the
           other way round: try moving the two sliders in opposite directions.</li>
-        <li><b>The energy reference is a soft wish.</b> β pulls the storage back towards x<sup>ref</sup> so it
-          is ready for the next event. Raise it too much and the controller stops shaving the peak to keep the
-          storage tidy; set it to zero and the storage ends the day wherever it happens to be.</li>
+        <li><b>The energy reference is a soft wish, and you can price it.</b> β decides how hard the storage
+          is pulled back towards x<sup>ref</sup>, ready for the next event, and it is paid for in power at the
+          point of connection. With the settings the page opens with the storage ends the day within half a
+          kilowatt-hour of its reference and the peak is still halved. Lower β to 0.02 and the storage ends
+          the day five kilowatt-hours away, because the optimal trade-off accepts a deviation that decays with
+          a time constant of about seven hours. Raise it to 2 and the controller keeps the storage tidy but
+          stops shaving: the peak climbs back towards the one of the area without storage.</li>
+        <li><b>The terminal cost decides whether the storage comes home.</b> Untick "terminal cost from the
+          Riccati equation" and the storage drifts: it ends the day far from its reference and comes back only
+          very slowly. The reason is the one of Lesson 4. With a window of twenty minutes, a controller whose
+          terminal cost is just the stage weight β sees almost no value in the state it leaves behind, so it
+          is myopic. The right terminal cost is the value function of the unconstrained problem, the
+          x<sup>T</sup>Wx with W from the Riccati equation — here about four hundred times β — and with it the
+          twenty-minute controller behaves like the infinite-horizon one.</li>
       </ul>
     </div>
   </section>
@@ -396,10 +408,10 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
   var PEN = 4000;             // penalty on the storage band (soft constraint)
 
   var P = {
-    N: 20, alpha: 1, beta: 0.02, beta_f: 0.02,
+    N: 20, alpha: 1, beta: 0.1, beta_f: 0.1,
     umax: 10, xmax: 100, xref: 50, pmax: 30,
     xmin: 0, x0: 30,
-    forecast: true, showpred: true,
+    forecast: true, showpred: true, riccati: true,
     scenario: "normal", speed: 40
   };
 
@@ -441,6 +453,17 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
     return P.forecast ? netLoad(k + i) : nowValue;
   }
 
+  // Terminal weight from the theory: the value function of the unconstrained,
+  // disturbance-free problem min sum alpha*u^2 + beta*(x-xref)^2 with x+ = x + H*u.
+  // The scalar Riccati equation H^2 W^2 - beta H^2 W - alpha beta = 0 gives
+  //     W = beta/2 + sqrt(beta^2/4 + alpha*beta/H^2),
+  // which is the V_f of the lectures. With the numbers of this lab it is about
+  // four hundred times larger than beta: that is why using beta as terminal weight
+  // leaves the storage far from its reference.
+  function riccatiWeight() {
+    return P.beta / 2 + Math.sqrt(P.beta * P.beta / 4 + P.alpha * P.beta / (H * H));
+  }
+
   // ------------------------------------------------------------ QP solver ---
   // Variables: u_0 ... u_{N-1}. States x_i = x_k + H * (u_0 + ... + u_{i-1}).
   // Cost:  alpha * sum (u_i + w_i)^2 + sum c_i (x_i - xref)^2 , c_i = beta (beta_f at the end)
@@ -467,7 +490,8 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
 
     // weights on the predicted states x_1 ... x_N (index 1..n here)
     var c = new Float64Array(n + 1);
-    for (i = 1; i <= n; i++) c[i] = (i === n) ? P.beta_f : P.beta;
+    var wTerm = P.riccati ? riccatiWeight() : P.beta;
+    for (i = 1; i <= n; i++) c[i] = (i === n) ? wTerm : P.beta;
     var cs = new Float64Array(n + 2);             // suffix sums of c
     cs[n + 1] = 0;
     for (i = n; i >= 1; i--) cs[i] = cs[i + 1] + c[i];
@@ -867,12 +891,23 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
       series: [{ data: S.hu, color: css("--sun"), width: 1.6 }]
     });
 
+    // what the controller believes about the next N steps
+    var futPev = [], futRes = [], nowPev = ppev(S.k), nowRes = pres(S.k), fi;
+    if (P.showpred) {
+      for (fi = 0; fi <= P.N; fi++) {
+        futPev.push(P.forecast ? ppev(S.k + fi) : nowPev);
+        futRes.push(P.forecast ? pres(S.k + fi) : nowRes);
+      }
+    }
+
     chart(document.getElementById("chart-w"), {
       tMin: tMin, tMax: tMax, vMin: 0, vMax: 32,
       ticks: [0, 15, 30],
       series: [
         { data: S.hpev, color: css("--base"), width: 1.6, dash: [5, 4] },
-        { data: S.hres, color: css("--sun"), width: 1.6 }
+        { data: S.hres, color: css("--sun"), width: 1.6 },
+        { data: futPev, t0: S.k, color: css("--ink"), width: 2.2 },
+        { data: futRes, t0: S.k, color: css("--sun"), width: 2.4 }
       ]
     });
 
@@ -937,8 +972,8 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
   S = fresh();
 
   bindSlider("N", "N", function (v) { return v + " steps"; }, function () { warm = null; });
-  bindSlider("alpha", "alpha", function (v) { return v.toFixed(1); });
-  bindSlider("beta", "beta", function (v) { P.beta_f = v; return v.toFixed(2); });
+  bindSlider("alpha", "alpha", function (v) { return v.toFixed(1); }, showTerminal);
+  bindSlider("beta", "beta", function (v) { P.beta_f = v; return v.toFixed(2); }, showTerminal);
   bindSlider("umax", "umax", function (v) { return v.toFixed(0) + " kW"; });
   bindSlider("xmax", "xmax", function (v) { return v.toFixed(0) + " kWh"; });
   bindSlider("xref", "xref", function (v) { return v.toFixed(0) + " kWh"; });
@@ -952,10 +987,17 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
   });
   document.getElementById("reset").addEventListener("click", resetSim);
   document.getElementById("scenario").addEventListener("change", function (e) { P.scenario = e.target.value; resetSim(); });
-  ["forecast", "showpred"].forEach(function (id) {
-    document.getElementById(id).addEventListener("change", function (e) { P[id] = e.target.checked; });
+  ["forecast", "showpred", "riccati"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function (e) { P[id] = e.target.checked; showTerminal(); });
   });
 
+  function showTerminal() {
+    document.getElementById("riccati-val").textContent =
+      P.riccati ? "(V_f weight " + riccatiWeight().toFixed(1) + " instead of " + P.beta.toFixed(2) + ")"
+                : "(using " + P.beta.toFixed(2) + ", the stage weight)";
+  }
+
+  showTerminal();
   window.addEventListener("resize", render);
   setPlayLabel();
   requestAnimationFrame(frame);
