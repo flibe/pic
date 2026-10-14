@@ -160,3 +160,30 @@ The last part applied all this to MPC. We assume the system has an equilibrium a
 - Study [[Cannon_2016]](references.qmd) section 2.6, "Stability and Convergence" (pp. 29–32): the Lyapunov argument applied to MPC, with the cost of the MPC problem used as the Lyapunov function. This is where the lesson is going.
 - [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for everything we did today in its general form: Lyapunov functions, the two theorems, and the local versions of the definitions. Section B.1, "Introduction" (pp. 691–696), has the examples.
 - [Rawlings_2017] section 2.4.2, "Stabilizing Conditions" (pp. 114–120), for the assumptions on $\ell$ and $V_f$ in the form we wrote them today.
+
+## Lesson 10 (14/10/2026): Stability of MPC: the optimal cost as Lyapunov function {#lesson-10}
+
+[MPC]{.part .part-mpc}
+
+We used the Lyapunov theorem of last lesson on the MPC closed loop. Before starting, one remark on the second condition: asking that $\Delta V(x)$ be semi-negative definite is the same as asking that $\Delta V(x) \le -h(x)$ for some non-negative $h$, and writing it in this second form is what makes the proof work, because it says *how much* $V$ has to decrease at each step.
+
+The first question was whether the origin survives the controller. The closed loop is $x_{k+1} = f(x_k, \kappa_N(x_k)) = \tilde f(x_k)$, so the origin is an equilibrium of $\tilde f$ only if $f(0, \kappa_N(0)) = 0$, that is only if $\kappa_N(0) = 0$. It is: starting from $x_k = 0$, the sequence of all zeros is feasible, keeps the state at zero and costs nothing, and since the stage cost and the terminal cost are positive definite no other sequence can cost less. The optimizer therefore returns zero and the controller does not move the equilibrium.
+
+Then the candidate Lyapunov function, and this is the idea of the whole construction: take the **optimal cost of the MPC problem**, $V^{*}_N(x_k) = V_N(x_k, \mathbf{u}^{*}_k)$, the value the optimizer returns at every step. It is a function of the state alone, and it is computed anyway, for free, by the controller. The first condition is immediate with the assumptions we made: $V^{*}(0) = 0$ by the argument above, and $V^{*}(x) > 0$ for every $x \neq 0$ because the first stage cost alone, $\ell(x_k, u^{*}_{0|k})$, is already strictly positive.
+
+The second condition is the real work. We want $\Delta V^{*}(x_k) = V^{*}(x_{k+1}) - V^{*}(x_k) \le 0$, and $V^{*}(x_{k+1})$ is the result of another optimization, which we do not know. The way around it is a bound: the optimal cost at $k+1$ is never larger than the cost of **any** feasible sequence at $k+1$, so if we exhibit one candidate sequence $\tilde{\mathbf{u}}_{k+1}$ whose cost is already below $V^{*}(x_k)$, we are done. The candidate is the one we already know from recursive feasibility — the tail of the optimal sequence of time $k$, $\{u^{*}_{1|k}, \dots, u^{*}_{N-1|k}\}$, completed with the terminal control $\kappa_f(x^{*}_{N|k})$ — and under the nominal assumption $x_{k+1} = x^{*}_{1|k}$ it is feasible.
+
+Writing both costs term by term, everything in the middle cancels, and what is left is
+$$
+V(x_{k+1}, \tilde{\mathbf{u}}_{k+1}) - V^{*}(x_k) = \underbrace{-\,\ell(x_k, u^{*}_{0|k})}_{\le\,0} + \Big[ \ell(x^{*}_{N|k}, \kappa_f(x^{*}_{N|k})) + V_f\big(f(x^{*}_{N|k}, \kappa_f(x^{*}_{N|k}))\big) - V_f(x^{*}_{N|k}) \Big].
+$$
+The first term is the price paid at the current step and is never positive: it is the decrease we get for free. So the whole difference is non-positive as soon as the bracket is, and the bracket is a condition on the **terminal ingredients only**:
+$$
+V_f\big(f(x, \kappa_f(x))\big) - V_f(x) \;\le\; -\,\ell(x, \kappa_f(x)).
+$$
+Read it as it deserves: the terminal cost must itself be a Lyapunov function for the system driven by the terminal control law, decreasing by at least the stage cost at every step. Stability of MPC is therefore not something one hopes for, it is something one obtains by choosing $V_f$ and $\kappa_f$ properly — the tuning of the controller is what makes the proof go through. Whether that inequality can actually be satisfied, and in which cases, is the question we left open and that we answer next time.
+
+- [Blackboard notes](files/notes/lesson-10-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Cannon_2016]](references.qmd) section 2.6, "Stability and Convergence" (pp. 29–32): the proof of today in the same form, with the optimal cost as Lyapunov function and the condition on the terminal cost.
+- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.4.2, "Stabilizing Conditions" (pp. 114–120): the same assumptions on $\ell$, $V_f$, $\kappa_f$ and the terminal set, stated once and used throughout their book.
+- [Rawlings_2017] appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for the theorem we are applying, in particular the form $\Delta V \le -h(x)$ we used today.
