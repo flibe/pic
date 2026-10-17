@@ -29,8 +29,8 @@ subtitle: "For each lesson, the lesson diary indicates exactly what to study. Th
 
 **Applications**
 
-- **[Liberati_2020]** F. Liberati. "Model predictive control of a road junction." *Smart Cities* 3(3), 806–817, 2020. [Open access](https://www.mdpi.com/2624-6511/3/3/41).
-- **[Liberati_2021]** F. Liberati. "Task execution control in an assembly line via shrinking horizon model predictive control." Confidential: available only on Google Class, for personal study, not to be shared.
+- **[Liberati_2025a]** F. Liberati, M. Donsante, A. Tortorelli. "Single intersection MPC traffic signal control in presence of automated vehicles." *IEEE Transactions on Control Systems Technology* 33(4), 1432–1446, 2025. [IEEE Xplore](https://ieeexplore.ieee.org/document/10666731/).
+- **[Liberati_2025b]** F. Liberati, M. Donsante, C. M. F. Cirino, A. Tortorelli. "Fast task scheduling with model predictive control integrating a priority-based heuristic." *IEEE Access* 13, 14499–14515, 2025. [Open access](https://ieeexplore.ieee.org/document/10843846/).
 - **[Di Giorgio_2014]** A. Di Giorgio, F. Liberati. "Near real time load shifting control for residential electricity prosumers under designed and market indexed pricing models." *Applied Energy* 128, 119–132, 2014. [Journal](https://www.sciencedirect.com/science/article/abs/pii/S0306261914003857).
 - **[Liberati_2018]** F. Liberati, A. Di Giorgio. "Economic model predictive and feedback control of a smart grid prosumer node." *Energies* 11(1), 48, 2018. [Open access](https://www.mdpi.com/1996-1073/11/1/48).
 - **[Liberati_2019]** F. Liberati et al. "Joint model predictive control of electric and heating resources in a smart building." *IEEE Transactions on Industry Applications* 55(6), 7015–7027, 2019. [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8786121/).
