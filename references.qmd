@@ -3,6 +3,8 @@ title: "References and study materials"
 subtitle: "For each lesson, the lesson diary indicates exactly what to study. The books and papers below are free and openly accessible whenever possible; advanced books are used only for specific sections."
 ---
 
+The few items that are not open access are still available to you: Sapienza subscribes to the main publishers, so you can read them from the University network, or from anywhere by signing in with your institutional account — either on the publisher's site (IEEE Xplore, ScienceDirect, SpringerLink) or through the [University proxy](https://login.ezproxy.uniroma1.it/login) of the [library system](https://www.uniroma1.it/it/pagina/sistema-bibliotecario-sapienza).
+
 ## Model Predictive Control [MPC]{.part .part-mpc}
 
 **Books**
