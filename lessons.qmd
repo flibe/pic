@@ -1,6 +1,6 @@
 ---
 title: "Lesson diary"
-subtitle: "For every lesson: a summary, the blackboard notes and exactly what to study. Reference codes such as [Rawlings_2017] are listed in [References](references.qmd)."
+subtitle: "For every lesson: a summary, the blackboard notes and exactly what to study. Reference codes such as [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) are listed in [References](references.qmd)."
 toc-title: "Lessons"
 ---
 
@@ -31,7 +31,7 @@ We discussed the course logistics, study materials and the exam. We then gave a 
 In the second part we started the technical content: the receding horizon principle and the MPC pseudo-code, nominal MPC and its three main properties (optimality, recursive feasibility, stability), the classes of optimization problems behind MPC (continuous versus mixed-integer programming), and robust and probabilistic MPC.
 
 - [Blackboard notes](files/notes/lesson-01-notes.pdf){target="_blank" rel="noopener"}
-- Read sections 1.1 and 1.2 of [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) or chapter 1 of [Cannon_2016] (the book can be found online).
+- Read sections 1.1 and 1.2 of [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) or chapter 1 of [[Cannon_2016]](references.qmd#ref-Cannon_2016) (the book can be found online).
 - Read [my slides on MPC](https://uniroma1it-my.sharepoint.com/:b:/g/personal/francesco_liberati_uniroma1_it/EbhJGNS5gNpGl6JGGy4YG48BLH0pOe2zZtmWtVCxawJ12g?e=7OBpWC) up to slide 25.
 - Read slides 1–26 of [Prof. Bemporad's presentation on linear MPC](http://cse.lab.imtlucca.it/~bemporad/teaching/mpc/imt/1-linear_mpc.pdf).
 
@@ -58,9 +58,9 @@ In the second part we wrote the general formulation of the problem $\mathcal{P}_
 We closed on two points. The first control of the optimal sequence is a function of the measured state, $u^{*}_{0|k} = \kappa(x_k)$: MPC is a feedback technique, not an open-loop plan computed once. And behind the whole construction there is the ideal problem we would like to solve, the infinite-horizon constrained optimal control problem, which specialized to a linear model and a quadratic cost gives the constrained LQR problem — the subject of the next lesson.
 
 - [Blackboard notes](files/notes/lesson-03-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) section 2.1, "Problem Description" (pp. 13–15): the same problem, the same notation we use in class.
-- Read [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.2, "Model Predictive Control" (pp. 91–106), for the general formulation with stage cost, terminal cost and terminal set.
-- For the modelling part, [Rawlings_2017] section 1.2, "Models and Modeling" (pp. 1–10).
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.1, "Problem Description" (pp. 13–15): the same problem, the same notation we use in class.
+- Read [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.2, "Model Predictive Control" (pp. 91–106), for the general formulation with stage cost, terminal cost and terminal set.
+- For the modelling part, [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 1.2, "Models and Modeling" (pp. 1–10).
 
 ## Lesson 4 (30/09/2026): Why MPC is optimal: dual mode control and the value function {#lesson-4}
 
@@ -75,9 +75,9 @@ Back to the constrained problem, and to Bellman's principle of optimality. Under
 The consequence is the point of the whole lesson. The infinite tail can be replaced by its cost, $x_N^\top W x_N$, so the intractable problem becomes a finite-horizon problem with $N$ variables and a terminal cost — and the two have the same solution, $u^{*N}_k = u^{*\infty}_k$ for $k = 0,\dots,N-1$, provided $N$ is large enough. That terminal cost is the value function $V(x)$, the cost of controlling the system optimally from $x$ onwards, which for the LQR problem is exactly $x^\top W x$. Solving that finite problem again at every sampling time is MPC, and this is the sense in which MPC is optimal. The same value function is what dynamic programming computes, which is where reinforcement learning will come in.
 
 - [Blackboard notes](files/notes/lesson-04-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) section 2.2, "The Unconstrained Optimum" (pp. 15–18): the cost under a linear feedback law, the Lyapunov equation for $W$ and the Riccati equation for the optimal gain, in the notation we used on the blackboard.
-- Study [Cannon_2016] section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21). Theorem 2.2 is the formal version of the result of this lesson: there is a finite horizon, depending on the current state, beyond which the truncated problem returns the first $N$ controls of the infinite-horizon constrained optimum, with the same cost.
-- For the same material reached by dynamic programming, which is the road we will take again with reinforcement learning, [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) sections 1.3.3 and 1.3.4 (pp. 18–23), and section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.2, "The Unconstrained Optimum" (pp. 15–18): the cost under a linear feedback law, the Lyapunov equation for $W$ and the Riccati equation for the optimal gain, in the notation we used on the blackboard.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21). Theorem 2.2 is the formal version of the result of this lesson: there is a finite horizon, depending on the current state, beyond which the truncated problem returns the first $N$ controls of the infinite-horizon constrained optimum, with the same cost.
+- For the same material reached by dynamic programming, which is the road we will take again with reinforcement learning, [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) sections 1.3.3 and 1.3.4 (pp. 18–23), and section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function.
 - Studying the proofs of these results is optional.
 
 ## Lesson 5 (01/10/2026): Conclusions on optimality and dual mode control; introduction to the first case study {#lesson-5}
@@ -93,8 +93,8 @@ With those ingredients in place we looked at what happens from one sampling time
 The second half opened the first case study, the control of an electric vehicle charging area. Vehicles arrive wanting to recharge as fast as possible, so even a few of them produce a large power flow at the point of connection, which means expensive hardware and a heavier bill under capacity-based tariffs. The controller therefore has two goals: serve the users and keep the power at the point of connection as close to zero as possible, using an energy storage system. We set up the problem — the storage power as control variable, the stored energy as state, the power at the point of connection as controlled variable, the vehicle demand and the renewable generation as disturbances with a known forecast — fixed the consumer sign convention, wrote the objective with the weight on the state reference deliberately small, and wrote the global constraint that ties everything together, the power balance at the point of connection.
 
 - [Blackboard notes](files/notes/lesson-05-notes.pdf){target="_blank" rel="noopener"}
-- Re-read [[Cannon_2016]](references.qmd) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), now that the argument is complete: the terminal penalty there is exactly the cost-to-go we discussed.
-- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function and the relation between the finite and the infinite horizon problem.
+- Re-read [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), now that the argument is complete: the terminal penalty there is exactly the cost-to-go we discussed.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.3, "Dynamic Programming Solution" (pp. 107–112), for the value function and the relation between the finite and the infinite horizon problem.
 - The case study continues in the next lesson; there is nothing to read for it yet.
 
 ## Lesson 6 (05/10/2026): The service area controller: final formulation and code {#lesson-6}
@@ -123,9 +123,9 @@ With the efficiencies in place the dynamics of the storage becomes linear again,
 The second half opened the central property of the rest of the course. An MPC algorithm is **recursively feasible** when, if the problem admits a solution at one time, it admits one at every time after that — feasible once, feasible forever. The natural object is the feasible set, the set of states from which the problem has a solution at all, and the property we need from it is **invariance**: a set is invariant for an autonomous system when every state inside it maps inside it, and it is **controlled invariant** when for every state inside it there exists at least one admissible control that keeps the next state inside. Recursive feasibility is precisely the statement that the MPC control law makes the feasible set controlled invariant. Proving it for a given problem is done constructively: at time $k+1$ one builds a tentative solution out of the tail of the optimal sequence found at $k$, and shows that it satisfies every constraint — which is why a terminal set with the right invariance property appears in the formulation.
 
 - [Blackboard notes](files/notes/lesson-07-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) sections 2.4, "Invariant Sets" (pp. 21–24), and 2.5, "Controlled Invariant Sets and Recursive Feasibility" (pp. 24–29). These are the sections of the course on today's material: the definitions of invariant and maximal invariant set, the controlled invariant set, and the result that the feasible sets grow with the horizon.
-- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.4.2, "Stabilizing Conditions" (pp. 114–120), for the assumptions on the terminal set in their standard form, and section 2.6, "Is a Terminal Constraint Set Necessary?" (pp. 144–147), for what happens without one.
-- On writing logical conditions as constraints — indicator variables, big-M, mutually exclusive events — [Hax_1977] chapter 9, and [Borrelli_2017] for the same ideas inside an MPC problem.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) sections 2.4, "Invariant Sets" (pp. 21–24), and 2.5, "Controlled Invariant Sets and Recursive Feasibility" (pp. 24–29). These are the sections of the course on today's material: the definitions of invariant and maximal invariant set, the controlled invariant set, and the result that the feasible sets grow with the horizon.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.4.2, "Stabilizing Conditions" (pp. 114–120), for the assumptions on the terminal set in their standard form, and section 2.6, "Is a Terminal Constraint Set Necessary?" (pp. 144–147), for what happens without one.
+- On writing logical conditions as constraints — indicator variables, big-M, mutually exclusive events — [[Hax_1977]](references.qmd#ref-Hax_1977) chapter 9, and [[Borrelli_2017]](references.qmd#ref-Borrelli_2017) for the same ideas inside an MPC problem.
 
 ## Lesson 8 (08/10/2026): Proving recursive feasibility; stability, first definitions {#lesson-8}
 
@@ -138,9 +138,9 @@ Both are guaranteed at once if the terminal set and the terminal control law are
 The second half began stability. Stability is a property of the equilibrium points of a dynamical system, not of the system as a whole, and a system may have none, one, several or infinitely many — the pendulum we drew has two *families* of them, the hanging one and the upright one, each repeated at every full turn, so infinitely many points but only two distinct behaviours. Adding a feedback law turns the controlled system into an autonomous one, and that creates two distinct problems: stabilization, which is making an unstable equilibrium stable, and checking that an equilibrium which was stable has not been made unstable by the controller. Taking the equilibrium at the origin without loss of generality, we gave the definition of stability in the $\varepsilon$–$\delta$ form, with the reading that small initial perturbations produce trajectories that remain forever close, and then asymptotic stability as stability plus attractiveness, with its region of attraction. Both are local concepts.
 
 - [Blackboard notes](files/notes/lesson-08-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) section 2.5, "Controlled Invariant Sets and Recursive Feasibility" (pp. 24–29): the proof of today, in the same form, with the nested feasible sets.
-- [Cannon_2016] section 2.6, "Stability and Convergence" (pp. 29–32), which is where the second half of the lesson is heading.
-- For the definitions of stability, [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) appendix B, section B.2, "Stability and Asymptotic Stability" (pp. 696–700). Section B.3, "Lyapunov Stability Theory" (pp. 700–709), is the material of the next lesson.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.5, "Controlled Invariant Sets and Recursive Feasibility" (pp. 24–29): the proof of today, in the same form, with the nested feasible sets.
+- [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.6, "Stability and Convergence" (pp. 29–32), which is where the second half of the lesson is heading.
+- For the definitions of stability, [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) appendix B, section B.2, "Stability and Asymptotic Stability" (pp. 696–700). Section B.3, "Lyapunov Stability Theory" (pp. 700–709), is the material of the next lesson.
 
 ## Lesson 9 (12/10/2026): Stability of MPC: Lyapunov theory {#lesson-9}
 
@@ -157,9 +157,9 @@ Then the two theorems, both sufficient conditions. The equilibrium is **stable**
 The last part applied all this to MPC. We assume the system has an equilibrium at the origin, $f(0,0) = 0$, that we are regulating the state to zero, that the stage cost $\ell(x,u)$ is a positive definite function of $(x,u)$ and that the terminal cost $V_f(x)$ is a positive definite function of $x$ — assumptions that any sensible regulation cost satisfies. The question is whether the closed loop $\tilde f$ is stable at the origin, and it is a real question: the MPC law changes the system, so the equilibrium itself could move. That is where we stopped, with the first thing to verify — is $x^{eq} = 0$ still an equilibrium of $\tilde f$? — written on the board for next time.
 
 - [Blackboard notes](files/notes/lesson-09-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) section 2.6, "Stability and Convergence" (pp. 29–32): the Lyapunov argument applied to MPC, with the cost of the MPC problem used as the Lyapunov function. This is where the lesson is going.
-- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for everything we did today in its general form: Lyapunov functions, the two theorems, and the local versions of the definitions. Section B.1, "Introduction" (pp. 691–696), has the examples.
-- [Rawlings_2017] section 2.4.2, "Stabilizing Conditions" (pp. 114–120), for the assumptions on $\ell$ and $V_f$ in the form we wrote them today.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.6, "Stability and Convergence" (pp. 29–32): the Lyapunov argument applied to MPC, with the cost of the MPC problem used as the Lyapunov function. This is where the lesson is going.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for everything we did today in its general form: Lyapunov functions, the two theorems, and the local versions of the definitions. Section B.1, "Introduction" (pp. 691–696), has the examples.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.4.2, "Stabilizing Conditions" (pp. 114–120), for the assumptions on $\ell$ and $V_f$ in the form we wrote them today.
 
 ## Lesson 10 (14/10/2026): Stability of MPC: the optimal cost as Lyapunov function {#lesson-10}
 
@@ -184,9 +184,9 @@ $$
 Read it as it deserves: the terminal cost must itself be a Lyapunov function for the system driven by the terminal control law, decreasing by at least the stage cost at every step. Stability of MPC is therefore not something one hopes for, it is something one obtains by choosing $V_f$ and $\kappa_f$ properly — the tuning of the controller is what makes the proof go through. Whether that inequality can actually be satisfied, and in which cases, is the question we left open and that we answer next time.
 
 - [Blackboard notes](files/notes/lesson-10-notes.pdf){target="_blank" rel="noopener"}
-- Study [[Cannon_2016]](references.qmd) section 2.6, "Stability and Convergence" (pp. 29–32): the proof of today in the same form, with the optimal cost as Lyapunov function and the condition on the terminal cost.
-- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.4.2, "Stabilizing Conditions" (pp. 114–120): the same assumptions on $\ell$, $V_f$, $\kappa_f$ and the terminal set, stated once and used throughout their book.
-- [Rawlings_2017] appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for the theorem we are applying, in particular the form $\Delta V \le -h(x)$ we used today.
+- Study [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.6, "Stability and Convergence" (pp. 29–32): the proof of today in the same form, with the optimal cost as Lyapunov function and the condition on the terminal cost.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.4.2, "Stabilizing Conditions" (pp. 114–120): the same assumptions on $\ell$, $V_f$, $\kappa_f$ and the terminal set, stated once and used throughout their book.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) appendix B, section B.3, "Lyapunov Stability Theory" (pp. 700–709), for the theorem we are applying, in particular the form $\Delta V \le -h(x)$ we used today.
 
 ## Lesson 11 (15/10/2026): The role of the MPC ingredients; economic MPC and the building case study {#lesson-11}
 
@@ -205,10 +205,10 @@ The second half changed point of view. In the **classic** regulation or tracking
 We then started the case study we will carry on next time: the energy management of a building. The system has photovoltaic panels, non-plannable loads, plannable loads, an energy storage system and a charging station for electric vehicles, all behind one meter at the point of delivery. The first goal is to minimize the electricity bill, computed with a time-of-use volumetric tariff with one price for the energy consumed and another, lower, for the energy injected into the grid. We fixed the nomenclature — powers in kW for the panels, the loads, the storage, the vehicles and the point of delivery; energies in kWh for the storage and the vehicles, which are the state variables — and the modelling assumptions: generation and non-plannable loads are known over the window, the storage and the charging powers are the control variables, and the plannable loads come in two kinds, those that can be shifted in time, where the decision is *when* to start them inside an allowed interval, and those whose power can be modulated, which we skip. Finally the first constraints: the power balance at the point of delivery, and the storage written with separate charging and discharging powers, their indicator variables, the indicator constraints with the maximum powers as big-M, and the mutual exclusivity $\delta^{ch} + \delta^{dis} \le 1$ — the same construction we used for the service area, now inside an economic problem.
 
 - [Blackboard notes](files/notes/lesson-11-notes.pdf){target="_blank" rel="noopener"}
-- Re-read [[Cannon_2016]](references.qmd) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), and sections 2.4–2.6 (pp. 21–32) with today's question in mind: what each of $N$, $V_f$ and $X_f$ is doing in the formulation.
-- [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.6, "Is a Terminal Constraint Set $X_f$ Necessary?" (pp. 144–147), on the cost of the artificial terminal constraint and on what survives without it.
-- [Rawlings_2017] section 2.8, "Economic Model Predictive Control" (pp. 153–160), for today's second half: how the economic problem differs from the tracking one, and which assumptions replace the positive definite cost.
-- For the mixed-integer part of the building model, the same references as the service area: [Hax_1977] chapter 9 for indicator variables and big-M, and [Borrelli_2017] for the same constructions inside an MPC problem.
+- Re-read [[Cannon_2016]](references.qmd#ref-Cannon_2016) section 2.3, "The Dual-Mode Prediction Paradigm" (pp. 18–21), and sections 2.4–2.6 (pp. 21–32) with today's question in mind: what each of $N$, $V_f$ and $X_f$ is doing in the formulation.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.6, "Is a Terminal Constraint Set $X_f$ Necessary?" (pp. 144–147), on the cost of the artificial terminal constraint and on what survives without it.
+- [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.8, "Economic Model Predictive Control" (pp. 153–160), for today's second half: how the economic problem differs from the tracking one, and which assumptions replace the positive definite cost.
+- For the mixed-integer part of the building model, the same references as the service area: [[Hax_1977]](references.qmd#ref-Hax_1977) chapter 9 for indicator variables and big-M, and [[Borrelli_2017]](references.qmd#ref-Borrelli_2017) for the same constructions inside an MPC problem.
 
 ## Lesson 12 (19/10/2026): The building case study: shiftable loads, the bill, battery ageing {#lesson-12}
 
@@ -223,5 +223,5 @@ The second half priced what crosses the meter. The tariff is time-of-use: $c^{in
 Last, the hidden cost of using the battery. A storage system has a price and a finite number of full cycles; with $COST^{ess}$ and the energy it will move in its whole life, $E^{life} = 2\,x^{ess,max}\cdot cycles$, the ratio $c^{dep} = COST^{ess}/E^{life}$ is what one kWh through the battery costs in terms of life consumed — a small number, a few cents. Charging and discharging both consume life, so the term is $J^{depr} = \sum_i c^{dep}\,(P^{ch}_{i|k} + P^{dis}_{i|k})\,T$, which is $c^{dep}|P^{ess}|$ written without an absolute value, thanks to the split into two non-negative powers. The objective of the controller is then the weighted sum $J = \alpha_1 J^{cost} + \alpha_2 J^{reg} + \alpha_3 J^{depr}$, with $J^{reg}$ the deviation of the stored energy from its reference. We closed on an observation from the simulations: run like this, the battery tends to end the day empty. Why that happens, and what has to be added to the cost to stop it, is the question for next time.
 
 - [Blackboard notes](files/notes/lesson-12-notes.pdf){target="_blank" rel="noopener"}
-- Re-read [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.8, "Economic Model Predictive Control" (pp. 153–160): today's cost is exactly of that kind, and the section says what survives of the theory when the cost stops being positive definite.
-- On writing today's logical conditions as constraints — one start per appliance, mutually exclusive import and export, big-M indicators — [Hax_1977] chapter 9, and [Borrelli_2017] for the same constructions inside an MPC problem.
+- Re-read [[Rawlings_2017]](references.qmd#ref-Rawlings_2017) section 2.8, "Economic Model Predictive Control" (pp. 153–160): today's cost is exactly of that kind, and the section says what survives of the theory when the cost stops being positive definite.
+- On writing today's logical conditions as constraints — one start per appliance, mutually exclusive import and export, big-M indicators — [[Hax_1977]](references.qmd#ref-Hax_1977) chapter 9, and [[Borrelli_2017]](references.qmd#ref-Borrelli_2017) for the same constructions inside an MPC problem.
