@@ -225,4 +225,3 @@ Last, the hidden cost of using the battery. A storage system has a price and a f
 - [Blackboard notes](files/notes/lesson-12-notes.pdf){target="_blank" rel="noopener"}
 - Re-read [[Rawlings_2017]](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf) section 2.8, "Economic Model Predictive Control" (pp. 153–160): today's cost is exactly of that kind, and the section says what survives of the theory when the cost stops being positive definite.
 - On writing today's logical conditions as constraints — one start per appliance, mutually exclusive import and export, big-M indicators — [Hax_1977] chapter 9, and [Borrelli_2017] for the same constructions inside an MPC problem.
-- [[Cannon_2016]](references.qmd) is not the reference for this lesson: the case study is modelling, not theory. Come back to its chapter 2 for the stability results we will need again.
