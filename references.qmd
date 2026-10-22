@@ -12,6 +12,7 @@ The few items that are not open access are still available to you: Sapienza subs
 - [**[Cannon_2016]**]{#ref-Cannon_2016} B. Kouvaritakis, M. Cannon. *Model Predictive Control: Classical, Robust and Stochastic*. Springer, 2016. Main reference of the course: chapter 2 follows the same route, and the same notation, as the lessons.
 - [**[Rawlings_2017]**]{#ref-Rawlings_2017} J. B. Rawlings, D. Q. Mayne, M. Diehl. *Model Predictive Control: Theory, Computation, and Design*, 2nd ed. Nob Hill Publishing, 2017. [Free PDF from the authors](https://sites.engineering.ucsb.edu/~jbraw/mpc/MPC-book-2nd-edition-1st-printing.pdf).
 - [**[Borrelli_2017]**]{#ref-Borrelli_2017} F. Borrelli, A. Bemporad, M. Morari. *Predictive Control for Linear and Hybrid Systems*. Cambridge University Press, 2017. Useful for hybrid (MLD) systems and explicit MPC.
+- [**[Boyd_2004]**]{#ref-Boyd_2004} S. Boyd, L. Vandenberghe. *Convex Optimization*. Cambridge University Press, 2004. [Free PDF from the authors](https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf). Used for specific sections: section 4.7 for several objectives at once, Pareto optimality and the weighted sum.
 
 **Slides**
 
@@ -33,7 +34,8 @@ The few items that are not open access are still available to you: Sapienza subs
 
 - [**[Liberati_2025a]**]{#ref-Liberati_2025a} F. Liberati, M. Donsante, A. Tortorelli. "Single intersection MPC traffic signal control in presence of automated vehicles." *IEEE Transactions on Control Systems Technology* 33(4), 1432–1446, 2025. [IEEE Xplore](https://ieeexplore.ieee.org/document/10666731/).
 - [**[Liberati_2025b]**]{#ref-Liberati_2025b} F. Liberati, M. Donsante, C. M. F. Cirino, A. Tortorelli. "Fast task scheduling with model predictive control integrating a priority-based heuristic." *IEEE Access* 13, 14499–14515, 2025. [Open access](https://ieeexplore.ieee.org/document/10843846/).
-- **[Di Giorgio_2014]** A. Di Giorgio, F. Liberati. "Near real time load shifting control for residential electricity prosumers under designed and market indexed pricing models." *Applied Energy* 128, 119–132, 2014. [Journal](https://www.sciencedirect.com/science/article/abs/pii/S0306261914003857).
+- [**[Kirschen_2019]**]{#ref-Kirschen_2019} D. S. Kirschen, G. Strbac. *Fundamentals of Power System Economics*, 2nd ed. Wiley, 2019. The context of the aggregator case study: how electricity markets are organized, who buys the services the grid operators need, and why flexibility is paid for.
+- [**[Di Giorgio_2014]**]{#ref-DiGiorgio_2014} A. Di Giorgio, F. Liberati. "Near real time load shifting control for residential electricity prosumers under designed and market indexed pricing models." *Applied Energy* 128, 119–132, 2014. [Journal](https://www.sciencedirect.com/science/article/abs/pii/S0306261914003857).
 - [**[Liberati_2018]**]{#ref-Liberati_2018} F. Liberati, A. Di Giorgio. "Economic model predictive and feedback control of a smart grid prosumer node." *Energies* 11(1), 48, 2018. [Open access](https://www.mdpi.com/1996-1073/11/1/48).
 - [**[Liberati_2019]**]{#ref-Liberati_2019} F. Liberati et al. "Joint model predictive control of electric and heating resources in a smart building." *IEEE Transactions on Industry Applications* 55(6), 7015–7027, 2019. [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8786121/).
 
