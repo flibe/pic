@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An aggregator of electric vehicle chargers following a power profile agreed with the grid, while respecting what each driver asked for. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>PEV Aggregator Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef; --panel: #ffffff; --panel-2: #faf8f6; --line: #ddd7d0; --grid: #e8e3dd;
+    --ink: #1f2a36; --ink-2: #55606d; --muted: #7d8794;
+    --mpc: #2f6690; --base: #8a939d; --ess: #3a7d44; --sun: #c8891a; --load: #7b5ea7; --limit: #8a1c2f;
+    --ref: #8a1c2f;
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+      --ref: #e0697f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+    --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+    --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+    --ref: #e0697f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  body { background: var(--bg); color: var(--ink);
+         font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+         font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 0 0 8px; font-weight: 700; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+  .stage { display: grid; grid-template-columns: minmax(300px, 370px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .status { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
+  .status.bad { color: var(--limit); font-weight: 600; }
+
+  canvas { display: block; width: 100%; }
+  .chart-canvas { height: 160px; }
+  .chart-canvas.tall { height: 200px; }
+  .chart-canvas.fleet { height: 230px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.mpc { border-color: var(--mpc); } .key.base { border-color: var(--base); border-top-style: dotted; }
+  .key.ref { border-color: var(--ref); border-top-style: dashed; }
+  .box { width: 13px; height: 10px; border-radius: 2px; display: inline-block; }
+  .box.plug { background: var(--grid); border: 1px solid var(--line); }
+  .box.chg { background: var(--mpc); }
+  .box.v2g { background: var(--sun); }
+  .box.miss { background: var(--limit); }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  input[type="range"], input[type="checkbox"], select { accent-color: var(--mpc); }
+  select { font: inherit; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 9px; font-size: 13.5px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 6px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+
+  table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  table.results th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  table.results th:first-child, table.results td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  td.worse { color: var(--limit); } td.better { color: var(--ess); }
+  .table-wrap { overflow-x: auto; }
+  .note-line { margin: 12px 0 0; color: var(--ink-2); font-size: 13.5px; }
+  .note-line b { color: var(--ink); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  .math .cm { color: var(--muted); }
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control &middot; Lesson 14</p>
+    <h1>PEV Aggregator Lab</h1>
+    <p class="lede">An aggregator operates the chargers of a fleet of electric vehicles. It has sold the
+      grid a power profile it promises the fleet will follow, and at the same time every driver has asked
+      for a charge by a given hour. The two goals pull against each other, and the controller has to
+      choose. This is the aggregator problem of the lesson, solved in your browser.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The fleet and the request</h2>
+        <span class="status" id="status">&nbsp;</span>
+      </div>
+
+      <h3>Fleet</h3>
+      <div class="row">
+        <label class="pick">Site
+          <select id="scenario">
+            <option value="office">Office car park</option>
+            <option value="mall">Shopping mall</option>
+            <option value="depot">Depot, long stays</option>
+          </select>
+        </label>
+        <button id="redraw">Another day</button>
+      </div>
+      <div class="sliders" style="margin-top:10px">
+        <div class="slider">
+          <label for="nveh">Vehicles <span class="num" id="nveh-val">10</span></label>
+          <input type="range" id="nveh" min="3" max="18" step="1" value="10">
+        </div>
+        <div class="slider">
+          <label for="pmax">Charger power <span class="num" id="pmax-val">11 kW</span></label>
+          <input type="range" id="pmax" min="3" max="22" step="1" value="11">
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">What the grid asks for</h3>
+      <div class="row">
+        <label class="pick">Dispatch profile
+          <select id="refshape">
+            <option value="bell" selected>a bell around midday</option>
+            <option value="flat">flat, while the cars are there</option>
+            <option value="dip">flat, with a stop in the middle</option>
+          </select>
+        </label>
+      </div>
+      <div class="sliders" style="margin-top:10px">
+        <div class="slider">
+          <label for="reflevel">Power asked for <span class="num" id="reflevel-val">35 kW</span></label>
+          <input type="range" id="reflevel" min="0" max="80" step="1" value="35">
+        </div>
+        <div class="slider" id="win-box">
+          <label for="winfrom">Stop from &hellip; to <span class="num" id="winfrom-val">18 &ndash; 21</span></label>
+          <input type="range" id="winfrom" min="0" max="22" step="1" value="18">
+          <input type="range" id="winto" min="1" max="24" step="1" value="21">
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">The controller</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="prio">Priority <span class="num" id="prio-val">balanced</span></label>
+          <input type="range" id="prio" min="0" max="100" step="1" value="65">
+        </div>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="v2g"> vehicles may give power back (V2G)</label>
+        <label><input type="checkbox" id="square" checked> penalty on the square of the deviation</label>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Power of the whole fleet</span><span class="unit">kW</span></div>
+        <canvas class="chart-canvas tall" id="chart-agg" aria-label="Aggregate charging power of the fleet against the reference"></canvas>
+        <div class="legend">
+          <span><i class="key ref"></i>asked by the grid</span>
+          <span><i class="key mpc"></i>with the aggregator's MPC</span>
+          <span><i class="key base"></i>everyone charges on arrival</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Each vehicle</span><span class="unit">plugged in, and charging</span></div>
+        <canvas class="chart-canvas fleet" id="chart-fleet" aria-label="Connection window and charging power of every vehicle"></canvas>
+        <div class="legend">
+          <span><i class="box plug"></i>plugged in</span>
+          <span><i class="box chg"></i>charging</span>
+          <span><i class="box v2g"></i>giving power back</span>
+          <span><i class="box miss"></i>left below the requested charge</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Charge at departure against what the driver asked</span><span class="unit">% of the battery</span></div>
+        <canvas class="chart-canvas" id="chart-soc" aria-label="State of charge at departure of every vehicle against the request"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:10px">The day, in numbers</h2>
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr><th>Strategy</th><th>Mean deviation</th><th>Worst deviation</th><th>Energy delivered</th><th>Drivers left short</th><th>Missing energy</th><th>Peak power</th></tr>
+        </thead>
+        <tbody id="result-rows"></tbody>
+      </table>
+    </div>
+    <p class="note-line" id="summary">&nbsp;</p>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>Flexibility is parked time, not power.</b> A car that stays eight hours to take three hours
+          of charge can be moved anywhere inside its window; one that arrives nearly empty and leaves in
+          two hours cannot be moved at all. Shorten the stays, or raise what the drivers ask for, and the
+          fleet stops being able to follow the grid even though the chargers are the same.</li>
+        <li><b>Charging on arrival is the worst of both worlds.</b> The dotted line is what happens
+          without a controller: a wall of power in the morning and nothing afterwards. It follows no
+          reference, and it does not serve the drivers any better &mdash; they get their charge either
+          way, just earlier than anyone needed.</li>
+        <li><b>The priority slider is the weight of the lesson.</b> All the way to the grid, the
+          controller sacrifices the drivers' requests to follow the profile; all the way to the drivers,
+          it serves every request and follows the profile only with what is left over. Sweeping it from
+          one end to the other traces the Pareto frontier of the two goals, the picture of the previous
+          lesson: on this fleet, going from "the drivers" to "mostly the grid" buys about one kilowatt
+          of tracking for some thirty kilowatt-hours the drivers do not get.</li>
+        <li><b>The request can be impossible, and the problem must survive it.</b> Ask for more power than
+          the fleet can absorb, or for charges that do not fit in the time available, and nothing breaks:
+          the relaxation variables take the violation and the solution tells you how much was impossible.
+          That is why the deadlines are written with the slack &epsilon;<sub>p</sub> and not as hard
+          constraints &mdash; a hard version would simply report infeasible and leave the controller with
+          nothing to apply.</li>
+        <li><b>V2G buys the ability to go down.</b> With discharging allowed, the fleet can follow a
+          reference that asks it to stop, or even to give power back, at the price of energy that has to
+          be bought again later.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The problem being solved</h2>
+      <p>One optimization over the day, with the arrivals, departures and requests of every vehicle
+        known. In closed loop it is re-solved at every step on the vehicles connected at that moment,
+        which is the set PEV<sub>i|k</sub> of the lesson.</p>
+      <p class="math">min &nbsp; d<sub>1</sub> &Sigma;<span class="cm">i</span> (P<span class="cm">i|k</span> &minus; P<sup>ref</sup><span class="cm">i|k</span>)<sup>2</sup> &nbsp;+&nbsp; d<sub>3</sub> &Sigma;<span class="cm">p</span> &epsilon;<span class="cm">p</span></p>
+      <p class="math">P<span class="cm">i|k</span> = &Sigma;<span class="cm">p</span> (P<sup>ch</sup><span class="cm">i|k,p</span> &minus; P<sup>dis</sup><span class="cm">i|k,p</span>)<br>
+        x<span class="cm">i+1|k,p</span> = x<span class="cm">i|k,p</span> + &eta;<sup>ch</sup> T P<sup>ch</sup><span class="cm">i|k,p</span> &minus; (1/&eta;<sup>dis</sup>) T P<sup>dis</sup><span class="cm">i|k,p</span><br>
+        x<span class="cm">F<sub>p</sub>|k,p</span> &ge; x<sup>ref</sup><span class="cm">p</span> &minus; &epsilon;<span class="cm">p</span> &nbsp;&nbsp; &epsilon;<span class="cm">p</span> &ge; 0 &nbsp;&nbsp; 0 &le; x<span class="cm">i|k,p</span> &le; x<sup>max</sup><span class="cm">p</span></p>
+      <p>The deadline of each driver is the relaxed constraint of the lesson: the slack
+        &epsilon;<sub>p</sub> is free to be positive, and it is paid for in the cost with the weight
+        d<sub>3</sub>, which is what the priority slider moves. A small d<sub>3</sub> lets the controller
+        disappoint a driver to follow the grid better; a large one makes it disappoint a driver only when
+        the request cannot be met at all.</p>
+      <p>Two notes on how this page differs from the blackboard. The square of the deviation is replaced
+        by the largest of a family of tangent lines to it, which keeps the problem linear and is exact to
+        within a fraction of a percent here; switching the penalty to the plain absolute value, with the
+        checkbox, changes the shape of the solution, because the square spreads the error over many hours
+        while the absolute value concentrates it in few. And the minimum charging power of a real charger
+        &mdash; the semi-continuous variable of the lesson &mdash; is left out: it would turn this linear
+        program into a mixed-integer one, as in the <a href="building-lab.html">Building Energy Lab</a>.</p>
+      <p>The solver is the same simplex written for the building lab, checked against the Cbc solver on
+        random instances of this model.</p>
+    </div>
+  </section>
+
+  <footer>
+    Process Identification and Control &middot; Sapienza University of Rome, DIAG &middot;
+    the page runs offline in your browser.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ====================================================================== *
+ *  1. Bounded-variable simplex: the solver of the building lab, verbatim. *
+ * ====================================================================== */
+
+function lpSolve(A, b, c, lo, up, opt) {
+  var m = A.length, n = c.length, i, j;
+  var EPS = (opt && opt.eps) || 1e-9;
+  var maxIter = (opt && opt.maxIter) || 40000;
+
+  var T = [];
+  var N = n + m;
+  for (i = 0; i < m; i++) T[i] = new Float64Array(N + 1);
+  var atUpper = [], xN = [];
+  for (j = 0; j < n; j++) {
+    if (lo[j] > -Infinity) { atUpper[j] = 0; xN[j] = lo[j]; }
+    else { atUpper[j] = 1; xN[j] = up[j]; }
+  }
+  var rhs = [];
+  for (i = 0; i < m; i++) {
+    var s = b[i];
+    for (j = 0; j < n; j++) { T[i][j] = A[i][j]; if (xN[j] !== 0) s -= A[i][j] * xN[j]; }
+    rhs[i] = s;
+  }
+  for (i = 0; i < m; i++) {
+    if (rhs[i] < 0) { for (j = 0; j < n; j++) T[i][j] = -T[i][j]; rhs[i] = -rhs[i]; }
+    T[i][n + i] = 1;
+    T[i][N] = rhs[i];
+  }
+  var loA = [], upA = [];
+  for (j = 0; j < n; j++) { loA[j] = lo[j]; upA[j] = up[j]; }
+  for (j = n; j < N; j++) { loA[j] = 0; upA[j] = Infinity; atUpper[j] = 0; }
+
+  var basis = [], xB = [];
+  for (i = 0; i < m; i++) { basis[i] = n + i; xB[i] = T[i][N]; }
+  function nbVal(j) { return atUpper[j] ? upA[j] : loA[j]; }
+  var inBasis = [];
+  for (j = 0; j < N; j++) inBasis[j] = -1;
+  for (i = 0; i < m; i++) inBasis[basis[i]] = i;
+
+  function phase(cc, allowArtificial) {
+    var it, q, jj, ii;
+    var d = new Float64Array(N);
+    function priceAll() {
+      for (jj = 0; jj < N; jj++) {
+        if (inBasis[jj] >= 0) { d[jj] = 0; continue; }
+        var v = cc[jj];
+        for (ii = 0; ii < m; ii++) { var a = T[ii][jj]; if (a !== 0) v -= cc[basis[ii]] * a; }
+        d[jj] = v;
+      }
+    }
+    priceAll();
+
+    for (it = 0; it < maxIter; it++) {
+      q = -1;
+      var best = EPS;
+      for (j = 0; j < N; j++) {
+        if (inBasis[j] >= 0) continue;
+        if (!allowArtificial && j >= n) continue;
+        if (upA[j] === loA[j]) continue;
+        var dj = d[j];
+        if (!atUpper[j] && dj < -best) { best = -dj; q = j; }
+        else if (atUpper[j] && dj > best) { best = dj; q = j; }
+      }
+      if (q < 0) return { status: "optimal", iter: it };
+
+      var dir = atUpper[q] ? -1 : 1;
+      var theta = upA[q] - loA[q], leave = -1, leaveToUpper = 0;
+      for (i = 0; i < m; i++) {
+        var alpha = T[i][q] * dir;
+        if (alpha > EPS) {
+          var room = xB[i] - loA[basis[i]];
+          if (room < 0) room = 0;
+          var t1 = room / alpha;
+          if (t1 < theta - 1e-12) { theta = t1; leave = i; leaveToUpper = 0; }
+        } else if (alpha < -EPS) {
+          var room2 = upA[basis[i]] - xB[i];
+          if (room2 === Infinity) continue;
+          if (room2 < 0) room2 = 0;
+          var t2 = room2 / (-alpha);
+          if (t2 < theta - 1e-12) { theta = t2; leave = i; leaveToUpper = 1; }
+        }
+      }
+      if (theta === Infinity) return { status: "unbounded", iter: it };
+
+      if (leave < 0) {
+        for (i = 0; i < m; i++) xB[i] -= T[i][q] * dir * theta;
+        atUpper[q] = atUpper[q] ? 0 : 1;
+        continue;
+      }
+
+      var p = basis[leave];
+      var qVal = nbVal(q) + dir * theta;
+      for (i = 0; i < m; i++) if (i !== leave) xB[i] -= T[i][q] * dir * theta;
+
+      var piv = T[leave][q], prow = T[leave];
+      for (j = 0; j < N + 1; j++) prow[j] /= piv;
+      for (i = 0; i < m; i++) {
+        if (i === leave) continue;
+        var f = T[i][q];
+        if (f === 0) continue;
+        var ri = T[i];
+        for (j = 0; j < N + 1; j++) ri[j] -= f * prow[j];
+      }
+      inBasis[p] = -1;
+      atUpper[p] = leaveToUpper;
+      basis[leave] = q;
+      inBasis[q] = leave;
+      xB[leave] = qVal;
+
+      if (it % 40 === 0) priceAll();
+      else {
+        var dq = d[q];
+        if (dq !== 0) for (j = 0; j < N; j++) if (inBasis[j] < 0) d[j] -= dq * prow[j];
+        d[p] = -dq * prow[p];
+        d[q] = 0;
+      }
+    }
+    return { status: "maxiter", iter: maxIter };
+  }
+
+  var c1 = new Float64Array(N);
+  for (j = n; j < N; j++) c1[j] = 1;
+  var r1 = phase(c1, true);
+  var inf = 0;
+  for (i = 0; i < m; i++) if (basis[i] >= n) inf += Math.abs(xB[i]);
+  if (r1.status !== "optimal" || inf > 1e-7) return { status: "infeasible" };
+
+  for (j = n; j < N; j++) { upA[j] = 0; if (inBasis[j] < 0) atUpper[j] = 0; }
+  var c2 = new Float64Array(N);
+  for (j = 0; j < n; j++) c2[j] = c[j];
+  var r2 = phase(c2, false);
+  if (r2.status === "unbounded") return { status: "unbounded" };
+
+  var x = new Float64Array(n);
+  for (j = 0; j < n; j++) x[j] = inBasis[j] >= 0 ? xB[inBasis[j]] : nbVal(j);
+  var obj = 0;
+  for (j = 0; j < n; j++) obj += c[j] * x[j];
+  return { status: r2.status === "optimal" ? "optimal" : r2.status, x: x, obj: obj };
+}
+
+/* ====================================================================== *
+ *  2. The aggregator problem as a linear program.                        *
+ *                                                                        *
+ *  Columns:  u[p][t]  charging power of vehicle p at hour t   [kW]       *
+ *            d[p][t]  power given back, only with V2G         [kW]       *
+ *            sp[t][j], sm[t][j]  the pieces of the deviation above and   *
+ *                     below the reference                     [kW]       *
+ *            eps[p]   energy the driver is left short         [kWh]      *
+ *  Rows:     deviation:  sum_p (u - d) - sum_j sp + sum_j sm = Pref[t]   *
+ *            deadline:   eta*dt*sum u - dt/eta*sum d + eps - s = need    *
+ *            capacity:   eta*dt*sum_{tau<=t} u - dt/eta*sum d + w = room *
+ *                                                                        *
+ *  A convex cost of the deviation needs no extra rows and no binaries:   *
+ *  the deviation is split into pieces of increasing price, and since the *
+ *  price increases the solver fills the cheap ones first by itself. With *
+ *  prices taken from the chords of e^2 the cost is the square; with one  *
+ *  single piece of price one it is the absolute value.                   *
+ * ====================================================================== */
+
+var T24 = 24, DT = 1;
+
+function buildAgg(P) {
+  var N = P.fleet.length, t, p, j, i;
+  var win = [], pos = [], off = [], offD = [], ncols = 0, nu = 0;
+  for (p = 0; p < N; p++) {
+    var v = P.fleet[p];
+    win[p] = []; pos[p] = [];
+    for (t = 0; t < T24; t++) pos[p][t] = -1;
+    for (t = v.arrive; t < v.depart; t++) { pos[p][t] = win[p].length; win[p].push(t); }
+    off[p] = ncols; ncols += win[p].length; nu += win[p].length;
+  }
+  if (P.v2g) for (p = 0; p < N; p++) { offD[p] = ncols; ncols += win[p].length; }
+  var seg = P.segments, S = seg.length;
+  var ISP = ncols; ncols += S * T24;
+  var ISM = ncols; ncols += S * T24;
+  var IEPS = ncols; ncols += N;
+
+  /* rows */
+  var nCap = 0;
+  for (p = 0; p < N; p++) nCap += P.v2g ? win[p].length : (win[p].length > 0 ? 1 : 0);
+  var m = T24 + N + nCap;
+
+  var A = [], b = [], c = [], lo = [], up = [];
+  for (i = 0; i < m; i++) { A[i] = new Float64Array(ncols + nCap + N); b[i] = 0; }
+  /* slack columns are appended after the structural ones */
+  var ISL = ncols;                       /* capacity slacks  */
+  var ISD = ISL + nCap;                  /* deadline surplus */
+  var ntot = ISD + N;
+  for (j = 0; j < ntot; j++) { c[j] = 0; lo[j] = 0; up[j] = Infinity; }
+
+  var eta = P.eta;
+  for (p = 0; p < N; p++) {
+    for (i = 0; i < win[p].length; i++) {
+      up[off[p] + i] = P.fleet[p].pmax;
+      if (P.v2g) up[offD[p] + i] = P.fleet[p].pmax;
+    }
+    up[IEPS + p] = Infinity;
+    c[IEPS + p] = P.wUser;               /* price of leaving a driver short */
+  }
+  for (t = 0; t < T24; t++) {
+    for (j = 0; j < S; j++) {
+      c[ISP + t * S + j] = P.wTrack * seg[j].price;
+      c[ISM + t * S + j] = P.wTrack * seg[j].price;
+      up[ISP + t * S + j] = seg[j].width;
+      up[ISM + t * S + j] = seg[j].width;
+    }
+  }
+
+  /* deviation rows */
+  for (t = 0; t < T24; t++) {
+    var r = A[t];
+    for (p = 0; p < N; p++) {
+      var k = pos[p][t];
+      if (k >= 0) { r[off[p] + k] = 1; if (P.v2g) r[offD[p] + k] = -1; }
+    }
+    for (j = 0; j < S; j++) { r[ISP + t * S + j] = -1; r[ISM + t * S + j] = 1; }
+    b[t] = P.pref[t];
+  }
+  /* deadline rows: what the driver still needs, minus the slack */
+  for (p = 0; p < N; p++) {
+    var rd = A[T24 + p], v2 = P.fleet[p];
+    for (i = 0; i < win[p].length; i++) {
+      rd[off[p] + i] = eta * DT;
+      if (P.v2g) rd[offD[p] + i] = -DT / eta;
+    }
+    rd[IEPS + p] = 1;
+    rd[ISD + p] = -1;
+    b[T24 + p] = Math.max(0, v2.target - v2.soc) * v2.cap;
+  }
+  /* capacity rows */
+  var rowCap = T24 + N, capIdx = 0;
+  for (p = 0; p < N; p++) {
+    if (win[p].length === 0) continue;
+    var room = (1 - P.fleet[p].soc) * P.fleet[p].cap;
+    if (!P.v2g) {
+      var rc = A[rowCap + capIdx];
+      for (i = 0; i < win[p].length; i++) rc[off[p] + i] = eta * DT;
+      rc[ISL + capIdx] = 1;
+      b[rowCap + capIdx] = room;
+      capIdx++;
+    } else {
+      for (var tt = 0; tt < win[p].length; tt++) {
+        var rc2 = A[rowCap + capIdx];
+        for (i = 0; i <= tt; i++) { rc2[off[p] + i] = eta * DT; rc2[offD[p] + i] = -DT / eta; }
+        rc2[ISL + capIdx] = 1;
+        b[rowCap + capIdx] = room;
+        capIdx++;
+      }
+    }
+  }
+  return { A: A, b: b, c: c, lo: lo, up: up, n: ntot, m: m, P: P,
+           win: win, off: off, offD: offD, ISP: ISP, ISM: ISM, IEPS: IEPS };
+}
+
+function unpackAgg(M, x) {
+  var P = M.P, N = P.fleet.length, p, t, i;
+  var power = [], soc = [], perVeh = [], shortfall = [];
+  for (t = 0; t < T24; t++) power[t] = 0;
+  for (p = 0; p < N; p++) {
+    var v = P.fleet[p], e = v.soc * v.cap, row = [];
+    for (t = 0; t < T24; t++) row[t] = 0;
+    for (i = 0; i < M.win[p].length; i++) {
+      t = M.win[p][i];
+      var u = x[M.off[p] + i], d = P.v2g ? x[M.offD[p] + i] : 0;
+      if (u < 1e-9) u = 0;
+      if (d < 1e-9) d = 0;
+      row[t] = u - d;
+      power[t] += u - d;
+      e += P.eta * DT * u - DT * d / P.eta;
+    }
+    perVeh[p] = row;
+    soc[p] = e / v.cap;
+    shortfall[p] = Math.max(0, (v.target - soc[p]) * v.cap);
+  }
+  return { power: power, soc: soc, perVeh: perVeh, shortfall: shortfall };
+}
+
+/* charging as soon as plugged in, at full power, until the request is met */
+function dumbCharging(P) {
+  var N = P.fleet.length, p, t, i;
+  var power = [], soc = [], perVeh = [], shortfall = [];
+  for (t = 0; t < T24; t++) power[t] = 0;
+  for (p = 0; p < N; p++) {
+    var v = P.fleet[p], e = v.soc * v.cap, row = [];
+    for (t = 0; t < T24; t++) row[t] = 0;
+    var needed = Math.max(0, v.target - v.soc) * v.cap;
+    var room = (1 - v.soc) * v.cap;
+    for (t = v.arrive; t < v.depart; t++) {
+      var want = Math.min(v.pmax, needed / (P.eta * DT), room / (P.eta * DT));
+      if (want < 1e-9) break;
+      row[t] = want;
+      power[t] += want;
+      var gained = P.eta * DT * want;
+      e += gained; needed -= gained; room -= gained;
+    }
+    perVeh[p] = row;
+    soc[p] = e / v.cap;
+    shortfall[p] = Math.max(0, (v.target - soc[p]) * v.cap);
+  }
+  return { power: power, soc: soc, perVeh: perVeh, shortfall: shortfall };
+}
+
+/* ====================================================================== *
+ *  3. The day: fleet, request, metrics.                                  *
+ * ====================================================================== */
+
+var UI = {}, SEED = 7;
+
+function rng() { SEED = (1103515245 * SEED + 12345) % 2147483648; return SEED / 2147483648; }
+function rint(a, b) { return a + Math.floor(rng() * (b - a + 1)); }
+
+function makeFleet(n, scenario, pmax) {
+  var out = [], i;
+  for (i = 0; i < n; i++) {
+    var arrive, stay, soc0, target;
+    if (scenario === "office") {
+      arrive = rint(7, 10); stay = rint(6, 9);
+      soc0 = 0.15 + rng() * 0.35; target = 0.7 + rng() * 0.25;
+    } else if (scenario === "mall") {
+      arrive = rint(9, 19); stay = rint(1, 4);
+      soc0 = 0.25 + rng() * 0.4; target = 0.6 + rng() * 0.3;
+    } else {
+      arrive = rint(0, 6); stay = rint(8, 14);
+      soc0 = 0.1 + rng() * 0.3; target = 0.8 + rng() * 0.2;
+    }
+    var depart = Math.min(T24, arrive + stay);
+    var cap = [40, 50, 60, 75][rint(0, 3)];
+    if (target < soc0) target = soc0;
+    out.push({ arrive: arrive, depart: depart, soc: soc0, target: target,
+               cap: cap, pmax: pmax, name: "car " + (i + 1) });
+  }
+  return out;
+}
+
+/* An aggregator only offers power for the hours in which it has vehicles, so
+   the flat profiles are asked for between the first arrival and the last
+   departure of the fleet.  The bell is a daylight shape and stands alone. */
+function makeRef(shape, level, from, to, fleet) {
+  var out = [], t, t0 = T24, t1 = 0, i;
+  for (i = 0; i < fleet.length; i++) {
+    if (fleet[i].arrive < t0) t0 = fleet[i].arrive;
+    if (fleet[i].depart > t1) t1 = fleet[i].depart;
+  }
+  for (t = 0; t < T24; t++) {
+    if (shape === "flat") out[t] = (t >= t0 && t < t1) ? level : 0;
+    else if (shape === "bell") {
+      var s = Math.sin(Math.PI * (t + 0.5 - 7) / 11);
+      out[t] = (t + 0.5 > 7 && t + 0.5 < 18) ? level * Math.pow(s, 1.5) : 0;
+    } else {
+      out[t] = (t >= t0 && t < t1 && !(t >= from && t < to)) ? level : 0;
+    }
+  }
+  return out;
+}
+
+function readUI() {
+  var n = +UI.nveh.value, pmax = +UI.pmax.value;
+  SEED = UI.seed;
+  var fleet = makeFleet(n, UI.scenario.value, pmax);
+  var from = Math.min(+UI.winfrom.value, +UI.winto.value - 1);
+  var to = Math.max(+UI.winto.value, from + 1);
+  /* the priority slider moves the weight of a disappointed driver against the
+     weight of a deviation from the profile the grid asked for              */
+  var s = +UI.prio.value / 100;
+  var wUser = 0.05 * Math.pow(400, s);
+  var emax = Math.max(10, n * pmax);
+  return {
+    fleet: fleet, pref: makeRef(UI.refshape.value, +UI.reflevel.value, from, to, fleet),
+    eta: 0.95, v2g: UI.v2g.checked, square: UI.square.checked,
+    wTrack: 1, wUser: wUser * 10,
+    segments: makeSegments(UI.square.checked, emax),
+    refFrom: from, refTo: to, shape: UI.refshape.value
+  };
+}
+
+/* The price list of the deviation.  For the square, the chords of e^2 on
+   breakpoints that double each time: fine where the deviation is small,
+   coarse where it is already large, and never a stretch that costs nothing.
+   For the absolute value, one single piece of price one.                 */
+function makeSegments(square, emax) {
+  /* the price of the first piece of the square, so that switching between the
+     two penalties does not quietly change how much a driver is worth       */
+  if (!square) return [{ width: Infinity, price: emax / 64 }];
+  var b = [], v = emax, j;
+  for (j = 0; j < 7; j++) { b.unshift(v); v /= 2; }
+  var out = [], prev = 0;
+  for (j = 0; j < b.length; j++) {
+    out.push({ width: b[j] - prev, price: b[j] + prev });   /* chord slope of e^2 */
+    prev = b[j];
+  }
+  out.push({ width: Infinity, price: 2 * prev });           /* linear tail */
+  return out;
+}
+
+function metrics(P, sol) {
+  var t, p, dev = 0, worst = 0, energy = 0, peak = 0, short0 = 0, nshort = 0;
+  for (t = 0; t < T24; t++) {
+    var e = Math.abs(sol.power[t] - P.pref[t]);
+    dev += e;
+    if (e > worst) worst = e;
+    if (sol.power[t] > peak) peak = sol.power[t];
+    energy += Math.max(0, sol.power[t]) * DT;
+  }
+  for (p = 0; p < P.fleet.length; p++) {
+    if (sol.shortfall[p] > 1e-6) { nshort++; short0 += sol.shortfall[p]; }
+  }
+  return { dev: dev / T24, worst: worst, energy: energy, peak: peak,
+           nshort: nshort, short: short0 };
+}
+
+/* ====================================================================== *
+ *  4. Charts.                                                            *
+ * ====================================================================== */
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function setup(cv) {
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  return { g: g, w: w, h: h };
+}
+
+function fmt(v, d) { return v.toFixed(d === undefined ? 2 : d); }
+
+function axes(g, w, h, pad, lo, hi) {
+  var i;
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  g.fillStyle = css("--muted");
+  g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+  for (i = 0; i <= 4; i++) {
+    var y = pad.t + (h - pad.t - pad.b) * i / 4;
+    var v = hi - (hi - lo) * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke();
+    g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText(fmt(v, Math.abs(hi - lo) < 4 ? 1 : 0), pad.l - 6, y);
+  }
+  g.textAlign = "center"; g.textBaseline = "top";
+  for (i = 0; i <= 24; i += 3) {
+    var x = pad.l + (w - pad.l - pad.r) * i / 24;
+    g.fillText("" + i, x, h - pad.b + 5);
+  }
+}
+
+function stepLine(g, w, h, pad, data, lo, hi, color, dash, width) {
+  var t, x0, x1, y;
+  g.save(); g.beginPath();
+  g.strokeStyle = color; g.lineWidth = width || 2;
+  if (dash) g.setLineDash(dash);
+  for (t = 0; t < data.length; t++) {
+    x0 = pad.l + (w - pad.l - pad.r) * t / 24;
+    x1 = pad.l + (w - pad.l - pad.r) * (t + 1) / 24;
+    y = pad.t + (h - pad.t - pad.b) * (hi - data[t]) / (hi - lo);
+    if (t === 0) g.moveTo(x0, y); else g.lineTo(x0, y);
+    g.lineTo(x1, y);
+  }
+  g.stroke(); g.restore();
+}
+
+function drawAgg(P, mpc, dumb) {
+  var c = setup(document.getElementById("chart-agg"));
+  var pad = { l: 42, r: 10, t: 12, b: 20 };
+  var lo = 0, hi = 1, t;
+  for (t = 0; t < T24; t++) {
+    hi = Math.max(hi, mpc.power[t], dumb.power[t], P.pref[t]);
+    lo = Math.min(lo, mpc.power[t], dumb.power[t]);
+  }
+  hi *= 1.12; lo = lo < 0 ? lo * 1.2 : 0;
+  axes(c.g, c.w, c.h, pad, lo, hi);
+  if (lo < 0) {
+    var y0 = pad.t + (c.h - pad.t - pad.b) * hi / (hi - lo);
+    c.g.save(); c.g.strokeStyle = css("--line"); c.g.beginPath();
+    c.g.moveTo(pad.l, y0); c.g.lineTo(c.w - pad.r, y0); c.g.stroke(); c.g.restore();
+  }
+  stepLine(c.g, c.w, c.h, pad, dumb.power, lo, hi, css("--base"), [2, 3], 1.6);
+  stepLine(c.g, c.w, c.h, pad, P.pref, lo, hi, css("--ref"), [5, 4], 2);
+  stepLine(c.g, c.w, c.h, pad, mpc.power, lo, hi, css("--mpc"), null, 2.4);
+}
+
+function drawFleet(P, sol) {
+  var c = setup(document.getElementById("chart-fleet"));
+  var g = c.g, N = P.fleet.length;
+  var pad = { l: 56, r: 10, t: 8, b: 20 };
+  var rowH = Math.min(22, (c.h - pad.t - pad.b) / Math.max(N, 1));
+  var X = function (h) { return pad.l + (c.w - pad.l - pad.r) * h / 24; };
+  var i, t, pmaxAll = 1;
+  for (i = 0; i < N; i++) pmaxAll = Math.max(pmaxAll, P.fleet[i].pmax);
+
+  g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+  for (i = 0; i <= 24; i += 3) {
+    g.strokeStyle = css("--grid"); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(X(i) + .5, pad.t); g.lineTo(X(i) + .5, pad.t + N * rowH); g.stroke();
+    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
+    g.fillText("" + i, X(i), pad.t + N * rowH + 4);
+  }
+  for (i = 0; i < N; i++) {
+    var v = P.fleet[i], y = pad.t + i * rowH;
+    g.fillStyle = css("--ink-2");
+    g.font = '11.5px "Source Sans 3", system-ui, sans-serif';
+    g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText(v.name, pad.l - 8, y + rowH / 2);
+    g.fillStyle = css("--grid");
+    g.fillRect(X(v.arrive), y + 2, X(v.depart) - X(v.arrive), rowH - 4);
+    for (t = v.arrive; t < v.depart; t++) {
+      var u = sol.perVeh[i][t];
+      if (Math.abs(u) < 1e-6) continue;
+      var frac = Math.min(1, Math.abs(u) / pmaxAll);
+      g.globalAlpha = 0.25 + 0.75 * frac;
+      g.fillStyle = u > 0 ? css("--mpc") : css("--sun");
+      g.fillRect(X(t) + 1, y + 2, X(t + 1) - X(t) - 2, rowH - 4);
+      g.globalAlpha = 1;
+    }
+    if (sol.shortfall[i] > 1e-6) {
+      g.fillStyle = css("--limit");
+      g.fillRect(X(v.depart) - 2, y + 2, 3, rowH - 4);
+    }
+  }
+}
+
+function drawSoc(P, sol) {
+  var c = setup(document.getElementById("chart-soc"));
+  var g = c.g, N = P.fleet.length, i;
+  var pad = { l: 56, r: 10, t: 10, b: 20 };
+  var bw = (c.w - pad.l - pad.r) / Math.max(N, 1);
+  var H = c.h - pad.t - pad.b;
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  for (i = 0; i <= 4; i++) {
+    var y = pad.t + H * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(c.w - pad.r, y + .5); g.stroke();
+    g.fillStyle = css("--muted"); g.textAlign = "right"; g.textBaseline = "middle";
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    g.fillText("" + (100 - 25 * i), pad.l - 6, y);
+  }
+  for (i = 0; i < N; i++) {
+    var v = P.fleet[i], x0 = pad.l + i * bw;
+    var hSoc = H * Math.max(0, Math.min(1, sol.soc[i]));
+    g.fillStyle = sol.shortfall[i] > 1e-6 ? css("--limit") : css("--ess");
+    g.fillRect(x0 + bw * 0.18, pad.t + H - hSoc, bw * 0.64, hSoc);
+    var yT = pad.t + H - H * Math.min(1, v.target);
+    g.strokeStyle = css("--ink"); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(x0 + bw * 0.1, yT); g.lineTo(x0 + bw * 0.9, yT); g.stroke();
+    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
+    g.font = '10px "IBM Plex Mono", ui-monospace, monospace';
+    if (bw > 18) g.fillText("" + (i + 1), x0 + bw / 2, pad.t + H + 4);
+  }
+}
+
+/* ====================================================================== *
+ *  5. Run and paint.                                                     *
+ * ====================================================================== */
+
+function run() {
+  var status = document.getElementById("status");
+  status.className = "status";
+  status.textContent = "solving…";
+  setTimeout(solveAndDraw, 0);
+}
+
+function solveAndDraw() {
+  var P = readUI();
+  var status = document.getElementById("status");
+  var t0 = (window.performance && performance.now) ? performance.now() : 0;
+  var M = buildAgg(P);
+  var r = lpSolve(M.A, M.b, M.c, M.lo, M.up, null);
+  var ms = ((window.performance && performance.now) ? performance.now() : 0) - t0;
+
+  if (r.status !== "optimal") {
+    status.className = "status bad";
+    status.textContent = "solver: " + r.status;
+    return;
+  }
+  var mpc = unpackAgg(M, r.x);
+  var dumb = dumbCharging(P);
+  var mM = metrics(P, mpc), mD = metrics(P, dumb);
+
+  status.className = "status";
+  status.textContent = "optimal · " + M.m + " rows · " + fmt(ms, 0) + " ms";
+
+  var rows = "";
+  rows += row("Everyone charges on arrival", mD, null);
+  rows += row("Aggregator's MPC", mM, mD);
+  document.getElementById("result-rows").innerHTML = rows;
+
+  var txt = "Following the grid: mean deviation <b>" + fmt(mM.dev, 2) + " kW</b> against <b>" +
+            fmt(mD.dev, 2) + " kW</b> with no controller. ";
+  if (mM.nshort === 0) txt += "Every driver left with the charge they asked for.";
+  else txt += "<b>" + mM.nshort + "</b> driver" + (mM.nshort > 1 ? "s" : "") + " left short, " +
+              fmt(mM.short, 1) + " kWh missing in all &mdash; move the priority slider towards the " +
+              "drivers to see how much of the tracking that costs, or check whether the request fitted " +
+              "in the time available at all.";
+  document.getElementById("summary").innerHTML = txt;
+
+  drawAgg(P, mpc, dumb);
+  drawFleet(P, mpc);
+  drawSoc(P, mpc);
+}
+
+function row(name, m, ref) {
+  var cls = ref ? (m.dev < ref.dev - 1e-9 ? "better" : (m.dev > ref.dev + 1e-9 ? "worse" : "")) : "";
+  var scls = m.nshort > 0 ? "worse" : "";
+  return "<tr><td>" + name + "</td><td class='" + cls + "'>" + fmt(m.dev, 2) + " kW</td><td>" +
+         fmt(m.worst, 1) + " kW</td><td>" + fmt(m.energy, 1) + " kWh</td><td class='" + scls + "'>" +
+         m.nshort + "</td><td class='" + scls + "'>" + fmt(m.short, 1) + " kWh</td><td>" +
+         fmt(m.peak, 1) + " kW</td></tr>";
+}
+
+/* ====================================================================== *
+ *  6. Interface.                                                         *
+ * ====================================================================== */
+
+var pending = null;
+function runSoon() {
+  if (pending) clearTimeout(pending);
+  pending = setTimeout(function () { pending = null; run(); }, 90);
+}
+
+function bindSlider(id, fmtFn) {
+  var el = document.getElementById(id), out = document.getElementById(id + "-val");
+  UI[id] = el;
+  function sync() { if (out) out.textContent = fmtFn(+el.value); runSoon(); }
+  el.addEventListener("input", sync);
+  if (out) out.textContent = fmtFn(+el.value);
+}
+
+function syncRefControls() {
+  document.getElementById("win-box").hidden = (UI.refshape.value !== "dip");
+}
+
+function prioLabel(v) {
+  if (v <= 10) return "the grid";
+  if (v <= 35) return "mostly the grid";
+  if (v <= 65) return "balanced";
+  if (v <= 90) return "mostly the drivers";
+  return "the drivers";
+}
+
+function init() {
+  bindSlider("nveh", function (v) { return "" + v; });
+  bindSlider("pmax", function (v) { return v + " kW"; });
+  bindSlider("reflevel", function (v) { return v + " kW"; });
+  bindSlider("prio", prioLabel);
+  UI.winfrom = document.getElementById("winfrom");
+  UI.winto = document.getElementById("winto");
+  function winSync() {
+    var a = +UI.winfrom.value, b = +UI.winto.value;
+    if (b <= a) { b = a + 1; UI.winto.value = b; }
+    document.getElementById("winfrom-val").textContent = a + " – " + b;
+    runSoon();
+  }
+  UI.winfrom.addEventListener("input", winSync);
+  UI.winto.addEventListener("input", winSync);
+  UI.scenario = document.getElementById("scenario");
+  UI.refshape = document.getElementById("refshape");
+  UI.v2g = document.getElementById("v2g");
+  UI.square = document.getElementById("square");
+  UI.seed = 7;
+  UI.scenario.addEventListener("change", run);
+  UI.refshape.addEventListener("change", function () {
+    /* a level the fleet can plausibly absorb, so that a new shape does not
+       start out asking for the impossible */
+    var def = { bell: 35, flat: 12, dip: 15 }[UI.refshape.value];
+    UI.reflevel.value = def;
+    document.getElementById("reflevel-val").textContent = def + " kW";
+    syncRefControls(); run();
+  });
+  UI.v2g.addEventListener("change", run);
+  UI.square.addEventListener("change", run);
+  document.getElementById("redraw").addEventListener("click", function () {
+    UI.seed = Math.floor(Math.random() * 2000000000);
+    run();
+  });
+  window.addEventListener("resize", runSoon);
+  syncRefControls();
+  winSync();
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>
