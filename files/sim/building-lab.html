@@ -323,6 +323,7 @@
         <canvas class="chart-canvas tall" id="chart-grid" aria-label="Power exchanged with the grid over the day"></canvas>
         <div class="legend">
           <span><i class="key mpc"></i>with economic MPC</span>
+          <span><i class="key ess" style="border-top-style:dotted"></i>rule-based battery</span>
           <span><i class="key base"></i>without control</span>
           <span><i class="key lim"></i>contract limit</span>
           <span><i class="box flex"></i>service window</span>
@@ -1049,13 +1050,14 @@ function niceRange(arrays, symmetric) {
   return [lo, hi];
 }
 
-function drawGrid(P, mpc, base) {
+function drawGrid(P, mpc, base, rule) {
   var c = setup(document.getElementById("chart-grid"));
   var pad = { l: 42, r: 10, t: 12, b: 20 };
   /* scale on the data, and show the contract limits only when they are close
      enough to be worth seeing: otherwise the interesting part is a flat line */
-  var r = niceRange([mpc, base], true);
-  if (P.pImpMax < r[1] * 1.6) r = niceRange([mpc, base, [P.pImpMax, -P.pExpMax]], true);
+  var series = rule ? [mpc, base, rule] : [mpc, base];
+  var r = niceRange(series, true);
+  if (P.pImpMax < r[1] * 1.6) r = niceRange(series.concat([[P.pImpMax, -P.pExpMax]]), true);
   bands(c.g, c.w, c.h, pad);
   axes(c.g, c.w, c.h, pad, r[0], r[1]);
   hline(c.g, c.w, c.h, pad, 0, r[0], r[1], css("--line"));
@@ -1063,6 +1065,7 @@ function drawGrid(P, mpc, base) {
   if (-P.pExpMax >= r[0]) hline(c.g, c.w, c.h, pad, -P.pExpMax, r[0], r[1], css("--limit"), [4, 4]);
   drawService(c, pad, P, r);
   stepLine(c.g, c.w, c.h, pad, base, r[0], r[1], css("--base"), [5, 4], 1.8);
+  if (rule) stepLine(c.g, c.w, c.h, pad, rule, r[0], r[1], css("--ess"), [2, 3], 1.6);
   stepLine(c.g, c.w, c.h, pad, mpc, r[0], r[1], css("--mpc"), null, 2.2);
 }
 
@@ -1266,7 +1269,7 @@ function solveAndDraw() {
       (noCtrl.svc.missed < 1e-6 ? "happens to respect it too." :
         "misses it by " + fmt(noCtrl.svc.missed, 2) + " kWh.") : "");
 
-  drawGrid(P, gridMpc, greedy ? greedy.grid : netNoEss);
+  drawGrid(P, gridMpc, netNoEss, greedy ? greedy.grid : null);
   drawPV(P, loadMpc, loadBase);
   drawEss(P, u.soc, essPow);
   drawGantt(P, u.starts, early.starts);
