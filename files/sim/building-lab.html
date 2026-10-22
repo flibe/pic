@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Economic MPC of a house with photovoltaic panels, a battery and shiftable appliances, under a time-of-use tariff. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>Building Energy Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef;
+    --panel: #ffffff;
+    --panel-2: #faf8f6;
+    --line: #ddd7d0;
+    --grid: #e8e3dd;
+    --ink: #1f2a36;
+    --ink-2: #55606d;
+    --muted: #7d8794;
+    --mpc: #2f6690;
+    --base: #8a939d;
+    --ess: #3a7d44;
+    --sun: #c8891a;
+    --load: #7b5ea7;
+    --limit: #8a1c2f;
+    --f1: rgba(138, 28, 47, .10);
+    --f2: rgba(200, 137, 26, .12);
+    --f3: rgba(58, 125, 68, .10);
+    --flex: rgba(123, 94, 167, .13);
+    --flexline: #7b5ea7;
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+      --f1: rgba(224, 105, 127, .13); --f2: rgba(224, 169, 63, .13); --f3: rgba(111, 187, 125, .12);
+      --flex: rgba(171, 143, 212, .16); --flexline: #ab8fd4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+    --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+    --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+    --f1: rgba(224, 105, 127, .13); --f2: rgba(224, 169, 63, .13); --f3: rgba(111, 187, 125, .12);
+      --flex: rgba(171, 143, 212, .16); --flexline: #ab8fd4;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 0 0 8px; font-weight: 700; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+
+  .stage { display: grid; grid-template-columns: minmax(320px, 400px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .status { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
+  .status.bad { color: var(--limit); font-weight: 600; }
+
+  canvas { display: block; width: 100%; }
+  .chart-canvas { height: 150px; }
+  .chart-canvas.tall { height: 190px; }
+  .chart-canvas.gantt { height: 140px; }
+
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.mpc { border-color: var(--mpc); } .key.base { border-color: var(--base); border-top-style: dashed; }
+  .key.ess { border-color: var(--ess); } .key.sun { border-color: var(--sun); }
+  .key.load { border-color: var(--load); } .key.lim { border-color: var(--limit); border-top-style: dashed; }
+  .box { width: 13px; height: 10px; border-radius: 2px; display: inline-block; }
+  .box.f1 { background: var(--f1); border: 1px solid var(--line); }
+  .box.f2 { background: var(--f2); border: 1px solid var(--line); }
+  .box.f3 { background: var(--f3); border: 1px solid var(--line); }
+  .box.flex { background: var(--flex); border: 1px solid var(--flexline); }
+  .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .appliances { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .appliances th { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+                   font-weight: 700; text-align: left; padding: 0 6px 6px 0; }
+  .appliances th.num, .appliances td.num { text-align: center; }
+  .appliances td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); }
+  .appliances tr:first-child td { border-top: none; }
+  .appliances label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .appliances .dur { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .appliances td:first-child { line-height: 1.35; }
+  .appliances input[type="number"] { width: 54px; font: inherit; font-family: "IBM Plex Mono", ui-monospace, monospace;
+       font-size: 12.5px; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+       border-radius: 6px; padding: 3px 4px; text-align: center; }
+  .appliances .mini { width: 58px; height: 20px; display: inline-block; vertical-align: -5px; margin-left: 6px; }
+  .appliances tr.off td { opacity: .45; }
+  .appliances tr.bad input[type="number"] { border-color: var(--limit); }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  input[type="range"], input[type="checkbox"], select { accent-color: var(--mpc); }
+  select { font: inherit; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 9px; font-size: 13.5px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 2px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+
+  table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  table.results th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  table.results th:first-child, table.results td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  td.worse { color: var(--limit); } td.better { color: var(--ess); }
+  .table-wrap { overflow-x: auto; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  .math .cm { color: var(--muted); }
+
+  .note-line { margin: 12px 0 0; color: var(--ink-2); font-size: 13.5px; }
+  .note-line b { color: var(--ink); }
+  .warn { border-left-color: var(--limit); }
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control &middot; Lessons 11&ndash;13</p>
+    <h1>Building Energy Lab</h1>
+    <p class="lede">A house with photovoltaic panels, a battery and a handful of appliances, on a
+      time-of-use tariff. You decide which appliances have to run today and inside which hours they are
+      allowed to run; the controller decides <em>when</em> to start each of them and what to do with the
+      battery, so that the electricity bill of the day is as small as possible. This is the economic MPC
+      problem of the lesson, written exactly as on the blackboard and solved in your browser.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The house today</h2>
+        <span class="status" id="status">&nbsp;</span>
+      </div>
+
+      <h3>Appliances to run (plannable loads)</h3>
+      <table class="appliances">
+        <thead>
+          <tr><th>Load</th><th class="num">Not before</th><th class="num">Done by</th></tr>
+        </thead>
+        <tbody id="appliance-rows"></tbody>
+      </table>
+
+      <h3 style="margin-top:16px">Plant and contract</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="pv">Photovoltaic peak <span class="num" id="pv-val">3.0 kWp</span></label>
+          <input type="range" id="pv" min="0" max="8" step="0.5" value="3">
+        </div>
+        <div class="slider">
+          <label for="cap">Battery capacity <span class="num" id="cap-val">10 kWh</span></label>
+          <input type="range" id="cap" min="0" max="20" step="1" value="10">
+        </div>
+        <div class="slider">
+          <label for="pess">Battery power <span class="num" id="pess-val">3.0 kW</span></label>
+          <input type="range" id="pess" min="0.5" max="6" step="0.5" value="3">
+        </div>
+        <div class="slider">
+          <label for="soc0">Battery at midnight <span class="num" id="soc0-val">20%</span></label>
+          <input type="range" id="soc0" min="0" max="100" step="5" value="20">
+        </div>
+        <div class="slider">
+          <label for="pmax">Contract limit P<sup>max</sup> <span class="num" id="pmax-val">6.0 kW</span></label>
+          <input type="range" id="pmax" min="3" max="10" step="0.5" value="6">
+        </div>
+        <div class="slider">
+          <label for="eta">Round-trip efficiency <span class="num" id="eta-val">90%</span></label>
+          <input type="range" id="eta" min="70" max="100" step="1" value="90">
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">Tariff and day</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="f1">F1 price, 08&ndash;19 <span class="num" id="f1-val">0.28 &euro;/kWh</span></label>
+          <input type="range" id="f1" min="0.1" max="0.5" step="0.01" value="0.28">
+        </div>
+        <div class="slider">
+          <label for="f3">F3 price, 23&ndash;07 <span class="num" id="f3-val">0.22 &euro;/kWh</span></label>
+          <input type="range" id="f3" min="0.05" max="0.5" step="0.01" value="0.22">
+        </div>
+        <div class="slider">
+          <label for="cexp">Energy sold at <span class="num" id="cexp-val">0.10 &euro;/kWh</span></label>
+          <input type="range" id="cexp" min="0" max="0.3" step="0.01" value="0.1">
+        </div>
+        <div class="slider">
+          <label for="wear">Battery wear <span class="num" id="wear-val">0.03 &euro;/kWh</span></label>
+          <input type="range" id="wear" min="0" max="0.1" step="0.005" value="0.03">
+        </div>
+      </div>
+      <h3 style="margin-top:16px">Flexibility service</h3>
+      <div class="row">
+        <label class="pick">The aggregator asks the house to
+          <select id="service">
+            <option value="none">nothing today</option>
+            <option value="cap">stay under a power cap</option>
+            <option value="track">follow a power curve</option>
+          </select>
+        </label>
+      </div>
+      <div id="service-box" hidden>
+        <table class="appliances" style="margin-top:8px">
+          <tr>
+            <td><span id="svc-label">from &hellip; to</span></td>
+            <td class="num"><input type="number" id="svc-from" min="0" max="23" step="1" value="18"></td>
+            <td class="num"><input type="number" id="svc-to" min="1" max="24" step="1" value="21"></td>
+          </tr>
+        </table>
+        <div class="sliders" style="margin-top:10px">
+          <div class="slider">
+            <label for="svc-level"><span id="svc-level-name">Cap on the power bought</span>
+              <span class="num" id="svc-level-val">0.4 kW</span></label>
+            <input type="range" id="svc-level" min="0" max="5" step="0.1" value="0.4">
+          </div>
+          <div class="slider">
+            <label for="svc-pen">Penalty if not delivered <span class="num" id="svc-pen-val">1.50 &euro;/kWh</span></label>
+            <input type="range" id="svc-pen" min="0" max="4" step="0.05" value="1.5">
+          </div>
+          <div class="slider">
+            <label for="svc-fee">Paid for the service <span class="num" id="svc-fee-val">0.50 &euro;/h</span></label>
+            <input type="range" id="svc-fee" min="0" max="3" step="0.05" value="0.5">
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">Day</h3>
+      <div class="row">
+        <label class="status" style="color:var(--ink-2);font-family:inherit;font-size:13.5px">Weather
+          <select id="weather">
+            <option value="sunny">Clear spring day</option>
+            <option value="cloudy">Cloudy day</option>
+            <option value="winter">Winter day</option>
+          </select>
+        </label>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="terminal" checked> value the energy left in the battery</label>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Power at the meter</span><span class="unit">kW &middot; positive = bought, negative = sold</span></div>
+        <canvas class="chart-canvas tall" id="chart-grid" aria-label="Power exchanged with the grid over the day"></canvas>
+        <div class="legend">
+          <span><i class="key mpc"></i>with economic MPC</span>
+          <span><i class="key base"></i>without control</span>
+          <span><i class="key lim"></i>contract limit</span>
+          <span><i class="box flex"></i>service window</span>
+          <span><i class="box f1"></i>F1</span><span><i class="box f2"></i>F2</span><span><i class="box f3"></i>F3</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Generation and consumption</span><span class="unit">kW</span></div>
+        <canvas class="chart-canvas" id="chart-pv" aria-label="Photovoltaic generation and household consumption over the day"></canvas>
+        <div class="legend">
+          <span><i class="key sun"></i>photovoltaic</span>
+          <span><i class="key load"></i>total load with MPC</span>
+          <span><i class="key base"></i>total load without control</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Battery: energy stored and power</span><span class="unit">kWh &middot; kW</span></div>
+        <canvas class="chart-canvas" id="chart-ess" aria-label="Energy stored in the battery and battery power over the day"></canvas>
+        <div class="legend">
+          <span><i class="key ess"></i>energy stored x<sub>k</sub></span>
+          <span><i class="key mpc"></i>battery power (+ charging)</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>When each appliance runs</span><span class="unit">hour of the day</span></div>
+        <canvas class="chart-canvas gantt" id="chart-gantt" aria-label="Allowed window and chosen start of every appliance"></canvas>
+        <div class="legend">
+          <span><i class="box f3" style="background:var(--grid)"></i>allowed window</span>
+          <span><i class="box f3" style="background:var(--mpc)"></i>chosen by MPC</span>
+          <span><i class="box f3" style="background:var(--base)"></i>without control</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:10px">The day, in numbers</h2>
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr id="result-head"><th>Strategy</th><th>Bill of the day</th><th>Battery at midnight</th><th class="svc-col" hidden>Service</th><th>Net cost</th><th>Bought</th><th>Sold</th><th>Self-consumed</th><th>Peak</th></tr>
+        </thead>
+        <tbody id="result-rows"></tbody>
+      </table>
+    </div>
+    <p class="note-line" id="savings">&nbsp;</p>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>The controller buys time, not energy.</b> The appliances consume the same kWh wherever they
+          are placed: what changes is the price of the hour they land in, and whether the sun is paying
+          for them. Widen the window of a load and watch it slide under the photovoltaic bell.</li>
+        <li><b>Self-consumption beats selling.</b> As long as a kWh costs more to buy than it is paid when
+          sold, the optimal plan prefers to use the generation on the spot or to store it. Push the
+          selling price up towards the purchase price &mdash; the slider stops just below it, because
+          being paid more than you pay would make buying and selling at once a way of printing money
+          &mdash; and the reason to store melts away.</li>
+        <li><b>Efficiency and wear are what limit the battery.</b> With a round-trip efficiency below one,
+          every cycle loses energy, and the wear term charges every kWh that goes through. Put both at
+          their best values and the battery cycles as much as the tariff allows; make wear expensive and
+          it only does the trades that really pay.</li>
+        <li><b>Take away the terminal term and the battery empties.</b> The energy left at midnight is
+          worth nothing to a controller that only looks at today, so it sells it before the day ends.
+          This is the terminal cost V<sub>f</sub> of the theory, seen from the application side: it
+          prices what happens after the horizon.</li>
+        <li><b>Flexibility is a product the house can sell.</b> Ask it to stay under a cap for three
+          evening hours, or to follow a curve at midday, and watch where the service is paid for: the
+          battery and the appliances are moved to deliver it, and the bill of the day gets worse while
+          the net cost gets better. The uncontrolled house collects the fee and then pays the penalty,
+          which is the whole business case for a controller.</li>
+        <li><b>A penalty is a price, not a prohibition.</b> The service is written in the cost and not
+          in the constraints, so the controller compares delivering with paying: make the service hard
+          (a deeper cap, a longer window, a smaller battery) and lower the penalty, and at some point
+          it stops delivering. Push the cap to zero over six hours and it fails whatever the penalty,
+          simply because the house cannot run on nothing &mdash; the fee was accepted for something it
+          could not do.</li>
+        <li><b>The contract limit can make the problem infeasible.</b> Lower it with several appliances
+          forced into the same narrow window and the optimizer reports that no feasible plan exists:
+          the constraints are contradictory, not the algorithm at fault.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The problem being solved</h2>
+      <p>One optimization over the 24 hours of the day, with perfect forecasts of generation and of the
+        non-plannable load. In closed loop it is re-solved at every step on the updated state and
+        forecast; with nothing unexpected happening, the plan you see here is what the controller
+        would follow.</p>
+      <p class="math">min &nbsp;&Sigma;<span class="cm">t</span> T/3600 &middot; (c<sup>in</sup><span class="cm">t</span> P<sup>in</sup><span class="cm">t</span> &minus; c<sup>out</sup><span class="cm">t</span> P<sup>out</sup><span class="cm">t</span>) &nbsp;+&nbsp; c<sup>wear</sup> &Sigma;<span class="cm">t</span> T/3600 &middot; (P<sup>ch</sup><span class="cm">t</span> + P<sup>dis</sup><span class="cm">t</span>) &nbsp;&minus;&nbsp; c<sup>term</sup> x<sub>N</sub></p>
+      <p class="math">P<sup>in</sup><span class="cm">t</span> &minus; P<sup>out</sup><span class="cm">t</span> = P<sup>npl</sup><span class="cm">t</span> + P<sup>pl</sup><span class="cm">t</span> + P<sup>ess</sup><span class="cm">t</span> &minus; P<sup>pv</sup><span class="cm">t</span><br>
+        P<sup>pl</sup><span class="cm">t</span> = &Sigma;<span class="cm">&#8467;</span> &Sigma;<span class="cm">j</span> P<sub>&#8467;</sub>(t&minus;j+1) s<sub>j,&#8467;</sub> &nbsp;&nbsp; &Sigma;<span class="cm">j=S&#8467;</span><sup>F&#8467;&minus;N&#8467;</sup> s<sub>j,&#8467;</sub> = 1 &nbsp;&nbsp; s<sub>j,&#8467;</sub> &isin; {0,1}<br>
+        x<sub>t+1</sub> = x<sub>t</sub> + &eta;<sup>ch</sup> T/3600 P<sup>ch</sup><span class="cm">t</span> &minus; (1/&eta;<sup>dis</sup>) T/3600 P<sup>dis</sup><span class="cm">t</span></p>
+      <p>When a flexibility service is asked for, one more term joins the objective over the hours of
+        the event: <span class="math" style="display:inline-block;margin:0;padding:3px 7px">&lambda; &Sigma; T/3600 &middot; (P<sup>in</sup><span class="cm">t</span> &minus; P<sup>cap</sup>)<sup>+</sup></span>
+        for the cap, or <span class="math" style="display:inline-block;margin:0;padding:3px 7px">&lambda; &Sigma; T/3600 &middot; |P<sup>poc</sup><span class="cm">t</span> &minus; P<sup>ref</sup><span class="cm">t</span>|</span>
+        for the curve, each written with the two non-negative variables of the exact linearization of
+        the absolute value. The fee paid for the service is a constant and does not change the optimal
+        plan &mdash; it changes whether accepting the service was a good idea, which is your decision,
+        not the controller's.</p>
+      <p>Each appliance has a fixed power profile and a duration; the binary s<sub>j,&#8467;</sub> says that
+        load &#8467; starts at hour j, and the equality says it starts exactly once, inside the window you
+        choose. That makes this a mixed-integer linear program, which the page solves with a simplex and a
+        branch and bound written for the occasion. Both were checked against the Cbc solver on a few
+        hundred random instances of this same model, optimum against optimum.</p>
+      <p>Simplifications with respect to the lecture: no electric vehicle, no thermal part, and the
+        indicator variables that forbid buying and selling (or charging and discharging) at the same
+        time are left out, because with a selling price below the buying one and a round-trip efficiency
+        below one the optimal solution never does either. The page checks it on every solution.</p>
+    </div>
+  </section>
+
+  <footer>
+    Process Identification and Control &middot; Sapienza University of Rome, DIAG &middot;
+    the page runs offline in your browser.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ====================================================================== *
+ *  1. Solver: bounded-variable simplex and branch and bound.             *
+ *     Identical to the code checked against Cbc on random instances.     *
+ * ====================================================================== */
+
+function lpSolve(A, b, c, lo, up, opt) {
+  var m = A.length, n = c.length, i, j;
+  var EPS = (opt && opt.eps) || 1e-9;
+  var maxIter = (opt && opt.maxIter) || 20000;
+
+  var T = [];
+  var N = n + m;
+  for (i = 0; i < m; i++) {
+    var row = new Float64Array(N + 1);
+    T[i] = row;
+  }
+  var atUpper = [], xN = [];
+  for (j = 0; j < n; j++) {
+    if (lo[j] > -Infinity) { atUpper[j] = 0; xN[j] = lo[j]; }
+    else { atUpper[j] = 1; xN[j] = up[j]; }
+  }
+  var rhs = [];
+  for (i = 0; i < m; i++) {
+    var s = b[i];
+    for (j = 0; j < n; j++) { T[i][j] = A[i][j]; if (xN[j] !== 0) s -= A[i][j] * xN[j]; }
+    rhs[i] = s;
+  }
+  for (i = 0; i < m; i++) {
+    if (rhs[i] < 0) { for (j = 0; j < n; j++) T[i][j] = -T[i][j]; rhs[i] = -rhs[i]; }
+    T[i][n + i] = 1;
+    T[i][N] = rhs[i];
+  }
+  var loA = [], upA = [];
+  for (j = 0; j < n; j++) { loA[j] = lo[j]; upA[j] = up[j]; }
+  for (j = n; j < N; j++) { loA[j] = 0; upA[j] = Infinity; atUpper[j] = 0; }
+
+  var basis = [], xB = [];
+  for (i = 0; i < m; i++) { basis[i] = n + i; xB[i] = T[i][N]; }
+  function nbVal(j) { return atUpper[j] ? upA[j] : loA[j]; }
+  var inBasis = [];
+  for (j = 0; j < N; j++) inBasis[j] = -1;
+  for (i = 0; i < m; i++) inBasis[basis[i]] = i;
+
+  function phase(cc, allowArtificial) {
+    var it, q, jj, ii;
+    var d = new Float64Array(N);
+    function priceAll() {
+      for (jj = 0; jj < N; jj++) {
+        if (inBasis[jj] >= 0) { d[jj] = 0; continue; }
+        var v = cc[jj];
+        for (ii = 0; ii < m; ii++) { var a = T[ii][jj]; if (a !== 0) v -= cc[basis[ii]] * a; }
+        d[jj] = v;
+      }
+    }
+    priceAll();
+
+    for (it = 0; it < maxIter; it++) {
+      q = -1;
+      var best = EPS;
+      for (j = 0; j < N; j++) {
+        if (inBasis[j] >= 0) continue;
+        if (!allowArtificial && j >= n) continue;
+        if (upA[j] === loA[j]) continue;
+        var dj = d[j];
+        if (!atUpper[j] && dj < -best) { best = -dj; q = j; }
+        else if (atUpper[j] && dj > best) { best = dj; q = j; }
+      }
+      if (q < 0) return { status: "optimal", iter: it };
+
+      var dir = atUpper[q] ? -1 : 1;
+      var theta = upA[q] - loA[q], leave = -1, leaveToUpper = 0;
+      for (i = 0; i < m; i++) {
+        var alpha = T[i][q] * dir;
+        if (alpha > EPS) {
+          var room = xB[i] - loA[basis[i]];
+          if (room < 0) room = 0;
+          var t1 = room / alpha;
+          if (t1 < theta - 1e-12) { theta = t1; leave = i; leaveToUpper = 0; }
+        } else if (alpha < -EPS) {
+          var room2 = upA[basis[i]] - xB[i];
+          if (room2 === Infinity) continue;
+          if (room2 < 0) room2 = 0;
+          var t2 = room2 / (-alpha);
+          if (t2 < theta - 1e-12) { theta = t2; leave = i; leaveToUpper = 1; }
+        }
+      }
+      if (theta === Infinity) return { status: "unbounded", iter: it };
+
+      if (leave < 0) {
+        for (i = 0; i < m; i++) xB[i] -= T[i][q] * dir * theta;
+        atUpper[q] = atUpper[q] ? 0 : 1;
+        continue;
+      }
+
+      var p = basis[leave];
+      var qVal = nbVal(q) + dir * theta;
+      for (i = 0; i < m; i++) if (i !== leave) xB[i] -= T[i][q] * dir * theta;
+
+      var piv = T[leave][q], prow = T[leave];
+      for (j = 0; j < N + 1; j++) prow[j] /= piv;
+      for (i = 0; i < m; i++) {
+        if (i === leave) continue;
+        var f = T[i][q];
+        if (f === 0) continue;
+        var ri = T[i];
+        for (j = 0; j < N + 1; j++) ri[j] -= f * prow[j];
+      }
+      inBasis[p] = -1;
+      atUpper[p] = leaveToUpper;
+      basis[leave] = q;
+      inBasis[q] = leave;
+      xB[leave] = qVal;
+
+      if (it % 40 === 0) priceAll();
+      else {
+        var dq = d[q];
+        if (dq !== 0) for (j = 0; j < N; j++) if (inBasis[j] < 0) d[j] -= dq * prow[j];
+        d[p] = -dq * prow[p];
+        d[q] = 0;
+      }
+    }
+    return { status: "maxiter", iter: maxIter };
+  }
+
+  var c1 = new Float64Array(N);
+  for (j = n; j < N; j++) c1[j] = 1;
+  var r1 = phase(c1, true);
+  var inf = 0;
+  for (i = 0; i < m; i++) if (basis[i] >= n) inf += Math.abs(xB[i]);
+  if (r1.status !== "optimal" || inf > 1e-7) return { status: "infeasible" };
+
+  for (j = n; j < N; j++) { upA[j] = 0; if (inBasis[j] < 0) atUpper[j] = 0; }
+  var c2 = new Float64Array(N);
+  for (j = 0; j < n; j++) c2[j] = c[j];
+  var r2 = phase(c2, false);
+  if (r2.status === "unbounded") return { status: "unbounded" };
+
+  var x = new Float64Array(n);
+  for (j = 0; j < n; j++) x[j] = inBasis[j] >= 0 ? xB[inBasis[j]] : nbVal(j);
+  var obj = 0;
+  for (j = 0; j < n; j++) obj += c[j] * x[j];
+  return { status: r2.status === "optimal" ? "optimal" : r2.status, x: x, obj: obj };
+}
+
+/* ---------------------------------------------------------------- model --- */
+
+function buildModel(P) {
+  var T = P.T, L = P.loads.length, t, l, j, i, q;
+  var nStart = [], off = [], ncols = 5 * T, nS = 0;
+  for (l = 0; l < L; l++) {
+    var ld = P.loads[l];
+    var cnt = (ld.winEnd - ld.dur) - ld.winStart + 1;
+    if (cnt < 1) cnt = 0;
+    nStart[l] = cnt; off[l] = ncols + nS; nS += cnt;
+  }
+  ncols += nS;
+  /* flexibility service: two extra columns and one extra row per hour of the
+     service window.  Both services are soft: the house can fail to deliver
+     and pay the penalty, which is what its contract says.                 */
+  var sv = P.service, nq = (sv && sv.type !== "none") ? (sv.to - sv.from) : 0;
+  var ISVC = ncols;
+  ncols += 2 * nq;
+  var m = T + T + L + nq;
+  var A = [], b = [], c = [], lo = [], up = [];
+  for (i = 0; i < m; i++) { A[i] = new Float64Array(ncols); b[i] = 0; }
+  var IPIN = 0, IPOUT = T, IPC = 2 * T, IPD = 3 * T, IW = 4 * T;
+  for (j = 0; j < ncols; j++) { c[j] = 0; lo[j] = 0; up[j] = Infinity; }
+
+  var dt = P.dt;
+  for (t = 0; t < T; t++) {
+    up[IPIN + t] = P.pImpMax;
+    up[IPOUT + t] = P.pExpMax;
+    up[IPC + t] = P.pEssMax;
+    up[IPD + t] = P.pEssMax;
+    up[IW + t] = P.xMax - P.xMin;
+    c[IPIN + t] = dt * P.cIn[t];
+    c[IPOUT + t] = -dt * P.cOut[t];
+    c[IPC + t] = dt * P.kWear - P.cTerm * dt * P.etaC;
+    c[IPD + t] = dt * P.kWear + P.cTerm * dt / P.etaD;
+  }
+  for (t = 0; t < T; t++) {
+    var r = A[t];
+    r[IPIN + t] = 1; r[IPOUT + t] = -1; r[IPC + t] = -1; r[IPD + t] = 1;
+    b[t] = P.npl[t] - P.pv[t];
+    for (l = 0; l < L; l++) {
+      var ld2 = P.loads[l];
+      for (j = 0; j < nStart[l]; j++) {
+        var idx = t - (ld2.winStart + j);
+        if (idx >= 0 && idx < ld2.dur) r[off[l] + j] -= ld2.profile[idx];
+      }
+    }
+  }
+  for (t = 0; t < T; t++) {
+    var rs = A[T + t];
+    for (var tau = 0; tau <= t; tau++) { rs[IPC + tau] = dt * P.etaC; rs[IPD + tau] = -dt / P.etaD; }
+    rs[IW + t] = 1;
+    b[T + t] = P.xMax - P.x0;
+  }
+  for (l = 0; l < L; l++) {
+    var ro = A[2 * T + l];
+    for (j = 0; j < nStart[l]; j++) ro[off[l] + j] = 1;
+    b[2 * T + l] = 1;
+  }
+  /* the service rows */
+  for (q = 0; q < nq; q++) {
+    var rq = A[2 * T + L + q], tq = sv.from + q, cA = ISVC + 2 * q, cB = cA + 1;
+    if (sv.type === "cap") {
+      /* P_in(t) - excess(t) + slack(t) = cap : the excess is what is paid for */
+      rq[IPIN + tq] = 1; rq[cA] = -1; rq[cB] = 1;
+      b[2 * T + L + q] = sv.level;
+      c[cA] = dt * sv.penalty;
+    } else {
+      /* P_in - P_out - dev+ + dev- = reference(t) */
+      rq[IPIN + tq] = 1; rq[IPOUT + tq] = -1; rq[cA] = -1; rq[cB] = 1;
+      b[2 * T + L + q] = sv.ref[q];
+      c[cA] = dt * sv.penalty; c[cB] = dt * sv.penalty;
+    }
+  }
+  var cConst = -P.cTerm * P.x0;
+  return { A: A, b: b, c: c, lo: lo, up: up, n: ncols, m: m, cConst: cConst,
+           T: T, L: L, nStart: nStart, off: off, nq: nq, ISVC: ISVC,
+           IPIN: IPIN, IPOUT: IPOUT, IPC: IPC, IPD: IPD, IW: IW, P: P };
+}
+
+function relaxSolve(M, node) {
+  var up = M.up.slice(0), l, j;
+  for (l = 0; l < M.L; l++) {
+    for (j = 0; j < M.nStart[l]; j++) {
+      up[M.off[l] + j] = (j < node.lo[l] || j > node.hi[l]) ? 0 : 1;
+    }
+  }
+  var r = lpSolve(M.A, M.b, M.c, M.lo, up, null);
+  if (r.status === "optimal") r.obj += M.cConst;
+  return r;
+}
+
+function fixedStartSolve(M, st) {
+  var node = { lo: [], hi: [] }, l;
+  for (l = 0; l < M.L; l++) {
+    var s = Math.max(0, Math.min(st[l], M.nStart[l] - 1));
+    node.lo[l] = s; node.hi[l] = s;
+  }
+  return relaxSolve(M, node);
+}
+
+function solveMILP(M, opt) {
+  var maxNodes = (opt && opt.maxNodes) || 4000;
+  var L = M.L, l, j;
+  var best = null, bestObj = Infinity, nodes = 0;
+  for (l = 0; l < L; l++) if (M.nStart[l] < 1) return { status: "infeasible", nodes: 0 };
+
+  var root = { lo: [], hi: [] };
+  for (l = 0; l < L; l++) { root.lo[l] = 0; root.hi[l] = M.nStart[l] - 1; }
+
+  var zeros = [];
+  for (l = 0; l < L; l++) zeros[l] = 0;
+  var heur = fixedStartSolve(M, zeros);
+  if (heur.status === "optimal") { best = heur; bestObj = heur.obj; }
+
+  var stack = [root];
+  while (stack.length > 0 && nodes < maxNodes) {
+    var node = stack.pop();
+    nodes++;
+    var res = relaxSolve(M, node);
+    if (res.status !== "optimal") continue;
+    if (res.obj > bestObj - 1e-7) continue;
+
+    var pick = -1, frac = 0;
+    for (l = 0; l < L; l++) {
+      if (node.lo[l] === node.hi[l]) continue;
+      var worst = 0;
+      for (j = node.lo[l]; j <= node.hi[l]; j++) {
+        var v = res.x[M.off[l] + j];
+        var f = Math.min(v, 1 - v);
+        if (f > worst) worst = f;
+      }
+      if (worst > frac + 1e-9) { frac = worst; pick = l; }
+    }
+    if (pick < 0) {
+      if (res.obj < bestObj - 1e-9) { bestObj = res.obj; best = res; }
+      continue;
+    }
+    var mid = Math.floor((node.lo[pick] + node.hi[pick]) / 2);
+    var left = { lo: node.lo.slice(0), hi: node.hi.slice(0) };
+    var right = { lo: node.lo.slice(0), hi: node.hi.slice(0) };
+    left.hi[pick] = mid; right.lo[pick] = mid + 1;
+    /* dive first into the half where the relaxation put most of the start:
+       it usually holds the optimum, so a good incumbent appears early and
+       prunes the rest of the tree                                         */
+    var wLeft = 0, wRight = 0;
+    for (j = node.lo[pick]; j <= mid; j++) wLeft += res.x[M.off[pick] + j];
+    for (j = mid + 1; j <= node.hi[pick]; j++) wRight += res.x[M.off[pick] + j];
+    if (wLeft >= wRight) { stack.push(right); stack.push(left); }
+    else { stack.push(left); stack.push(right); }
+  }
+  if (!best) return { status: "infeasible", nodes: nodes };
+  best.nodes = nodes;
+  best.proven = (stack.length === 0);
+  best.status = "optimal";
+  return best;
+}
+
+function unpack(M, x) {
+  var T = M.T, t, l, j;
+  var out = { pin: [], pout: [], pc: [], pd: [], pl: [], soc: [], starts: [] };
+  for (t = 0; t < T; t++) {
+    out.pin[t] = x[M.IPIN + t]; out.pout[t] = x[M.IPOUT + t];
+    out.pc[t] = x[M.IPC + t]; out.pd[t] = x[M.IPD + t];
+    out.pl[t] = 0;
+  }
+  for (l = 0; l < M.L; l++) {
+    var pick = -1, bestv = 0.5;
+    for (j = 0; j < M.nStart[l]; j++) if (x[M.off[l] + j] > bestv) { bestv = x[M.off[l] + j]; pick = j; }
+    out.starts[l] = pick < 0 ? -1 : M.P.loads[l].winStart + pick;
+    if (pick >= 0) {
+      var ld = M.P.loads[l];
+      for (j = 0; j < ld.dur; j++) out.pl[out.starts[l] + j] += ld.profile[j];
+    }
+  }
+  var e = M.P.x0;
+  for (t = 0; t < T; t++) {
+    e += M.P.dt * (M.P.etaC * out.pc[t] - out.pd[t] / M.P.etaD);
+    out.soc[t] = e;
+  }
+  return out;
+}
+
+/* ====================================================================== *
+ *  2. The house: profiles, appliances, tariff.                           *
+ * ====================================================================== */
+
+var T24 = 24, DT = 1;
+
+var APPLIANCES = [
+  { id: "wash",  name: "Washing machine", profile: [1.8, 0.5],      on: true,  s: 7,  f: 20 },
+  { id: "dish",  name: "Dishwasher",      profile: [1.2, 0.6],      on: true,  s: 9,  f: 23 },
+  { id: "dryer", name: "Tumble dryer",    profile: [1.9, 1.5],      on: false, s: 8,  f: 22 },
+  { id: "oven",  name: "Electric oven",   profile: [2.0],           on: false, s: 11, f: 21 },
+  { id: "boil",  name: "Water heater",    profile: [1.2, 1.2, 0.8], on: true,  s: 0,  f: 24 }
+];
+
+/* fridge, lights, standby, cooking: what the controller cannot move [kW].
+   About 10 kWh over the day, a detached house with no gas cooker.        */
+var NPL = [0.20, 0.18, 0.16, 0.16, 0.16, 0.20, 0.32, 0.45, 0.36, 0.28, 0.24, 0.32,
+           0.58, 0.40, 0.24, 0.24, 0.28, 0.45, 0.70, 0.82, 0.72, 0.56, 0.36, 0.24];
+
+/* Clear-sky bell, tuned so that one kWp gives about 4.4 kWh on the spring day,
+   1.5 kWh under clouds and 2.1 kWh in winter: the usual figures for central
+   Italy.  The controller is told this profile exactly: perfect forecast.   */
+function pvProfile(kwp, weather) {
+  var out = [], t, rise = 7, set = 19, scale = 0.82, expo = 3;
+  if (weather === "cloudy") { scale = 0.52; expo = 3; }
+  if (weather === "winter") { rise = 8; set = 17; scale = 0.47; expo = 2.5; }
+  var cloud = [1, .9, 1, .55, .35, .8, 1, .4, .3, .7, 1, .5, .6, 1, .45, .9, 1, .8, 1, .6, 1, 1, 1, 1];
+  for (t = 0; t < T24; t++) {
+    var h = t + 0.5;
+    var v = 0;
+    if (h > rise && h < set) {
+      var s = Math.sin(Math.PI * (h - rise) / (set - rise));
+      v = kwp * scale * Math.pow(s, expo);
+      if (weather === "cloudy") v *= cloud[t];
+    }
+    out[t] = Math.round(v * 1000) / 1000;
+  }
+  return out;
+}
+
+/* Italian time-of-use bands on a weekday: F1 08-19, F2 07-08 and 19-23, F3 23-07 */
+function bandOf(t) {
+  if (t >= 8 && t < 19) return 1;
+  if ((t >= 7 && t < 8) || (t >= 19 && t < 23)) return 2;
+  return 3;
+}
+function tariff(f1, f3) {
+  var out = [], t, f2 = (f1 + f3) / 2;
+  for (t = 0; t < T24; t++) out[t] = bandOf(t) === 1 ? f1 : (bandOf(t) === 2 ? f2 : f3);
+  return out;
+}
+
+/* ====================================================================== *
+ *  3. Scenario assembly, baselines and evaluation.                       *
+ * ====================================================================== */
+
+var UI = {};
+
+/* Selling must stay cheaper than buying.  Otherwise the model would buy and
+   sell at the same hour for a profit, which the indicator variables of the
+   lecture forbid and which we prefer to rule out by the price itself.     */
+function capExportPrice() {
+  var cap = Math.max(0, Math.min(+UI.f1.value, +UI.f3.value) - 0.01);
+  UI.cexp.max = cap.toFixed(2);
+  if (+UI.cexp.value > cap) {
+    UI.cexp.value = cap;
+    document.getElementById("cexp-val").textContent = fmt(cap) + " €/kWh";
+  }
+}
+
+/* what the aggregator asks for, and what it pays for it */
+function readService() {
+  var type = UI.service.value;
+  if (type === "none") return { type: "none", from: 0, to: 0, fee: 0, penalty: 0, level: 0, ref: [] };
+  var from = clampInt(UI.svcFrom.value, 0, 23, 18);
+  var to = clampInt(UI.svcTo.value, 1, 24, 21);
+  if (to <= from) to = Math.min(24, from + 1);
+  UI.svcFrom.value = from; UI.svcTo.value = to;
+  var n = to - from, ref = [], q;
+  var level = +UI.svcLevel.value;
+  for (q = 0; q < n; q++) ref[q] = level * Math.sin(Math.PI * (q + 0.5) / n);
+  return { type: type, from: from, to: to, level: level, ref: ref,
+           penalty: +UI.svcPen.value, fee: +UI.svcFee.value };
+}
+
+function readUI() {
+  capExportPrice();
+  var cap = +UI.cap.value, eta = Math.sqrt(+UI.eta.value / 100);
+  var loads = [], i;
+  for (i = 0; i < APPLIANCES.length; i++) {
+    var a = APPLIANCES[i];
+    if (!a.on) continue;
+    loads.push({ ref: a, dur: a.profile.length, winStart: a.s, winEnd: a.f, profile: a.profile });
+  }
+  var cIn = tariff(+UI.f1.value, +UI.f3.value), cOut = [], t;
+  for (t = 0; t < T24; t++) cOut[t] = +UI.cexp.value;
+  var avg = 0;
+  for (t = 0; t < T24; t++) avg += cIn[t];
+  avg /= T24;
+  return {
+    T: T24, dt: DT, npl: NPL.slice(0), pv: pvProfile(+UI.pv.value, UI.weather.value),
+    cIn: cIn, cOut: cOut, loads: loads,
+    pImpMax: +UI.pmax.value, pExpMax: +UI.pmax.value,
+    pEssMax: cap > 0 ? +UI.pess.value : 0,
+    xMax: cap, xMin: 0, x0: cap * (+UI.soc0.value) / 100,
+    etaC: eta, etaD: eta,
+    kWear: +UI.wear.value,
+    cTerm: UI.terminal.checked ? avg : 0,
+    cValue: avg,
+    service: readService()
+  };
+}
+
+/* how well a given profile at the meter delivers the service, and what that
+   is worth: the same accounting for every strategy in the table           */
+function serviceOf(P, grid) {
+  var sv = P.service, q, t, missed = 0;
+  if (sv.type === "none") return { missed: 0, penalty: 0, fee: 0, credit: 0 };
+  for (q = 0; q < sv.to - sv.from; q++) {
+    t = sv.from + q;
+    if (sv.type === "cap") missed += Math.max(0, grid[t] - sv.level) * P.dt;
+    else missed += Math.abs(grid[t] - sv.ref[q]) * P.dt;
+  }
+  var penalty = sv.penalty * missed, fee = sv.fee * (sv.to - sv.from);
+  return { missed: missed, penalty: penalty, fee: fee, credit: fee - penalty };
+}
+
+/* bill of a given grid profile, in euro */
+function billOf(P, grid) {
+  var t, v = 0;
+  for (t = 0; t < T24; t++) {
+    if (grid[t] > 0) v += P.dt * P.cIn[t] * grid[t];
+    else v += P.dt * P.cOut[t] * grid[t];
+  }
+  return v;
+}
+
+/* appliances started as early as they are allowed */
+function earliestLoads(P) {
+  var pl = [], t, l, j;
+  for (t = 0; t < T24; t++) pl[t] = 0;
+  var starts = [];
+  for (l = 0; l < P.loads.length; l++) {
+    var ld = P.loads[l];
+    starts[l] = ld.winStart;
+    for (j = 0; j < ld.dur; j++) if (starts[l] + j < T24) pl[starts[l] + j] += ld.profile[j];
+  }
+  return { pl: pl, starts: starts };
+}
+
+/* rule-based battery: store the surplus, cover the deficit */
+function greedyBattery(P, net) {
+  var t, soc = P.x0, pc = [], pd = [], grid = [], socs = [];
+  for (t = 0; t < T24; t++) {
+    var u = 0;
+    if (net[t] < 0) {                                   /* surplus: charge */
+      var room = (P.xMax - soc) / (P.etaC * P.dt);
+      u = Math.min(-net[t], P.pEssMax, room);
+      pc[t] = u; pd[t] = 0;
+      soc += P.dt * P.etaC * u;
+      grid[t] = net[t] + u;
+    } else {                                            /* deficit: discharge */
+      var avail = (soc - P.xMin) * P.etaD / P.dt;
+      u = Math.min(net[t], P.pEssMax, avail);
+      pc[t] = 0; pd[t] = u;
+      soc -= P.dt * u / P.etaD;
+      grid[t] = net[t] - u;
+    }
+    socs[t] = soc;
+  }
+  return { pc: pc, pd: pd, grid: grid, soc: socs };
+}
+
+function metrics(P, grid, pv, socEnd) {
+  var t, bought = 0, sold = 0, peak = 0;
+  for (t = 0; t < T24; t++) {
+    if (grid[t] > 0) { bought += P.dt * grid[t]; if (grid[t] > peak) peak = grid[t]; }
+    else sold += -P.dt * grid[t];
+  }
+  var gen = 0;
+  for (t = 0; t < T24; t++) gen += P.dt * pv[t];
+  var self = gen > 1e-9 ? 100 * (gen - sold) / gen : 0;
+  var bill = billOf(P, grid);
+  /* what is left in the battery is worth something tomorrow: value it at the
+     average purchase price, the same price the terminal term uses           */
+  var left = P.cValue * socEnd;
+  var svc = serviceOf(P, grid);
+  return { bill: bill, bought: bought, sold: sold, peak: peak, self: self,
+           socEnd: socEnd, left: left, svc: svc, net: bill - left - svc.credit };
+}
+
+/* ====================================================================== *
+ *  4. Charts.                                                            *
+ * ====================================================================== */
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function setup(cv) {
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  return { g: g, w: w, h: h };
+}
+
+function axes(g, w, h, pad, lo, hi, label) {
+  var i;
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  g.fillStyle = css("--muted");
+  g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+  for (i = 0; i <= 4; i++) {
+    var y = pad.t + (h - pad.t - pad.b) * i / 4;
+    var v = hi - (hi - lo) * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke();
+    g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText(fmt(v, Math.abs(hi - lo) < 4 ? 1 : 0), pad.l - 6, y);
+  }
+  g.textAlign = "center"; g.textBaseline = "top";
+  for (i = 0; i <= 24; i += 3) {
+    var x = pad.l + (w - pad.l - pad.r) * i / 24;
+    g.fillText(i === 24 ? "24" : ("" + i), x, h - pad.b + 5);
+  }
+  if (label) { g.textAlign = "left"; g.fillText(label, pad.l, 2); }
+}
+
+function bands(g, w, h, pad) {
+  var t, x0, x1, c;
+  for (t = 0; t < 24; t++) {
+    c = bandOf(t) === 1 ? css("--f1") : (bandOf(t) === 2 ? css("--f2") : css("--f3"));
+    x0 = pad.l + (w - pad.l - pad.r) * t / 24;
+    x1 = pad.l + (w - pad.l - pad.r) * (t + 1) / 24;
+    g.fillStyle = c;
+    g.fillRect(x0, pad.t, x1 - x0, h - pad.t - pad.b);
+  }
+}
+
+function stepLine(g, w, h, pad, data, lo, hi, color, dash, width) {
+  var t, x0, x1, y;
+  g.save();
+  g.beginPath();
+  g.strokeStyle = color; g.lineWidth = width || 2;
+  if (dash) g.setLineDash(dash);
+  for (t = 0; t < data.length; t++) {
+    x0 = pad.l + (w - pad.l - pad.r) * t / 24;
+    x1 = pad.l + (w - pad.l - pad.r) * (t + 1) / 24;
+    y = pad.t + (h - pad.t - pad.b) * (hi - data[t]) / (hi - lo);
+    if (t === 0) g.moveTo(x0, y); else g.lineTo(x0, y);
+    g.lineTo(x1, y);
+  }
+  g.stroke();
+  g.restore();
+}
+
+function hline(g, w, h, pad, v, lo, hi, color, dash) {
+  var y = pad.t + (h - pad.t - pad.b) * (hi - v) / (hi - lo);
+  g.save(); g.beginPath(); g.strokeStyle = color; g.lineWidth = 1.2;
+  if (dash) g.setLineDash(dash);
+  g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke(); g.restore();
+}
+
+function fmt(v, d) { return v.toFixed(d === undefined ? 2 : d); }
+
+function niceRange(arrays, symmetric) {
+  var lo = 0, hi = 0, i, j;
+  for (i = 0; i < arrays.length; i++) for (j = 0; j < arrays[i].length; j++) {
+    if (arrays[i][j] < lo) lo = arrays[i][j];
+    if (arrays[i][j] > hi) hi = arrays[i][j];
+  }
+  if (symmetric) { var m = Math.max(Math.abs(lo), Math.abs(hi)); lo = -m; hi = m; }
+  var span = hi - lo || 1;
+  hi += span * 0.12; lo -= span * 0.12;
+  if (!symmetric && lo > -1e-9) lo = Math.min(0, lo);
+  return [lo, hi];
+}
+
+function drawGrid(P, mpc, base) {
+  var c = setup(document.getElementById("chart-grid"));
+  var pad = { l: 42, r: 10, t: 12, b: 20 };
+  /* scale on the data, and show the contract limits only when they are close
+     enough to be worth seeing: otherwise the interesting part is a flat line */
+  var r = niceRange([mpc, base], true);
+  if (P.pImpMax < r[1] * 1.6) r = niceRange([mpc, base, [P.pImpMax, -P.pExpMax]], true);
+  bands(c.g, c.w, c.h, pad);
+  axes(c.g, c.w, c.h, pad, r[0], r[1]);
+  hline(c.g, c.w, c.h, pad, 0, r[0], r[1], css("--line"));
+  if (P.pImpMax <= r[1]) hline(c.g, c.w, c.h, pad, P.pImpMax, r[0], r[1], css("--limit"), [4, 4]);
+  if (-P.pExpMax >= r[0]) hline(c.g, c.w, c.h, pad, -P.pExpMax, r[0], r[1], css("--limit"), [4, 4]);
+  drawService(c, pad, P, r);
+  stepLine(c.g, c.w, c.h, pad, base, r[0], r[1], css("--base"), [5, 4], 1.8);
+  stepLine(c.g, c.w, c.h, pad, mpc, r[0], r[1], css("--mpc"), null, 2.2);
+}
+
+/* the service window, with the cap or the curve the aggregator asks for */
+function drawService(c, pad, P, r) {
+  var sv = P.service;
+  if (sv.type === "none") return;
+  var g = c.g, X = function (h) { return pad.l + (c.w - pad.l - pad.r) * h / 24; };
+  var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (r[1] - v) / (r[1] - r[0]); };
+  g.save();
+  g.fillStyle = css("--flex");
+  g.fillRect(X(sv.from), pad.t, X(sv.to) - X(sv.from), c.h - pad.t - pad.b);
+  g.strokeStyle = css("--flexline"); g.lineWidth = 2;
+  g.setLineDash([3, 3]);
+  g.beginPath();
+  if (sv.type === "cap") {
+    g.moveTo(X(sv.from), Y(sv.level)); g.lineTo(X(sv.to), Y(sv.level));
+  } else {
+    for (var q = 0; q < sv.ref.length; q++) {
+      var x0 = X(sv.from + q), x1 = X(sv.from + q + 1), y = Y(sv.ref[q]);
+      if (q === 0) g.moveTo(x0, y); else g.lineTo(x0, y);
+      g.lineTo(x1, y);
+    }
+  }
+  g.stroke();
+  g.restore();
+}
+
+function drawPV(P, loadMpc, loadBase) {
+  var c = setup(document.getElementById("chart-pv"));
+  var pad = { l: 42, r: 10, t: 12, b: 20 };
+  var r = niceRange([P.pv, loadMpc, loadBase], false);
+  axes(c.g, c.w, c.h, pad, r[0], r[1]);
+  stepLine(c.g, c.w, c.h, pad, P.pv, r[0], r[1], css("--sun"), null, 2);
+  stepLine(c.g, c.w, c.h, pad, loadBase, r[0], r[1], css("--base"), [5, 4], 1.8);
+  stepLine(c.g, c.w, c.h, pad, loadMpc, r[0], r[1], css("--load"), null, 2.2);
+}
+
+function drawEss(P, soc, power) {
+  var c = setup(document.getElementById("chart-ess"));
+  var pad = { l: 42, r: 42, t: 12, b: 20 };
+  var hi = Math.max(P.xMax, 1), lo = 0;
+  axes(c.g, c.w, c.h, pad, lo, hi);
+  stepLine(c.g, c.w, c.h, pad, soc, lo, hi, css("--ess"), null, 2.2);
+
+  /* the battery power lives on its own symmetric scale, drawn around the
+     middle of the frame: its zero and its ends are marked on the right  */
+  var pr = Math.max(P.pEssMax, 0.5) * 1.15, g = c.g;
+  var mid = pad.t + (c.h - pad.t - pad.b) / 2;
+  g.save();
+  g.strokeStyle = css("--grid"); g.setLineDash([2, 3]); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(pad.l, mid + .5); g.lineTo(c.w - pad.r, mid + .5); g.stroke();
+  g.restore();
+  stepLine(g, c.w, c.h, pad, power, -pr, pr, css("--mpc"), null, 1.6);
+  g.fillStyle = css("--muted");
+  g.font = '10.5px "IBM Plex Mono", ui-monospace, monospace';
+  g.textAlign = "left";
+  g.textBaseline = "top";    g.fillText("+" + fmt(pr, 1) + " kW", c.w - pad.r + 5, pad.t);
+  g.textBaseline = "middle"; g.fillText("0 kW", c.w - pad.r + 5, mid);
+  g.textBaseline = "bottom"; g.fillText("−" + fmt(pr, 1) + " kW", c.w - pad.r + 5, c.h - pad.b);
+}
+
+function drawGantt(P, startsMpc, startsBase) {
+  var cv = document.getElementById("chart-gantt");
+  var c = setup(cv);
+  var pad = { l: 118, r: 10, t: 8, b: 20 };
+  var n = P.loads.length, i;
+  var g = c.g;
+  g.font = '12px "Source Sans 3", system-ui, sans-serif';
+  if (n === 0) {
+    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("No appliance selected", c.w / 2, c.h / 2);
+    return;
+  }
+  var rowH = Math.min(26, (c.h - pad.t - pad.b) / n);
+  var X = function (h) { return pad.l + (c.w - pad.l - pad.r) * h / 24; };
+  for (i = 0; i <= 24; i += 3) {
+    g.strokeStyle = css("--grid"); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(X(i) + .5, pad.t); g.lineTo(X(i) + .5, pad.t + n * rowH); g.stroke();
+    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    g.fillText("" + i, X(i), pad.t + n * rowH + 4);
+  }
+  for (i = 0; i < n; i++) {
+    var ld = P.loads[i], y = pad.t + i * rowH;
+    g.fillStyle = css("--ink-2");
+    g.font = '12.5px "Source Sans 3", system-ui, sans-serif';
+    g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText(ld.ref.name, pad.l - 8, y + rowH / 2);
+    g.fillStyle = css("--grid");
+    g.fillRect(X(ld.winStart), y + 3, X(ld.winEnd) - X(ld.winStart), rowH - 6);
+    if (startsBase[i] >= 0) {
+      g.fillStyle = css("--base");
+      g.fillRect(X(startsBase[i]), y + rowH / 2, X(startsBase[i] + ld.dur) - X(startsBase[i]), rowH / 2 - 3);
+    }
+    if (startsMpc[i] >= 0) {
+      g.fillStyle = css("--mpc");
+      g.fillRect(X(startsMpc[i]), y + 3, X(startsMpc[i] + ld.dur) - X(startsMpc[i]), rowH / 2 - 3);
+    }
+  }
+}
+
+/* ====================================================================== *
+ *  5. Run everything and paint.                                          *
+ * ====================================================================== */
+
+function sum(a) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i]; return s; }
+
+/* the optimization can take a moment on the widest configurations: show that
+   the page is working before blocking the thread with it                   */
+function run() {
+  var status = document.getElementById("status");
+  status.className = "status";
+  status.textContent = "solving…";
+  setTimeout(solveAndDraw, 0);
+}
+
+function solveAndDraw() {
+  var P = readUI(), t, i;
+  var status = document.getElementById("status");
+  var hasSvc = P.service.type !== "none";
+  var head = document.querySelector("#result-head .svc-col");
+  if (head) head.hidden = !hasSvc;
+
+  /* ---- reference strategies: appliances as early as allowed ---------- */
+  var early = earliestLoads(P);
+  var netNoEss = [];
+  for (t = 0; t < T24; t++) netNoEss[t] = P.npl[t] + early.pl[t] - P.pv[t];
+  var noCtrl = metrics(P, netNoEss, P.pv, P.x0);
+  var greedy = P.pEssMax > 0 && P.xMax > 0 ? greedyBattery(P, netNoEss) : null;
+  var greedyM = greedy ? metrics(P, greedy.grid, P.pv, greedy.soc[T24 - 1]) : null;
+
+  /* ---- economic MPC --------------------------------------------------- */
+  var t0 = (window.performance && performance.now) ? performance.now() : 0;
+  var M = buildModel(P);
+  var sol = solveMILP(M, { maxNodes: 4000 });
+  var ms = ((window.performance && performance.now) ? performance.now() : 0) - t0;
+
+  var rows = document.getElementById("result-rows"), html = "";
+  if (sol.status !== "optimal") {
+    status.className = "status bad";
+    status.textContent = "no feasible plan";
+    document.getElementById("savings").innerHTML =
+      "<b>The problem has no solution.</b> With these windows, this contract limit and these appliances " +
+      "there is no way to satisfy every constraint: either the loads do not fit in the hours you allow, " +
+      "or running them needs more power than the meter lets through. Widen a window, drop a load, or " +
+      "raise P<sup>max</sup>.";
+    var loadBase0 = [];
+    for (t = 0; t < T24; t++) loadBase0[t] = P.npl[t] + early.pl[t];
+    rows.innerHTML = resultRow("Without control", noCtrl, null, P.pImpMax, hasSvc);
+    drawGrid(P, netNoEss, netNoEss);
+    drawPV(P, loadBase0, loadBase0);
+    drawEss(P, zerosArr(), zerosArr());
+    drawGantt(P, fillArr(P.loads.length, -1), early.starts);
+    return;
+  }
+
+  var u = unpack(M, sol.x);
+  var gridMpc = [], essPow = [], loadMpc = [], loadBase = [];
+  for (t = 0; t < T24; t++) {
+    gridMpc[t] = u.pin[t] - u.pout[t];
+    essPow[t] = u.pc[t] - u.pd[t];
+    loadMpc[t] = P.npl[t] + u.pl[t];
+    loadBase[t] = P.npl[t] + early.pl[t];
+  }
+  var mpcM = metrics(P, gridMpc, P.pv, u.soc[T24 - 1]);
+
+  /* sanity checks on the solution: never buying and selling at the same
+     time, never charging and discharging at the same time               */
+  var bad = 0;
+  for (t = 0; t < T24; t++) {
+    if (u.pin[t] > 1e-6 && u.pout[t] > 1e-6) bad++;
+    if (u.pc[t] > 1e-6 && u.pd[t] > 1e-6) bad++;
+  }
+
+  status.className = "status";
+  status.textContent = (sol.proven ? "optimal" : "best found, not proven") + " · " + sol.nodes +
+                       " nodes · " + fmt(ms, 0) + " ms" + (bad ? " · check failed" : "");
+
+  html = "";
+  html += resultRow("Without control", noCtrl, null, P.pImpMax, hasSvc);
+  if (greedyM) html += resultRow("Rule-based battery", greedyM, noCtrl, P.pImpMax, hasSvc);
+  html += resultRow("Economic MPC", mpcM, noCtrl, P.pImpMax, hasSvc);
+  rows.innerHTML = html;
+
+  var saved = noCtrl.net - mpcM.net;
+  var pct = (noCtrl.net > 1e-9 && mpcM.net > -1e-9) ? " (" + fmt(100 * saved / noCtrl.net, 0) + "%)" : "";
+  document.getElementById("savings").innerHTML =
+    "Net cost of the day: <b>" + fmt(mpcM.net) + " &euro;</b> with economic MPC against <b>" +
+    fmt(noCtrl.net) + " &euro;</b> leaving the house alone &mdash; " +
+    (saved >= 0 ? "saved " : "lost ") + "<b>" + fmt(Math.abs(saved)) + " &euro;</b>" + pct + " in one day. " +
+    "Net cost is the bill minus the energy left in the battery at midnight, valued at the average " +
+    "purchase price of " + fmt(P.cValue) + " &euro;/kWh: comparing bills alone would reward a " +
+    "controller that simply sells the battery off before the day ends." +
+    (hasSvc ? " Flexibility service: the controller " +
+      (mpcM.svc.missed < 1e-6 ? "delivers it in full and keeps the <b>" + fmt(mpcM.svc.fee) +
+        " &euro;</b> it is paid" : "misses it by <b>" + fmt(mpcM.svc.missed, 2) +
+        " kWh</b> and pays <b>" + fmt(mpcM.svc.penalty) + " &euro;</b> of penalty, which it still " +
+        "prefers to the cost of delivering") +
+      ", while the uncontrolled house " +
+      (noCtrl.svc.missed < 1e-6 ? "happens to respect it too." :
+        "misses it by " + fmt(noCtrl.svc.missed, 2) + " kWh.") : "");
+
+  drawGrid(P, gridMpc, greedy ? greedy.grid : netNoEss);
+  drawPV(P, loadMpc, loadBase);
+  drawEss(P, u.soc, essPow);
+  drawGantt(P, u.starts, early.starts);
+}
+
+function resultRow(name, m, ref, limit, withService) {
+  var cls = "";
+  if (ref) cls = m.net < ref.net - 1e-9 ? "better" : (m.net > ref.net + 1e-9 ? "worse" : "");
+  var pcls = (limit !== undefined && m.peak > limit + 1e-6) ? "worse" : "";
+  var svc = "";
+  if (withService) {
+    var scls = m.svc.credit > 1e-9 ? "better" : (m.svc.credit < -1e-9 ? "worse" : "");
+    svc = "<td class='" + scls + "'>" + (m.svc.credit >= 0 ? "+" : "−") +
+          fmt(Math.abs(m.svc.credit)) + " &euro;</td>";
+  }
+  return "<tr><td>" + name + "</td><td>" + fmt(m.bill) + " &euro;</td><td>" +
+         fmt(m.socEnd, 1) + " kWh</td>" + svc + "<td class='" + cls + "'>" + fmt(m.net) +
+         " &euro;</td><td>" + fmt(m.bought, 1) + " kWh</td><td>" + fmt(m.sold, 1) + " kWh</td><td>" +
+         fmt(m.self, 0) + "%</td><td class='" + pcls + "'>" + fmt(m.peak, 2) + " kW</td></tr>";
+}
+
+function zerosArr() { var a = [], i; for (i = 0; i < T24; i++) a[i] = 0; return a; }
+function fillArr(n, v) { var a = [], i; for (i = 0; i < n; i++) a[i] = v; return a; }
+
+/* ====================================================================== *
+ *  6. Interface.                                                         *
+ * ====================================================================== */
+
+function buildApplianceRows() {
+  var tb = document.getElementById("appliance-rows"), i, html = "";
+  for (i = 0; i < APPLIANCES.length; i++) {
+    var a = APPLIANCES[i];
+    var kwh = 0, j;
+    for (j = 0; j < a.profile.length; j++) kwh += a.profile[j];
+    html += "<tr id='row-" + a.id + "' class='" + (a.on ? "" : "off") + "'>" +
+      "<td><label><input type='checkbox' id='on-" + a.id + "'" + (a.on ? " checked" : "") + ">" +
+      a.name + "</label> <span class='dur'>" + a.profile.length + " h &middot; " +
+      fmt(kwh, 1) + " kWh</span>" +
+      "<canvas class='mini' id='mini-" + a.id + "' title='power profile of the job'></canvas></td>" +
+      "<td class='num'><input type='number' id='s-" + a.id + "' min='0' max='23' step='1' value='" + a.s + "'></td>" +
+      "<td class='num'><input type='number' id='f-" + a.id + "' min='1' max='24' step='1' value='" + a.f + "'></td></tr>";
+  }
+  tb.innerHTML = html;
+  for (i = 0; i < APPLIANCES.length; i++) { bindAppliance(APPLIANCES[i]); drawMini(APPLIANCES[i]); }
+}
+
+/* the power profile of one job, as the appliance hands it to the controller */
+function drawMini(a) {
+  var cv = document.getElementById("mini-" + a.id);
+  if (!cv) return;
+  var c = setup(cv), g = c.g, i;
+  var peak = 0;
+  for (i = 0; i < APPLIANCES.length; i++) {
+    var p = APPLIANCES[i].profile, j;
+    for (j = 0; j < p.length; j++) if (p[j] > peak) peak = p[j];
+  }
+  var maxDur = 1;
+  for (i = 0; i < APPLIANCES.length; i++) maxDur = Math.max(maxDur, APPLIANCES[i].profile.length);
+  var bw = c.w / maxDur;
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0, c.h - .5); g.lineTo(c.w, c.h - .5); g.stroke();
+  g.fillStyle = a.on ? css("--load") : css("--muted");
+  for (i = 0; i < a.profile.length; i++) {
+    var hgt = (c.h - 3) * a.profile[i] / peak;
+    g.fillRect(i * bw + 1, c.h - 1 - hgt, bw - 2, hgt);
+  }
+}
+
+function bindAppliance(a) {
+  var on = document.getElementById("on-" + a.id);
+  var s = document.getElementById("s-" + a.id);
+  var f = document.getElementById("f-" + a.id);
+  function sync() {
+    a.on = on.checked;
+    a.s = clampInt(s.value, 0, 23, a.s);
+    a.f = clampInt(f.value, 1, 24, a.f);
+    if (a.f - a.s < a.profile.length) {           /* keep the window wide enough */
+      a.f = Math.min(24, a.s + a.profile.length);
+      if (a.f - a.s < a.profile.length) a.s = a.f - a.profile.length;
+    }
+    s.value = a.s; f.value = a.f;
+    document.getElementById("row-" + a.id).className = a.on ? "" : "off";
+    drawMini(a);
+    run();
+  }
+  on.addEventListener("change", sync);
+  s.addEventListener("change", sync);
+  f.addEventListener("change", sync);
+}
+
+/* the service controls, and what they are called, depend on the service */
+function syncService() {
+  var type = UI.service.value;
+  document.getElementById("service-box").hidden = (type === "none");
+  if (type === "none") return;
+  var isCap = (type === "cap");
+  document.getElementById("svc-label").innerHTML = isCap
+    ? "Event window, not above the cap"
+    : "Event window, following the curve";
+  document.getElementById("svc-level-name").textContent = isCap
+    ? "Cap on the power bought" : "Peak of the curve to follow";
+  if (isCap) { UI.svcFrom.value = 18; UI.svcTo.value = 21; UI.svcLevel.value = 0.4; }
+  else { UI.svcFrom.value = 11; UI.svcTo.value = 16; UI.svcLevel.value = 2; }
+  document.getElementById("svc-level-val").textContent = fmt(+UI.svcLevel.value, 1) + " kW";
+}
+
+function clampInt(v, lo, hi, fallback) {
+  var n = parseInt(v, 10);
+  if (isNaN(n)) return fallback;
+  return Math.max(lo, Math.min(hi, n));
+}
+
+/* one solve per pause, so that dragging a slider stays smooth */
+var pending = null;
+function runSoon() {
+  if (pending) clearTimeout(pending);
+  pending = setTimeout(function () { pending = null; run(); }, 90);
+}
+
+function bindSlider(id, fmtFn) {
+  var el = document.getElementById(id), out = document.getElementById(id + "-val");
+  UI[id] = el;
+  function sync() { out.textContent = fmtFn(+el.value); runSoon(); }
+  el.addEventListener("input", sync);
+  out.textContent = fmtFn(+el.value);
+}
+
+function init() {
+  buildApplianceRows();
+  bindSlider("pv", function (v) { return fmt(v, 1) + " kWp"; });
+  bindSlider("cap", function (v) { return v === 0 ? "no battery" : fmt(v, 0) + " kWh"; });
+  bindSlider("pess", function (v) { return fmt(v, 1) + " kW"; });
+  bindSlider("soc0", function (v) { return fmt(v, 0) + "%"; });
+  bindSlider("pmax", function (v) { return fmt(v, 1) + " kW"; });
+  bindSlider("eta", function (v) { return fmt(v, 0) + "%"; });
+  bindSlider("f1", function (v) { return fmt(v) + " €/kWh"; });
+  bindSlider("f3", function (v) { return fmt(v) + " €/kWh"; });
+  bindSlider("cexp", function (v) { return fmt(v) + " €/kWh"; });
+  bindSlider("wear", function (v) { return fmt(v, 3) + " €/kWh"; });
+  bindSlider("svc-level", function (v) { return fmt(v, 1) + " kW"; });
+  bindSlider("svc-pen", function (v) { return fmt(v) + " €/kWh"; });
+  bindSlider("svc-fee", function (v) { return fmt(v) + " €/h"; });
+  UI.svcLevel = UI["svc-level"]; UI.svcPen = UI["svc-pen"]; UI.svcFee = UI["svc-fee"];
+  UI.svcFrom = document.getElementById("svc-from");
+  UI.svcTo = document.getElementById("svc-to");
+  UI.service = document.getElementById("service");
+  UI.svcFrom.addEventListener("change", run);
+  UI.svcTo.addEventListener("change", run);
+  UI.service.addEventListener("change", function () { syncService(); run(); });
+  syncService();
+
+  UI.weather = document.getElementById("weather");
+  UI.terminal = document.getElementById("terminal");
+  UI.weather.addEventListener("change", run);
+  UI.terminal.addEventListener("change", run);
+  document.getElementById("reset").addEventListener("click", function () { location.reload(); });
+  window.addEventListener("resize", runSoon);
+  run();
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>
