@@ -14,8 +14,8 @@ h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba(255,255,255,.15); padding
 .part-mpc { background: #3d7fb0; } .part-rl { background: #b98020; } .part-id { background: #4b9656; } .part-gen { background: #6b7682; }
 .course-strip { display: flex; width: 100%; height: 2.6rem; border-radius: 4px; overflow: hidden; margin: 1rem 0 .4rem; }
 .course-strip > div { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: .9rem; }
-.course-strip .s-mpc { background: #3d7fb0; flex: 14; } .course-strip .s-rl { background: #b98020; flex: 6; }
-.course-strip .s-id { background: #4b9656; flex: 9; } .course-strip .s-end { background: #6b7682; flex: 1; }
+.course-strip .s-mpc { background: #3d7fb0; flex: 15; } .course-strip .s-rl { background: #b98020; flex: 6; }
+.course-strip .s-id { background: #4b9656; flex: 8; } .course-strip .s-end { background: #6b7682; flex: 1; }
 .strip-dates { position: relative; height: 1.3rem; font-size: .8rem; opacity: .75; margin-bottom: 1.2rem; }
 .strip-dates span { position: absolute; top: 0; white-space: nowrap; }
 .strip-dates span:last-child { transform: translateX(-60%); }

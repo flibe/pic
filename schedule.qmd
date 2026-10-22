@@ -1,49 +1,49 @@
 ---
 title: "Schedule"
-subtitle: "30 lessons of 3 hours, from 23/09 to 30/11/2026. This page is the plan: topics move between lessons as the course goes on, and the table is not updated after every change. What a lesson actually covered is written in the [lesson diary](lessons.qmd)."
+subtitle: "30 lessons of 3 hours, from 23/09 to 30/11/2026. The lessons already given are listed as they actually went; what follows is a plan, and topics keep moving between lessons as the course goes on. What a lesson actually covered is always written in the [lesson diary](lessons.qmd)."
 toc: false
 ---
 
 ```{=html}
-<div class="course-strip" role="img" aria-label="Course parts: MPC lessons 1-14, RL lessons 15-20, identification lessons 21-29, wrap-up lesson 30">
+<div class="course-strip" role="img" aria-label="Course parts: MPC lessons 1-15, RL lessons 16-21, identification lessons 22-29, wrap-up lesson 30">
   <div class="s-mpc">MPC</div><div class="s-rl">RL</div><div class="s-id">Identification</div><div class="s-end"></div>
 </div>
 <div class="strip-dates">
-  <span style="left:0">23/09</span><span style="left:46.7%">26/10</span><span style="left:66.7%">09/11</span><span style="left:96.7%">30/11</span>
+  <span style="left:0">23/09</span><span style="left:50%">28/10</span><span style="left:70%">11/11</span><span style="left:96.7%">30/11</span>
 </div>
 ```
 
 | # | Date | Part | Topic |
 |--:|---|---|---|
-| 1 | Wed 23/09 | [Intro]{.part .part-gen} [MPC]{.part .part-mpc} | Course overview, logistics and exam. Receding horizon, nominal MPC and its properties, MPC pseudo-code and notation |
-| 2 | Thu 24/09 | [MPC]{.part .part-mpc} | Toy example vs PID, general formulation, infinite-horizon control, LQR and its optimal cost |
-| 3 | Mon 28/09 | [MPC]{.part .part-mpc} | Dual-mode control and implications for MPC; numerical experiment |
-| 4 | Wed 30/09 | [MPC]{.part .part-mpc} | Case study: control of an EV charging area (formulation and Julia code) |
-| 5 | Thu 01/10 | [MPC]{.part .part-mpc} | End of case study; value function interpretation, Bellman's principle, explicit MPC |
-| 6 | Mon 05/10 | [MPC]{.part .part-mpc} | Recursive feasibility; stability and Lyapunov theory |
-| 7 | Wed 07/10 | [MPC]{.part .part-mpc} | Stability of tracking MPC |
-| 8 | Thu 08/10 | [MPC]{.part .part-mpc} | Economic MPC; large-scale EV charging control |
-| 9 | Mon 12/10 | [MPC]{.part .part-mpc} | Large-scale EV charging: battery losses, decentralized strategies |
-| 10 | Wed 14/10 | [MPC]{.part .part-mpc} | Building energy management with MPC: model and constraints |
-| 11 | Thu 15/10 | [MPC]{.part .part-mpc} | Building energy management: objective function and results |
-| 12 | Mon 19/10 | [MPC]{.part .part-mpc} | Task scheduling in an assembly line; logical constraints |
-| 13 | Wed 21/10 | [MPC]{.part .part-mpc} | End of task scheduling; MPC for traffic control |
-| 14 | Thu 22/10 | [MPC]{.part .part-mpc} | Exercises; unmeasured states and offset-free MPC |
-| 15 | Mon 26/10 | [RL]{.part .part-rl} | From MPC to dynamic programming; introduction to RL |
-| 16 | Wed 28/10 | [RL]{.part .part-rl} | MDPs, value functions, Bellman equations |
-| 17 | Thu 29/10 | [RL]{.part .part-rl} | Dynamic programming: policy and value iteration; numerical experiment |
-| 18 | Mon 02/11 | [RL]{.part .part-rl} | Monte Carlo and temporal-difference methods; Q-learning |
-| 19 | Wed 04/11 | [RL]{.part .part-rl} | Function approximation and deep RL (DDPG) |
-| 20 | Thu 05/11 | [RL]{.part .part-rl} | Hybrid MPC–RL algorithms |
-| 21 | Mon 09/11 | [ID]{.part .part-id} | Introduction to identification; statistical estimators and their properties |
-| 22 | Wed 11/11 | [ID]{.part .part-id} | Linear and weighted least squares; regularization |
-| 23 | Thu 12/11 | [ID]{.part .part-id} | Maximum likelihood, Bayesian estimation, Cramér–Rao bound, nonlinear least squares |
-| 24 | Mon 16/11 | [ID]{.part .part-id} | Recursive least squares; dynamic models (ARX, output error), predictors |
-| 25 | Wed 18/11 | [ID]{.part .part-id} | Prediction error methods; experiment design; model validation |
-| 26 | Thu 19/11 | [ID]{.part .part-id} | Lab: full identification workflow on real data |
-| 27 | Mon 23/11 | [ID]{.part .part-id} | Kalman filter, EKF, moving horizon estimation |
-| 28 | Wed 25/11 | [ID]{.part .part-id} | Data-driven predictive control: Willems' lemma and DeePC |
-| 29 | Thu 26/11 | [ID]{.part .part-id} | Time series for forecasting; advanced identification methods |
+| 1 | Wed 23/09 | [Intro]{.part .part-gen} [MPC]{.part .part-mpc} | Course overview, logistics and exam; receding horizon, nominal MPC and its properties, pseudo-code and notation |
+| 2 | Thu 24/09 | [MPC]{.part .part-mpc} | MPC in practice: centralized and decentralized, the two time indices, first example, state space models |
+| 3 | Mon 28/09 | [MPC]{.part .part-mpc} | The general MPC problem; infinite-horizon constrained control, LQR and its optimal cost |
+| 4 | Wed 30/09 | [MPC]{.part .part-mpc} | Why MPC is optimal: dual mode control and the value function |
+| 5 | Thu 01/10 | [MPC]{.part .part-mpc} | Conclusions on optimality; first case study: the EV charging service area |
+| 6 | Mon 05/10 | [MPC]{.part .part-mpc} | Service area: final formulation and Julia code; losses and indicator variables |
+| 7 | Wed 07/10 | [MPC]{.part .part-mpc} | End of the service area example; recursive feasibility |
+| 8 | Thu 08/10 | [MPC]{.part .part-mpc} | Proving recursive feasibility; stability, first definitions |
+| 9 | Mon 12/10 | [MPC]{.part .part-mpc} | Stability of MPC: Lyapunov theory |
+| 10 | Wed 14/10 | [MPC]{.part .part-mpc} | Stability of MPC: the optimal cost as Lyapunov function |
+| 11 | Thu 15/10 | [MPC]{.part .part-mpc} | The role of the MPC ingredients; economic MPC; second case study: the building |
+| 12 | Mon 19/10 | [MPC]{.part .part-mpc} | Building: shiftable loads, the electricity bill, battery ageing |
+| 13 | Wed 21/10 | [MPC]{.part .part-mpc} | End of the building case study; tuning and the Pareto frontier; large-scale EV charging |
+| 14 | Thu 22/10 | [MPC]{.part .part-mpc} | End of the large-scale charging example; MPC for traffic control |
+| 15 | Mon 26/10 | [MPC]{.part .part-mpc} | Task scheduling in an assembly line; logical constraints at work |
+| 16 | Wed 28/10 | [RL]{.part .part-rl} | From MPC to dynamic programming; introduction to RL |
+| 17 | Thu 29/10 | [RL]{.part .part-rl} | MDPs, value functions, Bellman equations |
+| 18 | Mon 02/11 | [RL]{.part .part-rl} | Dynamic programming: policy and value iteration; numerical experiment |
+| 19 | Wed 04/11 | [RL]{.part .part-rl} | Monte Carlo and temporal-difference methods; Q-learning |
+| 20 | Thu 05/11 | [RL]{.part .part-rl} | Function approximation and deep RL (DDPG) |
+| 21 | Mon 09/11 | [RL]{.part .part-rl} | Hybrid MPC–RL algorithms; learning the weights and the terminal cost of an MPC |
+| 22 | Wed 11/11 | [ID]{.part .part-id} | Introduction to identification; statistical estimators and their properties |
+| 23 | Thu 12/11 | [ID]{.part .part-id} | Linear and weighted least squares; regularization |
+| 24 | Mon 16/11 | [ID]{.part .part-id} | Maximum likelihood, Bayesian estimation, Cramér–Rao bound, nonlinear least squares |
+| 25 | Wed 18/11 | [ID]{.part .part-id} | Recursive least squares; dynamic models (ARX, output error), predictors |
+| 26 | Thu 19/11 | [ID]{.part .part-id} | Prediction error methods; experiment design; model validation |
+| 27 | Mon 23/11 | [ID]{.part .part-id} | Lab: full identification workflow on real data |
+| 28 | Wed 25/11 | [ID]{.part .part-id} | Kalman filter, EKF, moving horizon estimation |
+| 29 | Thu 26/11 | [ID]{.part .part-id} | Data-driven predictive control (Willems' lemma, DeePC); time series and advanced methods |
 | 30 | Mon 30/11 | [Wrap-up]{.part .part-gen} | Course recap, exam information, identify-then-control demo |
 
 : {.schedule tbl-colwidths="[5,15,15,65]"}

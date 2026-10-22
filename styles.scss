@@ -57,9 +57,9 @@ h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba($ink, .12); padding-botto
                 overflow: hidden; margin: 1rem 0 .4rem; }
 .course-strip > div { display: flex; align-items: center; justify-content: center;
                       color: #fff; font-weight: 600; font-size: .9rem; }
-.course-strip .s-mpc { background: $mpc; flex: 14; }
+.course-strip .s-mpc { background: $mpc; flex: 15; }
 .course-strip .s-rl  { background: $rl;  flex: 6; }
-.course-strip .s-id  { background: $idn; flex: 9; }
+.course-strip .s-id  { background: $idn; flex: 8; }
 .course-strip .s-end { background: #5b6672; flex: 1; }
 .strip-dates { position: relative; height: 1.3rem; font-size: .8rem; opacity: .75; margin-bottom: 1.2rem; }
 .strip-dates span { position: absolute; top: 0; white-space: nowrap; }
