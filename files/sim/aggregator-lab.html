@@ -117,11 +117,17 @@
   .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 6px; }
   .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
   .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .clock { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; color: var(--ink-2);
+           font-variant-numeric: tabular-nums; margin-left: auto; }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
   .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
            border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
   button:hover { border-color: var(--muted); }
   button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+  button.primary { background: var(--mpc); border-color: var(--mpc); color: #fff; min-width: 86px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #10161c; } }
 
   table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
   table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
@@ -164,7 +170,17 @@
         <span class="status" id="status">&nbsp;</span>
       </div>
 
-      <h3>Fleet</h3>
+      <div class="transport">
+        <button class="primary" id="play">Pause</button>
+        <button id="step">Step</button>
+        <button id="reset">Restart</button>
+        <label class="pick">Speed
+          <input type="range" id="speed" min="1" max="10" step="1" value="4" style="width:90px">
+        </label>
+        <span class="clock" id="clock">00:00</span>
+      </div>
+
+      <h3 style="margin-top:14px">Fleet</h3>
       <div class="row">
         <label class="pick">Site
           <select id="scenario">
@@ -178,7 +194,7 @@
       <div class="sliders" style="margin-top:10px">
         <div class="slider">
           <label for="nveh">Vehicles <span class="num" id="nveh-val">10</span></label>
-          <input type="range" id="nveh" min="3" max="18" step="1" value="10">
+          <input type="range" id="nveh" min="3" max="14" step="1" value="10">
         </div>
         <div class="slider">
           <label for="pmax">Charger power <span class="num" id="pmax-val">11 kW</span></label>
@@ -186,32 +202,26 @@
         </div>
       </div>
 
-      <h3 style="margin-top:16px">What the grid asks for</h3>
-      <div class="row">
-        <label class="pick">Dispatch profile
-          <select id="refshape">
-            <option value="bell" selected>a bell around midday</option>
-            <option value="flat">flat, while the cars are there</option>
-            <option value="dip">flat, with a stop in the middle</option>
-          </select>
-        </label>
-      </div>
+      <h3 style="margin-top:16px">The signal from the aggregator</h3>
+      <p class="hint">A flat profile for the hours in which the cars are there, with a window in which
+        the fleet is asked to stop. That request does not exist at the beginning of the day: it arrives
+        at the hour you choose, and the controller has to rearrange what is left.</p>
       <div class="sliders" style="margin-top:10px">
         <div class="slider">
-          <label for="reflevel">Power asked for <span class="num" id="reflevel-val">35 kW</span></label>
-          <input type="range" id="reflevel" min="0" max="80" step="1" value="35">
+          <label for="reflevel">Power asked for <span class="num" id="reflevel-val">28 kW</span></label>
+          <input type="range" id="reflevel" min="0" max="80" step="1" value="28">
         </div>
-        <div class="slider" id="win-box">
-          <label for="winfrom">Stop from &hellip; to <span class="num" id="winfrom-val">18 &ndash; 21</span></label>
-          <input type="range" id="winfrom" min="0" max="22" step="1" value="18">
-          <input type="range" id="winto" min="1" max="24" step="1" value="21">
-        </div>
-      </div>
-
-      <h3 style="margin-top:16px">The controller</h3>
-      <div class="sliders">
         <div class="slider">
-          <label for="prio">Priority <span class="num" id="prio-val">balanced</span></label>
+          <label for="winfrom">Stop between <span class="num" id="winfrom-val">13 &ndash; 16</span></label>
+          <input type="range" id="winfrom" min="0" max="22" step="1" value="13">
+          <input type="range" id="winto" min="1" max="24" step="1" value="16">
+        </div>
+        <div class="slider">
+          <label for="announce">Request arrives at <span class="num" id="announce-val">10:00</span></label>
+          <input type="range" id="announce" min="0" max="23" step="1" value="10">
+        </div>
+        <div class="slider">
+          <label for="prio">Priority <span class="num" id="prio-val">mostly the drivers</span></label>
           <input type="range" id="prio" min="0" max="100" step="1" value="65">
         </div>
       </div>
@@ -223,27 +233,27 @@
 
     <div class="panel charts">
       <div>
-        <div class="chart-title"><span>Power of the whole fleet</span><span class="unit">kW</span></div>
-        <canvas class="chart-canvas tall" id="chart-agg" aria-label="Aggregate charging power of the fleet against the reference"></canvas>
+        <div class="chart-title"><span>Power of the whole fleet</span><span class="unit">kW &middot; one colour per car</span></div>
+        <canvas class="chart-canvas tall" id="chart-agg" aria-label="Charging power of every vehicle stacked, against the profile asked by the aggregator"></canvas>
         <div class="legend">
-          <span><i class="key ref"></i>asked by the grid</span>
-          <span><i class="key mpc"></i>with the aggregator's MPC</span>
+          <span><i class="key ref"></i>asked by the aggregator</span>
+          <span><i class="key mpc"></i>the plan from now on</span>
           <span><i class="key base"></i>everyone charges on arrival</span>
+          <span><i class="box plug"></i>the hours already run, car by car</span>
         </div>
       </div>
       <div>
-        <div class="chart-title"><span>Each vehicle</span><span class="unit">plugged in, and charging</span></div>
-        <canvas class="chart-canvas fleet" id="chart-fleet" aria-label="Connection window and charging power of every vehicle"></canvas>
+        <div class="chart-title"><span>Charge of each car</span><span class="unit">% of the battery</span></div>
+        <canvas class="chart-canvas tall" id="chart-soc" aria-label="State of charge of every vehicle over the day"></canvas>
         <div class="legend">
-          <span><i class="box plug"></i>plugged in</span>
-          <span><i class="box chg"></i>charging</span>
-          <span><i class="box v2g"></i>giving power back</span>
-          <span><i class="box miss"></i>left below the requested charge</span>
+          <span><i class="key" style="border-color:var(--muted)"></i>what has happened</span>
+          <span><i class="key" style="border-top-style:dashed;border-color:var(--muted)"></i>what is planned</span>
+          <span><i class="box miss"></i>what the driver asked for, at departure</span>
         </div>
       </div>
       <div>
-        <div class="chart-title"><span>Charge at departure against what the driver asked</span><span class="unit">% of the battery</span></div>
-        <canvas class="chart-canvas" id="chart-soc" aria-label="State of charge at departure of every vehicle against the request"></canvas>
+        <div class="chart-title"><span>At departure</span><span class="unit">charge reached against the request</span></div>
+        <canvas class="chart-canvas" id="chart-bars" aria-label="Charge reached at departure by every vehicle against the request"></canvas>
       </div>
     </div>
   </section>
@@ -253,7 +263,7 @@
     <div class="table-wrap">
       <table class="results">
         <thead>
-          <tr><th>Strategy</th><th>Mean deviation</th><th>Worst deviation</th><th>Energy delivered</th><th>Drivers left short</th><th>Missing energy</th><th>Peak power</th></tr>
+          <tr><th>Strategy</th><th>Mean deviation</th><th>Worst deviation</th><th>Power during the stop</th><th>Energy delivered</th><th>Drivers left short</th><th>Missing energy</th></tr>
         </thead>
         <tbody id="result-rows"></tbody>
       </table>
@@ -265,54 +275,56 @@
     <div>
       <h2>What to notice</h2>
       <ul>
-        <li><b>Flexibility is parked time, not power.</b> A car that stays eight hours to take three hours
-          of charge can be moved anywhere inside its window; one that arrives nearly empty and leaves in
-          two hours cannot be moved at all. Shorten the stays, or raise what the drivers ask for, and the
-          fleet stops being able to follow the grid even though the chargers are the same.</li>
-        <li><b>Charging on arrival is the worst of both worlds.</b> The dotted line is what happens
-          without a controller: a wall of power in the morning and nothing afterwards. It follows no
-          reference, and it does not serve the drivers any better &mdash; they get their charge either
-          way, just earlier than anyone needed.</li>
-        <li><b>The priority slider is the weight of the lesson.</b> All the way to the grid, the
-          controller sacrifices the drivers' requests to follow the profile; all the way to the drivers,
-          it serves every request and follows the profile only with what is left over. Sweeping it from
-          one end to the other traces the Pareto frontier of the two goals, the picture of the previous
-          lesson: on this fleet, going from "the drivers" to "mostly the grid" buys about one kilowatt
-          of tracking for some thirty kilowatt-hours the drivers do not get.</li>
-        <li><b>The request can be impossible, and the problem must survive it.</b> Ask for more power than
-          the fleet can absorb, or for charges that do not fit in the time available, and nothing breaks:
-          the relaxation variables take the violation and the solution tells you how much was impossible.
-          That is why the deadlines are written with the slack &epsilon;<sub>p</sub> and not as hard
-          constraints &mdash; a hard version would simply report infeasible and leave the controller with
-          nothing to apply.</li>
-        <li><b>V2G buys the ability to go down.</b> With discharging allowed, the fleet can follow a
-          reference that asks it to stop, or even to give power back, at the price of energy that has to
-          be bought again later.</li>
+        <li><b>Watch the hour the request arrives.</b> Until then the controller is spreading the charge
+          to follow a flat profile. At that hour the stop appears in the part of the reference that is
+          still ahead, and the plan changes shape at once: the cars that can be moved take their energy
+          earlier, so that the window can be left empty. Nothing about the past changes &mdash; only
+          what is still to be decided.</li>
+        <li><b>Flexibility is parked time, not power.</b> A car that stays eight hours to take three
+          hours of charge can be moved anywhere inside its window; one that arrives nearly empty and
+          leaves in two hours cannot be moved at all. Announce the stop later, or shorten the stays, and
+          the fleet can no longer get out of the way.</li>
+        <li><b>Charging on arrival is the worst of both worlds.</b> The dotted line is the fleet without
+          a controller: a wall of power when the cars arrive and nothing afterwards. It follows no
+          profile, and the drivers are not served any better &mdash; they get their charge either way,
+          just earlier than anyone needed.</li>
+        <li><b>The priority slider is the weight of the lesson.</b> Towards the grid, the controller
+          sacrifices the drivers' requests to follow the profile; towards the drivers, it serves every
+          request and follows the profile with what is left over. Sweeping it traces the Pareto frontier
+          of the two goals, the picture of the previous lesson.</li>
+        <li><b>The request can be impossible, and the problem must survive it.</b> Ask for a stop that
+          covers the only hours in which a car is there, and nothing breaks: the relaxation variables
+          take the violation, and the table says how much charge was not delivered. A hard deadline
+          would simply report infeasible and leave the controller with nothing to apply.</li>
+        <li><b>V2G buys the ability to go down.</b> With discharging allowed the fleet can hold the
+          profile even when the request goes below what the cars already need, at the price of energy
+          that has to be bought again later.</li>
       </ul>
     </div>
     <div>
       <h2>The problem being solved</h2>
-      <p>One optimization over the day, with the arrivals, departures and requests of every vehicle
-        known. In closed loop it is re-solved at every step on the vehicles connected at that moment,
-        which is the set PEV<sub>i|k</sub> of the lesson.</p>
+      <p>At every hour the controller re-solves the problem over what is left of the day, on the
+        vehicles connected or expected &mdash; the set PEV<sub>i|k</sub> of the lesson &mdash; starting
+        from the charge they have now, and applies only the first step. The reference it uses is the one
+        known at that hour: before the announcement, the stop is not in it.</p>
       <p class="math">min &nbsp; d<sub>1</sub> &Sigma;<span class="cm">i</span> (P<span class="cm">i|k</span> &minus; P<sup>ref</sup><span class="cm">i|k</span>)<sup>2</sup> &nbsp;+&nbsp; d<sub>3</sub> &Sigma;<span class="cm">p</span> &epsilon;<span class="cm">p</span></p>
       <p class="math">P<span class="cm">i|k</span> = &Sigma;<span class="cm">p</span> (P<sup>ch</sup><span class="cm">i|k,p</span> &minus; P<sup>dis</sup><span class="cm">i|k,p</span>)<br>
         x<span class="cm">i+1|k,p</span> = x<span class="cm">i|k,p</span> + &eta;<sup>ch</sup> T P<sup>ch</sup><span class="cm">i|k,p</span> &minus; (1/&eta;<sup>dis</sup>) T P<sup>dis</sup><span class="cm">i|k,p</span><br>
         x<span class="cm">F<sub>p</sub>|k,p</span> &ge; x<sup>ref</sup><span class="cm">p</span> &minus; &epsilon;<span class="cm">p</span> &nbsp;&nbsp; &epsilon;<span class="cm">p</span> &ge; 0 &nbsp;&nbsp; 0 &le; x<span class="cm">i|k,p</span> &le; x<sup>max</sup><span class="cm">p</span></p>
       <p>The deadline of each driver is the relaxed constraint of the lesson: the slack
-        &epsilon;<sub>p</sub> is free to be positive, and it is paid for in the cost with the weight
+        &epsilon;<sub>p</sub> may be positive, and it is paid for in the cost with the weight
         d<sub>3</sub>, which is what the priority slider moves. A small d<sub>3</sub> lets the controller
         disappoint a driver to follow the grid better; a large one makes it disappoint a driver only when
         the request cannot be met at all.</p>
-      <p>Two notes on how this page differs from the blackboard. The square of the deviation is replaced
-        by the largest of a family of tangent lines to it, which keeps the problem linear and is exact to
-        within a fraction of a percent here; switching the penalty to the plain absolute value, with the
-        checkbox, changes the shape of the solution, because the square spreads the error over many hours
-        while the absolute value concentrates it in few. And the minimum charging power of a real charger
-        &mdash; the semi-continuous variable of the lesson &mdash; is left out: it would turn this linear
-        program into a mixed-integer one, as in the <a href="building-lab.html">Building Energy Lab</a>.</p>
-      <p>The solver is the same simplex written for the building lab, checked against the Cbc solver on
-        random instances of this model.</p>
+      <p>Two notes on how this page differs from the blackboard. The square of the deviation is written
+        as a cost in pieces of increasing price &mdash; the chords of a parabola &mdash; which keeps the
+        problem linear; with the checkbox off the penalty becomes the plain absolute value, and the
+        solution changes shape, because the square spreads the error over many hours while the absolute
+        value concentrates it in few. And the minimum charging power of a real charger, the
+        semi-continuous variable of the lesson, is left out: it would turn this linear program into a
+        mixed-integer one, as in the <a href="building-lab.html">Building Energy Lab</a>.</p>
+      <p>The solver is the same simplex written for the building lab, and the model of this page was
+        checked against the Cbc solver on random instances, optimum against optimum.</p>
     </div>
   </section>
 
@@ -466,7 +478,7 @@ function lpSolve(A, b, c, lo, up, opt) {
 }
 
 /* ====================================================================== *
- *  2. The aggregator problem as a linear program.                        *
+ *  2. The aggregator problem as a linear program, from the hour k0 on.   *
  *                                                                        *
  *  Columns:  u[p][t]  charging power of vehicle p at hour t   [kW]       *
  *            d[p][t]  power given back, only with V2G         [kW]       *
@@ -486,30 +498,31 @@ function lpSolve(A, b, c, lo, up, opt) {
 
 var T24 = 24, DT = 1;
 
-function buildAgg(P) {
+function buildAgg(P, k0, socNow) {
   var N = P.fleet.length, t, p, j, i;
-  var win = [], pos = [], off = [], offD = [], ncols = 0, nu = 0;
+  var nT = T24 - k0;
+  var win = [], pos = [], off = [], offD = [], ncols = 0, act = [];
   for (p = 0; p < N; p++) {
     var v = P.fleet[p];
     win[p] = []; pos[p] = [];
     for (t = 0; t < T24; t++) pos[p][t] = -1;
-    for (t = v.arrive; t < v.depart; t++) { pos[p][t] = win[p].length; win[p].push(t); }
-    off[p] = ncols; ncols += win[p].length; nu += win[p].length;
+    var a = Math.max(v.arrive, k0);
+    for (t = a; t < v.depart; t++) { pos[p][t] = win[p].length; win[p].push(t); }
+    act[p] = win[p].length > 0;
+    off[p] = ncols; ncols += win[p].length;
   }
   if (P.v2g) for (p = 0; p < N; p++) { offD[p] = ncols; ncols += win[p].length; }
   var seg = P.segments, S = seg.length;
-  var ISP = ncols; ncols += S * T24;
-  var ISM = ncols; ncols += S * T24;
+  var ISP = ncols; ncols += S * nT;
+  var ISM = ncols; ncols += S * nT;
   var IEPS = ncols; ncols += N;
 
-  /* rows */
   var nCap = 0;
-  for (p = 0; p < N; p++) nCap += P.v2g ? win[p].length : (win[p].length > 0 ? 1 : 0);
-  var m = T24 + N + nCap;
+  for (p = 0; p < N; p++) nCap += P.v2g ? win[p].length : (act[p] ? 1 : 0);
+  var m = nT + N + nCap;
 
   var A = [], b = [], c = [], lo = [], up = [];
   for (i = 0; i < m; i++) { A[i] = new Float64Array(ncols + nCap + N); b[i] = 0; }
-  /* slack columns are appended after the structural ones */
   var ISL = ncols;                       /* capacity slacks  */
   var ISD = ISL + nCap;                  /* deadline surplus */
   var ntot = ISD + N;
@@ -521,10 +534,9 @@ function buildAgg(P) {
       up[off[p] + i] = P.fleet[p].pmax;
       if (P.v2g) up[offD[p] + i] = P.fleet[p].pmax;
     }
-    up[IEPS + p] = Infinity;
     c[IEPS + p] = P.wUser;               /* price of leaving a driver short */
   }
-  for (t = 0; t < T24; t++) {
+  for (t = 0; t < nT; t++) {
     for (j = 0; j < S; j++) {
       c[ISP + t * S + j] = P.wTrack * seg[j].price;
       c[ISM + t * S + j] = P.wTrack * seg[j].price;
@@ -533,32 +545,33 @@ function buildAgg(P) {
     }
   }
 
-  /* deviation rows */
-  for (t = 0; t < T24; t++) {
-    var r = A[t];
+  /* deviation rows, one per hour still to come */
+  for (t = 0; t < nT; t++) {
+    var r = A[t], tt = k0 + t;
     for (p = 0; p < N; p++) {
-      var k = pos[p][t];
+      var k = pos[p][tt];
       if (k >= 0) { r[off[p] + k] = 1; if (P.v2g) r[offD[p] + k] = -1; }
     }
     for (j = 0; j < S; j++) { r[ISP + t * S + j] = -1; r[ISM + t * S + j] = 1; }
-    b[t] = P.pref[t];
+    b[t] = P.pref[tt];
   }
   /* deadline rows: what the driver still needs, minus the slack */
   for (p = 0; p < N; p++) {
-    var rd = A[T24 + p], v2 = P.fleet[p];
+    var rd = A[nT + p], v2 = P.fleet[p], now = socNow[p];
     for (i = 0; i < win[p].length; i++) {
       rd[off[p] + i] = eta * DT;
       if (P.v2g) rd[offD[p] + i] = -DT / eta;
     }
     rd[IEPS + p] = 1;
     rd[ISD + p] = -1;
-    b[T24 + p] = Math.max(0, v2.target - v2.soc) * v2.cap;
+    b[nT + p] = Math.max(0, v2.target - now) * v2.cap;
   }
   /* capacity rows */
-  var rowCap = T24 + N, capIdx = 0;
+  var rowCap = nT + N, capIdx = 0;
   for (p = 0; p < N; p++) {
-    if (win[p].length === 0) continue;
-    var room = (1 - P.fleet[p].soc) * P.fleet[p].cap;
+    if (!act[p]) continue;
+    var room = (1 - socNow[p]) * P.fleet[p].cap;
+    if (room < 0) room = 0;
     if (!P.v2g) {
       var rc = A[rowCap + capIdx];
       for (i = 0; i < win[p].length; i++) rc[off[p] + i] = eta * DT;
@@ -566,72 +579,67 @@ function buildAgg(P) {
       b[rowCap + capIdx] = room;
       capIdx++;
     } else {
-      for (var tt = 0; tt < win[p].length; tt++) {
+      for (var q = 0; q < win[p].length; q++) {
         var rc2 = A[rowCap + capIdx];
-        for (i = 0; i <= tt; i++) { rc2[off[p] + i] = eta * DT; rc2[offD[p] + i] = -DT / eta; }
+        for (i = 0; i <= q; i++) { rc2[off[p] + i] = eta * DT; rc2[offD[p] + i] = -DT / eta; }
         rc2[ISL + capIdx] = 1;
         b[rowCap + capIdx] = room;
         capIdx++;
       }
     }
   }
-  return { A: A, b: b, c: c, lo: lo, up: up, n: ntot, m: m, P: P,
-           win: win, off: off, offD: offD, ISP: ISP, ISM: ISM, IEPS: IEPS };
+
+  return { A: A, b: b, c: c, lo: lo, up: up, n: ntot, m: m, P: P, k0: k0,
+           win: win, pos: pos, off: off, offD: offD, ISP: ISP, ISM: ISM, IEPS: IEPS };
 }
 
+/* the plan: power of every vehicle for every hour from k0 on */
 function unpackAgg(M, x) {
   var P = M.P, N = P.fleet.length, p, t, i;
-  var power = [], soc = [], perVeh = [], shortfall = [];
-  for (t = 0; t < T24; t++) power[t] = 0;
+  var plan = [];
   for (p = 0; p < N; p++) {
-    var v = P.fleet[p], e = v.soc * v.cap, row = [];
-    for (t = 0; t < T24; t++) row[t] = 0;
+    plan[p] = [];
+    for (t = 0; t < T24; t++) plan[p][t] = 0;
     for (i = 0; i < M.win[p].length; i++) {
       t = M.win[p][i];
       var u = x[M.off[p] + i], d = P.v2g ? x[M.offD[p] + i] : 0;
       if (u < 1e-9) u = 0;
       if (d < 1e-9) d = 0;
-      row[t] = u - d;
-      power[t] += u - d;
-      e += P.eta * DT * u - DT * d / P.eta;
+      plan[p][t] = u - d;
     }
-    perVeh[p] = row;
-    soc[p] = e / v.cap;
-    shortfall[p] = Math.max(0, (v.target - soc[p]) * v.cap);
   }
-  return { power: power, soc: soc, perVeh: perVeh, shortfall: shortfall };
+  return plan;
 }
 
 /* charging as soon as plugged in, at full power, until the request is met */
 function dumbCharging(P) {
-  var N = P.fleet.length, p, t, i;
-  var power = [], soc = [], perVeh = [], shortfall = [];
-  for (t = 0; t < T24; t++) power[t] = 0;
+  var N = P.fleet.length, p, t;
+  var plan = [], soc = [];
   for (p = 0; p < N; p++) {
-    var v = P.fleet[p], e = v.soc * v.cap, row = [];
-    for (t = 0; t < T24; t++) row[t] = 0;
+    var v = P.fleet[p], e = v.soc * v.cap;
+    plan[p] = []; soc[p] = [];
+    for (t = 0; t < T24; t++) plan[p][t] = 0;
     var needed = Math.max(0, v.target - v.soc) * v.cap;
     var room = (1 - v.soc) * v.cap;
-    for (t = v.arrive; t < v.depart; t++) {
-      var want = Math.min(v.pmax, needed / (P.eta * DT), room / (P.eta * DT));
-      if (want < 1e-9) break;
-      row[t] = want;
-      power[t] += want;
-      var gained = P.eta * DT * want;
-      e += gained; needed -= gained; room -= gained;
+    for (t = 0; t < T24; t++) {
+      if (t >= v.arrive && t < v.depart) {
+        var want = Math.min(v.pmax, needed / (P.eta * DT), room / (P.eta * DT));
+        if (want < 1e-9) want = 0;
+        plan[p][t] = want;
+        var gained = P.eta * DT * want;
+        e += gained; needed -= gained; room -= gained;
+      }
+      soc[p][t] = e / v.cap;
     }
-    perVeh[p] = row;
-    soc[p] = e / v.cap;
-    shortfall[p] = Math.max(0, (v.target - soc[p]) * v.cap);
   }
-  return { power: power, soc: soc, perVeh: perVeh, shortfall: shortfall };
+  return { plan: plan, soc: soc };
 }
 
 /* ====================================================================== *
- *  3. The day: fleet, request, metrics.                                  *
+ *  3. The day: fleet, the signal, the closed loop.                       *
  * ====================================================================== */
 
-var UI = {}, SEED = 7;
+var UI = {}, SEED = 7, SIM = null, timer = null, playing = true;
 
 function rng() { SEED = (1103515245 * SEED + 12345) % 2147483648; return SEED / 2147483648; }
 function rint(a, b) { return a + Math.floor(rng() * (b - a + 1)); }
@@ -641,13 +649,13 @@ function makeFleet(n, scenario, pmax) {
   for (i = 0; i < n; i++) {
     var arrive, stay, soc0, target;
     if (scenario === "office") {
-      arrive = rint(7, 10); stay = rint(6, 9);
+      arrive = rint(6, 9); stay = rint(7, 10);
       soc0 = 0.15 + rng() * 0.35; target = 0.7 + rng() * 0.25;
     } else if (scenario === "mall") {
-      arrive = rint(9, 19); stay = rint(1, 4);
+      arrive = rint(9, 18); stay = rint(2, 5);
       soc0 = 0.25 + rng() * 0.4; target = 0.6 + rng() * 0.3;
     } else {
-      arrive = rint(0, 6); stay = rint(8, 14);
+      arrive = rint(0, 6); stay = rint(9, 15);
       soc0 = 0.1 + rng() * 0.3; target = 0.8 + rng() * 0.2;
     }
     var depart = Math.min(T24, arrive + stay);
@@ -659,51 +667,23 @@ function makeFleet(n, scenario, pmax) {
   return out;
 }
 
-/* An aggregator only offers power for the hours in which it has vehicles, so
-   the flat profiles are asked for between the first arrival and the last
-   departure of the fleet.  The bell is a daylight shape and stands alone. */
-function makeRef(shape, level, from, to, fleet) {
+/* The profile the aggregator has to follow: flat while the cars are there,
+   zero inside the window of the stop.  Before the stop is announced the
+   controller believes the profile is flat all the way.                    */
+function makeRef(level, from, to, fleet, withStop) {
   var out = [], t, t0 = T24, t1 = 0, i;
   for (i = 0; i < fleet.length; i++) {
     if (fleet[i].arrive < t0) t0 = fleet[i].arrive;
     if (fleet[i].depart > t1) t1 = fleet[i].depart;
   }
   for (t = 0; t < T24; t++) {
-    if (shape === "flat") out[t] = (t >= t0 && t < t1) ? level : 0;
-    else if (shape === "bell") {
-      var s = Math.sin(Math.PI * (t + 0.5 - 7) / 11);
-      out[t] = (t + 0.5 > 7 && t + 0.5 < 18) ? level * Math.pow(s, 1.5) : 0;
-    } else {
-      out[t] = (t >= t0 && t < t1 && !(t >= from && t < to)) ? level : 0;
-    }
+    var on = (t >= t0 && t < t1);
+    if (withStop && t >= from && t < to) on = false;
+    out[t] = on ? level : 0;
   }
   return out;
 }
 
-function readUI() {
-  var n = +UI.nveh.value, pmax = +UI.pmax.value;
-  SEED = UI.seed;
-  var fleet = makeFleet(n, UI.scenario.value, pmax);
-  var from = Math.min(+UI.winfrom.value, +UI.winto.value - 1);
-  var to = Math.max(+UI.winto.value, from + 1);
-  /* the priority slider moves the weight of a disappointed driver against the
-     weight of a deviation from the profile the grid asked for              */
-  var s = +UI.prio.value / 100;
-  var wUser = 0.05 * Math.pow(400, s);
-  var emax = Math.max(10, n * pmax);
-  return {
-    fleet: fleet, pref: makeRef(UI.refshape.value, +UI.reflevel.value, from, to, fleet),
-    eta: 0.95, v2g: UI.v2g.checked, square: UI.square.checked,
-    wTrack: 1, wUser: wUser * 10,
-    segments: makeSegments(UI.square.checked, emax),
-    refFrom: from, refTo: to, shape: UI.refshape.value
-  };
-}
-
-/* The price list of the deviation.  For the square, the chords of e^2 on
-   breakpoints that double each time: fine where the deviation is small,
-   coarse where it is already large, and never a stretch that costs nothing.
-   For the absolute value, one single piece of price one.                 */
 function makeSegments(square, emax) {
   /* the price of the first piece of the square, so that switching between the
      two penalties does not quietly change how much a driver is worth       */
@@ -719,20 +699,89 @@ function makeSegments(square, emax) {
   return out;
 }
 
-function metrics(P, sol) {
-  var t, p, dev = 0, worst = 0, energy = 0, peak = 0, short0 = 0, nshort = 0;
+function readUI() {
+  var n = +UI.nveh.value, pmax = +UI.pmax.value;
+  SEED = UI.seed;
+  var fleet = makeFleet(n, UI.scenario.value, pmax);
+  var from = +UI.winfrom.value, to = +UI.winto.value;
+  if (to <= from) { to = from + 1; UI.winto.value = to; }
+  var s = +UI.prio.value / 100;
+  var emax = Math.max(10, n * pmax);
+  var level = +UI.reflevel.value;
+  return {
+    fleet: fleet, eta: 0.95, v2g: UI.v2g.checked, square: UI.square.checked,
+    level: level, from: from, to: to, announce: +UI.announce.value,
+    refFlat: makeRef(level, from, to, fleet, false),
+    refStop: makeRef(level, from, to, fleet, true),
+    pref: makeRef(level, from, to, fleet, true),     /* the true profile */
+    wTrack: 1, wUser: 0.05 * Math.pow(400, s) * 10,
+    segments: makeSegments(UI.square.checked, emax)
+  };
+}
+
+/* the whole day in closed loop, one optimization per hour */
+function runClosedLoop(P) {
+  var N = P.fleet.length, p, t;
+  var soc = [], realized = [], socPath = [], plans = [], ms = 0, infeasible = 0;
+  for (p = 0; p < N; p++) {
+    soc[p] = P.fleet[p].soc;
+    realized[p] = [];
+    socPath[p] = [];
+    for (t = 0; t < T24; t++) { realized[p][t] = 0; socPath[p][t] = soc[p]; }
+  }
   for (t = 0; t < T24; t++) {
-    var e = Math.abs(sol.power[t] - P.pref[t]);
+    /* what the controller knows at this hour */
+    var known = (t >= P.announce) ? P.refStop : P.refFlat;
+    var Pk = {};
+    for (var key in P) if (P.hasOwnProperty(key)) Pk[key] = P[key];
+    Pk.pref = known;
+    var t0 = (window.performance && performance.now) ? performance.now() : 0;
+    var M = buildAgg(Pk, t, soc);
+    var r = lpSolve(M.A, M.b, M.c, M.lo, M.up, null);
+    ms += ((window.performance && performance.now) ? performance.now() : 0) - t0;
+    if (r.status !== "optimal") { infeasible++; plans[t] = null; continue; }
+    var plan = unpackAgg(M, r.x);
+    plans[t] = plan;
+    for (p = 0; p < N; p++) {
+      realized[p][t] = plan[p][t];
+      var u = plan[p][t];
+      soc[p] += (u >= 0 ? P.eta * DT * u : DT * u / P.eta) / P.fleet[p].cap;
+      if (soc[p] < 0) soc[p] = 0;
+      if (soc[p] > 1) soc[p] = 1;
+      socPath[p][t] = soc[p];
+    }
+  }
+  return { realized: realized, socPath: socPath, plans: plans, ms: ms, infeasible: infeasible };
+}
+
+function aggregate(planByCar, from, to) {
+  var t, p, out = [];
+  for (t = 0; t < T24; t++) {
+    var s = 0;
+    for (p = 0; p < planByCar.length; p++) s += planByCar[p][t];
+    out[t] = s;
+  }
+  return out;
+}
+
+function metrics(P, powerByCar, socPath) {
+  var t, p, dev = 0, worst = 0, energy = 0, inStop = 0, short0 = 0, nshort = 0;
+  var agg = aggregate(powerByCar);
+  for (t = 0; t < T24; t++) {
+    var e = Math.abs(agg[t] - P.pref[t]);
     dev += e;
     if (e > worst) worst = e;
-    if (sol.power[t] > peak) peak = sol.power[t];
-    energy += Math.max(0, sol.power[t]) * DT;
+    energy += Math.max(0, agg[t]) * DT;
+    if (t >= P.from && t < P.to) inStop += Math.abs(agg[t]) * DT;
   }
   for (p = 0; p < P.fleet.length; p++) {
-    if (sol.shortfall[p] > 1e-6) { nshort++; short0 += sol.shortfall[p]; }
+    var end = socPath[p][P.fleet[p].depart - 1];
+    if (P.fleet[p].depart - 1 < 0) end = P.fleet[p].soc;
+    var miss = Math.max(0, (P.fleet[p].target - end) * P.fleet[p].cap);
+    if (miss > 1e-6) { nshort++; short0 += miss; }
   }
-  return { dev: dev / T24, worst: worst, energy: energy, peak: peak,
-           nshort: nshort, short: short0 };
+  return { dev: dev / T24, worst: worst, energy: energy, inStop: inStop,
+           nshort: nshort, short: short0, agg: agg };
 }
 
 /* ====================================================================== *
@@ -740,6 +789,15 @@ function metrics(P, sol) {
  * ====================================================================== */
 
 function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function isDark() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function carColor(i, n, alpha) {
+  var hue = Math.round((360 * i / Math.max(n, 1) + 20) % 360);
+  var l = isDark() ? 62 : 46, s = 58;
+  if (alpha === undefined) alpha = 1;
+  return "hsla(" + hue + "," + s + "%," + l + "%," + alpha + ")";
+}
 
 function setup(cv) {
   var dpr = window.devicePixelRatio || 1;
@@ -772,85 +830,142 @@ function axes(g, w, h, pad, lo, hi) {
   }
 }
 
-function stepLine(g, w, h, pad, data, lo, hi, color, dash, width) {
-  var t, x0, x1, y;
+function stepLine(g, w, h, pad, data, lo, hi, color, dash, width, fromT) {
+  var t, x0, x1, y, started = false;
   g.save(); g.beginPath();
   g.strokeStyle = color; g.lineWidth = width || 2;
   if (dash) g.setLineDash(dash);
-  for (t = 0; t < data.length; t++) {
+  for (t = (fromT || 0); t < data.length; t++) {
     x0 = pad.l + (w - pad.l - pad.r) * t / 24;
     x1 = pad.l + (w - pad.l - pad.r) * (t + 1) / 24;
     y = pad.t + (h - pad.t - pad.b) * (hi - data[t]) / (hi - lo);
-    if (t === 0) g.moveTo(x0, y); else g.lineTo(x0, y);
+    if (!started) { g.moveTo(x0, y); started = true; } else g.lineTo(x0, y);
     g.lineTo(x1, y);
   }
   g.stroke(); g.restore();
 }
 
-function drawAgg(P, mpc, dumb) {
+/* the stop window, and the hour the request arrived */
+function drawMarks(c, pad, P, k, lo, hi) {
+  var g = c.g, X = function (t) { return pad.l + (c.w - pad.l - pad.r) * t / 24; };
+  if (k >= P.announce) {
+    g.save();
+    g.fillStyle = isDark() ? "rgba(224,105,127,.10)" : "rgba(138,28,47,.07)";
+    g.fillRect(X(P.from), pad.t, X(P.to) - X(P.from), c.h - pad.t - pad.b);
+    g.restore();
+  }
+  /* the hour reached by the simulation */
+  g.save();
+  g.strokeStyle = css("--ink-2"); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(X(k), pad.t); g.lineTo(X(k), c.h - pad.b); g.stroke();
+  if (P.announce <= k) {
+    g.strokeStyle = css("--ref"); g.setLineDash([3, 3]); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(X(P.announce), pad.t); g.lineTo(X(P.announce), c.h - pad.b); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = css("--ref");
+    g.font = '10.5px "Source Sans 3", system-ui, sans-serif';
+    g.textAlign = "left"; g.textBaseline = "top";
+    if (X(P.announce) < c.w - pad.r - 80) g.fillText("request", X(P.announce) + 4, pad.t + 2);
+  }
+  g.restore();
+}
+
+function drawStack(P, S, k) {
   var c = setup(document.getElementById("chart-agg"));
   var pad = { l: 42, r: 10, t: 12, b: 20 };
-  var lo = 0, hi = 1, t;
+  var N = P.fleet.length, t, p;
+  var planned = S.plans[Math.min(k, T24 - 1)];
+  var aggReal = aggregate(S.realized);
+  var aggPlan = planned ? aggregate(planned) : aggReal;
+  var dumbAgg = aggregate(S.dumb.plan);
+  var lo = 0, hi = 1;
   for (t = 0; t < T24; t++) {
-    hi = Math.max(hi, mpc.power[t], dumb.power[t], P.pref[t]);
-    lo = Math.min(lo, mpc.power[t], dumb.power[t]);
+    hi = Math.max(hi, aggReal[t], aggPlan[t], dumbAgg[t], P.refFlat[t]);
+    lo = Math.min(lo, aggReal[t], aggPlan[t]);
   }
-  hi *= 1.12; lo = lo < 0 ? lo * 1.2 : 0;
+  hi *= 1.12; lo = lo < 0 ? lo * 1.25 : 0;
+  var X = function (t) { return pad.l + (c.w - pad.l - pad.r) * t / 24; };
+  var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (hi - v) / (hi - lo); };
+
+  drawMarks(c, pad, P, k, lo, hi);
   axes(c.g, c.w, c.h, pad, lo, hi);
+
+  /* the hours already run, one stacked bar per hour, a colour per car */
+  for (t = 0; t < Math.min(k, T24); t++) {
+    var posTop = 0, negTop = 0;
+    for (p = 0; p < N; p++) {
+      var u = S.realized[p][t];
+      if (Math.abs(u) < 1e-7) continue;
+      c.g.fillStyle = carColor(p, N);
+      if (u > 0) { c.g.fillRect(X(t) + 1, Y(posTop + u), X(t + 1) - X(t) - 2, Y(posTop) - Y(posTop + u)); posTop += u; }
+      else { c.g.fillRect(X(t) + 1, Y(negTop), X(t + 1) - X(t) - 2, Y(negTop + u) - Y(negTop)); negTop += u; }
+    }
+  }
   if (lo < 0) {
-    var y0 = pad.t + (c.h - pad.t - pad.b) * hi / (hi - lo);
     c.g.save(); c.g.strokeStyle = css("--line"); c.g.beginPath();
-    c.g.moveTo(pad.l, y0); c.g.lineTo(c.w - pad.r, y0); c.g.stroke(); c.g.restore();
+    c.g.moveTo(pad.l, Y(0)); c.g.lineTo(c.w - pad.r, Y(0)); c.g.stroke(); c.g.restore();
   }
-  stepLine(c.g, c.w, c.h, pad, dumb.power, lo, hi, css("--base"), [2, 3], 1.6);
-  stepLine(c.g, c.w, c.h, pad, P.pref, lo, hi, css("--ref"), [5, 4], 2);
-  stepLine(c.g, c.w, c.h, pad, mpc.power, lo, hi, css("--mpc"), null, 2.4);
+  /* what the fleet would do with nobody in charge, and the plan from now on */
+  stepLine(c.g, c.w, c.h, pad, dumbAgg, lo, hi, css("--base"), [2, 3], 1.6);
+  if (planned && k < T24) stepLine(c.g, c.w, c.h, pad, aggPlan, lo, hi, css("--mpc"), null, 2.2, k);
+  /* the profile as the controller knows it now */
+  var ref = (k >= P.announce) ? P.refStop : P.refFlat;
+  stepLine(c.g, c.w, c.h, pad, ref, lo, hi, css("--ref"), [5, 4], 2);
 }
 
-function drawFleet(P, sol) {
-  var c = setup(document.getElementById("chart-fleet"));
-  var g = c.g, N = P.fleet.length;
-  var pad = { l: 56, r: 10, t: 8, b: 20 };
-  var rowH = Math.min(22, (c.h - pad.t - pad.b) / Math.max(N, 1));
-  var X = function (h) { return pad.l + (c.w - pad.l - pad.r) * h / 24; };
-  var i, t, pmaxAll = 1;
-  for (i = 0; i < N; i++) pmaxAll = Math.max(pmaxAll, P.fleet[i].pmax);
-
-  g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
-  for (i = 0; i <= 24; i += 3) {
-    g.strokeStyle = css("--grid"); g.lineWidth = 1;
-    g.beginPath(); g.moveTo(X(i) + .5, pad.t); g.lineTo(X(i) + .5, pad.t + N * rowH); g.stroke();
-    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
-    g.fillText("" + i, X(i), pad.t + N * rowH + 4);
-  }
-  for (i = 0; i < N; i++) {
-    var v = P.fleet[i], y = pad.t + i * rowH;
-    g.fillStyle = css("--ink-2");
-    g.font = '11.5px "Source Sans 3", system-ui, sans-serif';
-    g.textAlign = "right"; g.textBaseline = "middle";
-    g.fillText(v.name, pad.l - 8, y + rowH / 2);
-    g.fillStyle = css("--grid");
-    g.fillRect(X(v.arrive), y + 2, X(v.depart) - X(v.arrive), rowH - 4);
-    for (t = v.arrive; t < v.depart; t++) {
-      var u = sol.perVeh[i][t];
-      if (Math.abs(u) < 1e-6) continue;
-      var frac = Math.min(1, Math.abs(u) / pmaxAll);
-      g.globalAlpha = 0.25 + 0.75 * frac;
-      g.fillStyle = u > 0 ? css("--mpc") : css("--sun");
-      g.fillRect(X(t) + 1, y + 2, X(t + 1) - X(t) - 2, rowH - 4);
-      g.globalAlpha = 1;
-    }
-    if (sol.shortfall[i] > 1e-6) {
-      g.fillStyle = css("--limit");
-      g.fillRect(X(v.depart) - 2, y + 2, 3, rowH - 4);
-    }
-  }
-}
-
-function drawSoc(P, sol) {
+function drawSocLines(P, S, k) {
   var c = setup(document.getElementById("chart-soc"));
+  var pad = { l: 42, r: 10, t: 12, b: 20 };
+  var N = P.fleet.length, p, t;
+  var X = function (t) { return pad.l + (c.w - pad.l - pad.r) * t / 24; };
+  var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (1 - v); };
+  drawMarks(c, pad, P, k, 0, 1);
+  axes(c.g, c.w, c.h, pad, 0, 100);
+
+  var planned = S.plans[Math.min(k, T24 - 1)];
+  for (p = 0; p < N; p++) {
+    var v = P.fleet[p], g = c.g;
+    /* what has happened */
+    g.save();
+    g.strokeStyle = carColor(p, N); g.lineWidth = 2;
+    g.beginPath();
+    var started = false, soc = v.soc;
+    for (t = v.arrive; t < Math.min(k, v.depart); t++) {
+      if (!started) { g.moveTo(X(t), Y(soc)); started = true; }
+      soc = S.socPath[p][t];
+      g.lineTo(X(t + 1), Y(soc));
+    }
+    if (started) g.stroke();
+    g.restore();
+    /* what is planned, from the current hour to the departure */
+    if (planned && k < v.depart) {
+      g.save();
+      g.strokeStyle = carColor(p, N, 0.75); g.lineWidth = 1.6; g.setLineDash([3, 3]);
+      g.beginPath();
+      var s2 = (k > v.arrive) ? S.socPath[p][k - 1] : v.soc;
+      var t0 = Math.max(k, v.arrive);
+      g.moveTo(X(t0), Y(s2));
+      for (t = t0; t < v.depart; t++) {
+        var u = planned[p][t];
+        s2 += (u >= 0 ? P.eta * DT * u : DT * u / P.eta) / v.cap;
+        if (s2 > 1) s2 = 1; if (s2 < 0) s2 = 0;
+        g.lineTo(X(t + 1), Y(s2));
+      }
+      g.stroke(); g.restore();
+    }
+    /* what the driver asked for, at the hour of departure */
+    c.g.save();
+    c.g.strokeStyle = css("--limit"); c.g.lineWidth = 2;
+    c.g.beginPath();
+    c.g.moveTo(X(v.depart) - 5, Y(v.target)); c.g.lineTo(X(v.depart) + 5, Y(v.target));
+    c.g.stroke(); c.g.restore();
+  }
+}
+
+function drawBars(P, S, k) {
+  var c = setup(document.getElementById("chart-bars"));
   var g = c.g, N = P.fleet.length, i;
-  var pad = { l: 56, r: 10, t: 10, b: 20 };
+  var pad = { l: 42, r: 10, t: 10, b: 20 };
   var bw = (c.w - pad.l - pad.r) / Math.max(N, 1);
   var H = c.h - pad.t - pad.b;
   g.strokeStyle = css("--grid"); g.lineWidth = 1;
@@ -863,145 +978,172 @@ function drawSoc(P, sol) {
   }
   for (i = 0; i < N; i++) {
     var v = P.fleet[i], x0 = pad.l + i * bw;
-    var hSoc = H * Math.max(0, Math.min(1, sol.soc[i]));
-    g.fillStyle = sol.shortfall[i] > 1e-6 ? css("--limit") : css("--ess");
+    var done = Math.min(k, v.depart) - 1;
+    var soc = done >= v.arrive ? S.socPath[i][done] : v.soc;
+    var hSoc = H * Math.max(0, Math.min(1, soc));
+    var left = (k >= v.depart) && (soc < v.target - 1e-6);
+    g.fillStyle = left ? css("--limit") : carColor(i, N, k >= v.depart ? 1 : 0.45);
     g.fillRect(x0 + bw * 0.18, pad.t + H - hSoc, bw * 0.64, hSoc);
     var yT = pad.t + H - H * Math.min(1, v.target);
     g.strokeStyle = css("--ink"); g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(x0 + bw * 0.1, yT); g.lineTo(x0 + bw * 0.9, yT); g.stroke();
-    g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
-    g.font = '10px "IBM Plex Mono", ui-monospace, monospace';
-    if (bw > 18) g.fillText("" + (i + 1), x0 + bw / 2, pad.t + H + 4);
+    if (bw > 18) {
+      g.fillStyle = css("--muted"); g.textAlign = "center"; g.textBaseline = "top";
+      g.font = '10px "IBM Plex Mono", ui-monospace, monospace';
+      g.fillText("" + (i + 1), x0 + bw / 2, pad.t + H + 4);
+    }
   }
 }
 
 /* ====================================================================== *
- *  5. Run and paint.                                                     *
+ *  5. The simulation and what it prints.                                 *
  * ====================================================================== */
 
-function run() {
-  var status = document.getElementById("status");
-  status.className = "status";
-  status.textContent = "solving…";
-  setTimeout(solveAndDraw, 0);
+function rebuild() {
+  var P = readUI();
+  var t0 = (window.performance && performance.now) ? performance.now() : 0;
+  var loop = runClosedLoop(P);
+  var ms = ((window.performance && performance.now) ? performance.now() : 0) - t0;
+  SIM = { P: P, realized: loop.realized, socPath: loop.socPath, plans: loop.plans,
+          dumb: dumbCharging(P), ms: ms, k: 0, infeasible: loop.infeasible };
+  paint();
 }
 
-function solveAndDraw() {
-  var P = readUI();
-  var status = document.getElementById("status");
-  var t0 = (window.performance && performance.now) ? performance.now() : 0;
-  var M = buildAgg(P);
-  var r = lpSolve(M.A, M.b, M.c, M.lo, M.up, null);
-  var ms = ((window.performance && performance.now) ? performance.now() : 0) - t0;
+function paint() {
+  if (!SIM) return;
+  var P = SIM.P, k = SIM.k;
+  document.getElementById("clock").textContent =
+    (k < 10 ? "0" : "") + k + ":00";
+  var st = document.getElementById("status");
+  st.className = SIM.infeasible ? "status bad" : "status";
+  st.textContent = SIM.infeasible ? (SIM.infeasible + " hours without a solution")
+                                  : ("24 solves · " + fmt(SIM.ms, 0) + " ms");
+  drawStack(P, SIM, k);
+  drawSocLines(P, SIM, k);
+  drawBars(P, SIM, k);
+  printTable();
+}
 
-  if (r.status !== "optimal") {
-    status.className = "status bad";
-    status.textContent = "solver: " + r.status;
-    return;
-  }
-  var mpc = unpackAgg(M, r.x);
-  var dumb = dumbCharging(P);
-  var mM = metrics(P, mpc), mD = metrics(P, dumb);
-
-  status.className = "status";
-  status.textContent = "optimal · " + M.m + " rows · " + fmt(ms, 0) + " ms";
-
+function printTable() {
+  var P = SIM.P;
+  var mM = metrics(P, SIM.realized, SIM.socPath);
+  var dumbSoc = SIM.dumb.soc;
+  var mD = metrics(P, SIM.dumb.plan, dumbSoc);
   var rows = "";
-  rows += row("Everyone charges on arrival", mD, null);
-  rows += row("Aggregator's MPC", mM, mD);
+  rows += row("Everyone charges on arrival", mD, null, P);
+  rows += row("Aggregator's MPC", mM, mD, P);
   document.getElementById("result-rows").innerHTML = rows;
 
-  var txt = "Following the grid: mean deviation <b>" + fmt(mM.dev, 2) + " kW</b> against <b>" +
-            fmt(mD.dev, 2) + " kW</b> with no controller. ";
+  var txt = "Over the whole day: mean deviation <b>" + fmt(mM.dev, 2) + " kW</b> against <b>" +
+            fmt(mD.dev, 2) + " kW</b> with no controller, and <b>" + fmt(mM.inStop, 1) +
+            " kWh</b> drawn during the hours of the stop against <b>" + fmt(mD.inStop, 1) +
+            " kWh</b>. ";
   if (mM.nshort === 0) txt += "Every driver left with the charge they asked for.";
   else txt += "<b>" + mM.nshort + "</b> driver" + (mM.nshort > 1 ? "s" : "") + " left short, " +
-              fmt(mM.short, 1) + " kWh missing in all &mdash; move the priority slider towards the " +
-              "drivers to see how much of the tracking that costs, or check whether the request fitted " +
-              "in the time available at all.";
+              fmt(mM.short, 1) + " kWh missing in all — move the priority towards the drivers, " +
+              "or ask for the stop earlier in the day.";
   document.getElementById("summary").innerHTML = txt;
-
-  drawAgg(P, mpc, dumb);
-  drawFleet(P, mpc);
-  drawSoc(P, mpc);
 }
 
-function row(name, m, ref) {
+function row(name, m, ref, P) {
   var cls = ref ? (m.dev < ref.dev - 1e-9 ? "better" : (m.dev > ref.dev + 1e-9 ? "worse" : "")) : "";
   var scls = m.nshort > 0 ? "worse" : "";
+  var icls = ref ? (m.inStop < ref.inStop - 1e-9 ? "better" : "") : (m.inStop > 1e-6 ? "worse" : "");
   return "<tr><td>" + name + "</td><td class='" + cls + "'>" + fmt(m.dev, 2) + " kW</td><td>" +
-         fmt(m.worst, 1) + " kW</td><td>" + fmt(m.energy, 1) + " kWh</td><td class='" + scls + "'>" +
-         m.nshort + "</td><td class='" + scls + "'>" + fmt(m.short, 1) + " kWh</td><td>" +
-         fmt(m.peak, 1) + " kW</td></tr>";
+         fmt(m.worst, 1) + " kW</td><td class='" + icls + "'>" + fmt(m.inStop, 1) + " kWh</td><td>" +
+         fmt(m.energy, 1) + " kWh</td><td class='" + scls + "'>" + m.nshort + "</td><td class='" +
+         scls + "'>" + fmt(m.short, 1) + " kWh</td></tr>";
 }
 
 /* ====================================================================== *
  *  6. Interface.                                                         *
  * ====================================================================== */
 
-var pending = null;
-function runSoon() {
-  if (pending) clearTimeout(pending);
-  pending = setTimeout(function () { pending = null; run(); }, 90);
+function tick() {
+  if (!SIM) return;
+  SIM.k++;
+  if (SIM.k >= T24) { SIM.k = T24; setPlaying(false); }
+  paint();
 }
 
-function bindSlider(id, fmtFn) {
+function setPlaying(on) {
+  playing = on;
+  document.getElementById("play").textContent = on ? "Pause" : "Play";
+  if (timer) { clearInterval(timer); timer = null; }
+  if (on) timer = setInterval(tick, 1400 / (+UI.speed.value));
+}
+
+var pending = null;
+function rebuildSoon() {
+  if (pending) clearTimeout(pending);
+  pending = setTimeout(function () {
+    pending = null;
+    var k = SIM ? SIM.k : 0;
+    rebuild();
+    SIM.k = Math.min(k, T24);
+    paint();
+  }, 120);
+}
+
+function bindSlider(id, fmtFn, onChange) {
   var el = document.getElementById(id), out = document.getElementById(id + "-val");
   UI[id] = el;
-  function sync() { if (out) out.textContent = fmtFn(+el.value); runSoon(); }
+  function sync() { if (out) out.textContent = fmtFn(+el.value); if (onChange) onChange(); }
   el.addEventListener("input", sync);
   if (out) out.textContent = fmtFn(+el.value);
-}
-
-function syncRefControls() {
-  document.getElementById("win-box").hidden = (UI.refshape.value !== "dip");
 }
 
 function prioLabel(v) {
   if (v <= 10) return "the grid";
   if (v <= 35) return "mostly the grid";
-  if (v <= 65) return "balanced";
-  if (v <= 90) return "mostly the drivers";
-  return "the drivers";
+  if (v <= 65) return "mostly the drivers";
+  if (v <= 90) return "the drivers";
+  return "the drivers, always";
 }
 
 function init() {
-  bindSlider("nveh", function (v) { return "" + v; });
-  bindSlider("pmax", function (v) { return v + " kW"; });
-  bindSlider("reflevel", function (v) { return v + " kW"; });
-  bindSlider("prio", prioLabel);
+  bindSlider("nveh", function (v) { return "" + v; }, rebuildSoon);
+  bindSlider("pmax", function (v) { return v + " kW"; }, rebuildSoon);
+  bindSlider("reflevel", function (v) { return v + " kW"; }, rebuildSoon);
+  bindSlider("prio", prioLabel, rebuildSoon);
+  bindSlider("announce", function (v) { return (v < 10 ? "0" : "") + v + ":00"; }, rebuildSoon);
+  bindSlider("speed", function (v) { return v; }, function () { if (playing) setPlaying(true); });
   UI.winfrom = document.getElementById("winfrom");
   UI.winto = document.getElementById("winto");
   function winSync() {
     var a = +UI.winfrom.value, b = +UI.winto.value;
     if (b <= a) { b = a + 1; UI.winto.value = b; }
     document.getElementById("winfrom-val").textContent = a + " – " + b;
-    runSoon();
+    rebuildSoon();
   }
   UI.winfrom.addEventListener("input", winSync);
   UI.winto.addEventListener("input", winSync);
   UI.scenario = document.getElementById("scenario");
-  UI.refshape = document.getElementById("refshape");
   UI.v2g = document.getElementById("v2g");
   UI.square = document.getElementById("square");
   UI.seed = 7;
-  UI.scenario.addEventListener("change", run);
-  UI.refshape.addEventListener("change", function () {
-    /* a level the fleet can plausibly absorb, so that a new shape does not
-       start out asking for the impossible */
-    var def = { bell: 35, flat: 12, dip: 15 }[UI.refshape.value];
-    UI.reflevel.value = def;
-    document.getElementById("reflevel-val").textContent = def + " kW";
-    syncRefControls(); run();
-  });
-  UI.v2g.addEventListener("change", run);
-  UI.square.addEventListener("change", run);
+  UI.scenario.addEventListener("change", function () { restart(); });
+  UI.v2g.addEventListener("change", rebuildSoon);
+  UI.square.addEventListener("change", rebuildSoon);
   document.getElementById("redraw").addEventListener("click", function () {
     UI.seed = Math.floor(Math.random() * 2000000000);
-    run();
+    restart();
   });
-  window.addEventListener("resize", runSoon);
-  syncRefControls();
-  winSync();
+  document.getElementById("play").addEventListener("click", function () { setPlaying(!playing); });
+  document.getElementById("step").addEventListener("click", function () { setPlaying(false); tick(); });
+  document.getElementById("reset").addEventListener("click", restart);
+  window.addEventListener("resize", function () { paint(); });
+
+  document.getElementById("winfrom-val").textContent =
+    UI.winfrom.value + " – " + UI.winto.value;
+  restart();
+}
+
+function restart() {
+  rebuild();
+  SIM.k = 0;
+  paint();
+  setPlaying(true);
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
