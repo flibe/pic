@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Two one-way roads crossing, controlled by a fixed-time plan and by MPC on the same arrivals, with the queues and the waiting times compared. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>Traffic Light Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef; --panel: #ffffff; --panel-2: #faf8f6; --line: #ddd7d0; --grid: #e8e3dd;
+    --ink: #1f2a36; --ink-2: #55606d; --muted: #7d8794;
+    --mpc: #2f6690; --base: #8a939d; --ess: #3a7d44; --sun: #c8891a; --load: #7b5ea7; --limit: #8a1c2f;
+    --ref: #8a1c2f;
+    --road: #e3ded7; --roadline: #b8b0a6; --car1: #2f6690; --car2: #7b5ea7; --go: #3a7d44;
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+      --ref: #e0697f;
+      --road: #262c33; --roadline: #3d4650; --car1: #6aa9dc; --car2: #ab8fd4; --go: #6fbb7d;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+    --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+    --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+    --ref: #e0697f;
+    --road: #262c33; --roadline: #3d4650; --car1: #6aa9dc; --car2: #ab8fd4; --go: #6fbb7d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  body { background: var(--bg); color: var(--ink);
+         font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+         font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 0 0 8px; font-weight: 700; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+  .stage { display: grid; grid-template-columns: minmax(300px, 370px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .status { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
+  .status.bad { color: var(--limit); font-weight: 600; }
+
+  canvas { display: block; width: 100%; }
+  .chart-canvas { height: 160px; }
+  .chart-canvas.tall { height: 200px; }
+  .chart-canvas.fleet { height: 230px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.mpc { border-color: var(--mpc); } .key.base { border-color: var(--base); border-top-style: dotted; }
+  .key.ref { border-color: var(--ref); border-top-style: dashed; }
+  .box { width: 13px; height: 10px; border-radius: 2px; display: inline-block; }
+  .box.plug { background: var(--grid); border: 1px solid var(--line); }
+  .box.car1 { background: var(--car1); }
+  .box.car2 { background: var(--car2); }
+  .twin { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  @media (max-width: 700px) { .twin { grid-template-columns: 1fr; } }
+  .twin-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+                font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                color: var(--muted); margin-bottom: 4px; }
+  .twin-title .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                     letter-spacing: 0; text-transform: none; font-size: 11.5px; }
+  .road-canvas { height: 230px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+  .box.chg { background: var(--mpc); }
+  .box.v2g { background: var(--sun); }
+  .box.miss { background: var(--limit); }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  input[type="range"], input[type="checkbox"], select { accent-color: var(--mpc); }
+  select { font: inherit; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 9px; font-size: 13.5px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 6px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .clock { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; color: var(--ink-2);
+           font-variant-numeric: tabular-nums; margin-left: auto; }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+  button.primary { background: var(--mpc); border-color: var(--mpc); color: #fff; min-width: 86px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #10161c; } }
+
+  table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  table.results th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  table.results th:first-child, table.results td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  td.worse { color: var(--limit); } td.better { color: var(--ess); }
+  .table-wrap { overflow-x: auto; }
+  .note-line { margin: 12px 0 0; color: var(--ink-2); font-size: 13.5px; }
+  .note-line b { color: var(--ink); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  .math .cm { color: var(--muted); }
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control &middot; Lesson 15</p>
+    <h1>Traffic Light Lab</h1>
+    <p class="lede">Two one-way roads crossing, the intersection of the lesson. On the left the lights
+      follow a fixed plan, the one that is set once and repeats all day; on the right they are decided
+      at every step by an MPC that looks at the queues it measures and at the sixty seconds ahead. The
+      two intersections receive <em>exactly the same cars at exactly the same times</em>, so whatever
+      difference you see is the controller and nothing else.</p>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>The intersection, live</h2>
+      <span class="status" id="status">&nbsp;</span>
+    </div>
+    <div class="transport">
+      <button class="primary" id="play">Pause</button>
+      <button id="step">Step</button>
+      <button id="reset">Restart</button>
+      <label class="pick">Speed
+        <input type="range" id="speed" min="1" max="12" step="1" value="6" style="width:90px">
+      </label>
+      <button id="redraw">Another day</button>
+      <span class="clock" id="clock">00:00</span>
+    </div>
+    <div class="twin">
+      <div>
+        <div class="twin-title"><span>Fixed plan</span><span class="num" id="lab-fixed">&nbsp;</span></div>
+        <canvas class="road-canvas" id="road-fixed" aria-label="The intersection controlled by a fixed-time plan"></canvas>
+      </div>
+      <div>
+        <div class="twin-title"><span>MPC</span><span class="num" id="lab-mpc">&nbsp;</span></div>
+        <canvas class="road-canvas" id="road-mpc" aria-label="The intersection controlled by MPC"></canvas>
+      </div>
+    </div>
+    <div class="legend" style="margin-top:8px">
+      <span><i class="box car1"></i>cars on the road from the west</span>
+      <span><i class="box car2"></i>cars on the road from the south</span>
+      <span>the number by each queue is how many are waiting</span>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="panel">
+      <h3>Traffic</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="lam1">From the west <span class="num" id="lam1-val">700 veh/h</span></label>
+          <input type="range" id="lam1" min="100" max="1200" step="50" value="700">
+        </div>
+        <div class="slider">
+          <label for="lam2">From the south <span class="num" id="lam2-val">300 veh/h</span></label>
+          <input type="range" id="lam2" min="100" max="1200" step="50" value="300">
+        </div>
+        <div class="slider">
+          <label for="burst">Rush from the south at 10 min <span class="num" id="burst-val">on</span></label>
+          <input type="range" id="burst" min="0" max="1" step="1" value="1">
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">The fixed plan</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="g1">Green from the west <span class="num" id="g1-val">30 s</span></label>
+          <input type="range" id="g1" min="10" max="80" step="5" value="30">
+        </div>
+        <div class="slider">
+          <label for="g2">Green from the south <span class="num" id="g2-val">30 s</span></label>
+          <input type="range" id="g2" min="10" max="80" step="5" value="30">
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">The controller</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="N">Prediction window <span class="num" id="N-val">60 s</span></label>
+          <input type="range" id="N" min="20" max="150" step="5" value="60">
+        </div>
+        <div class="slider">
+          <label for="gmin">Minimum green <span class="num" id="gmin-val">15 s</span></label>
+          <input type="range" id="gmin" min="5" max="40" step="5" value="15">
+        </div>
+        <div class="slider">
+          <label for="wmax">Weight on the road kept waiting <span class="num" id="wmax-val">0.5</span></label>
+          <input type="range" id="wmax" min="0" max="3" step="0.1" value="0.5">
+        </div>
+      </div>
+      <p class="hint" style="margin-top:10px">Both lights hold a 5 s yellow before turning red, and the
+        green of one road can only start after the yellow of the other is over &mdash; the transition
+        constraints of the lesson. The fixed plan repeats its cycle whatever the traffic does.</p>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Queue from the west</span><span class="unit">vehicles</span></div>
+        <canvas class="chart-canvas" id="chart-q1" aria-label="Queue on the road from the west, fixed plan against MPC"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Queue from the south</span><span class="unit">vehicles</span></div>
+        <canvas class="chart-canvas" id="chart-q2" aria-label="Queue on the road from the south, fixed plan against MPC"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Waiting time of the cars that have left</span><span class="unit">seconds, running average</span></div>
+        <canvas class="chart-canvas" id="chart-w" aria-label="Average waiting time of the vehicles that have crossed"></canvas>
+        <div class="legend">
+          <span><i class="key base"></i>fixed plan</span>
+          <span><i class="key mpc"></i>MPC</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:10px">Up to now</h2>
+    <div class="table-wrap">
+      <table class="results">
+        <thead>
+          <tr><th>Control</th><th>Mean queue</th><th>Longest queue</th><th>Mean wait</th><th>Worst wait</th><th>Cars through</th><th>Still waiting</th></tr>
+        </thead>
+        <tbody id="result-rows"></tbody>
+      </table>
+    </div>
+    <p class="note-line" id="summary">&nbsp;</p>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>The fixed plan is right only for the traffic it was designed for.</b> With 700 vehicles
+          an hour from the west and 300 from the south, an even split gives the busy road the same
+          green as the quiet one: its queue grows, the other light is green over an empty road. The MPC
+          gives green where the cars are, and the two queues end up of comparable length.</li>
+        <li><b>Giving the fixed plan the right split moves the problem, it does not solve it.</b> Set
+          the green from the west to 45 s and the one from the south to 20 s: the average wait of the
+          fixed plan improves, from about 94 s to 83 s. But the split is now wrong for the rush at the
+          tenth minute, and the road from the south pays for it &mdash; the longest wait of the day
+          goes from 220 s to 455 s, while the MPC, which re-decides every five seconds, stays around
+          100 s.</li>
+        <li><b>The minimum green is a safety constraint and it costs performance.</b> Raise it and the
+          MPC is forced to stay on a road it would rather leave; the queues grow. It is the clearest
+          example of a constraint that is not negotiable even though the optimizer would happily break
+          it.</li>
+        <li><b>Looking further ahead is not always better.</b> The prediction window pays until it
+          covers the time the queues need to empty; beyond that the controller is planning for arrivals
+          it only knows on average, and the extra horizon buys nothing.</li>
+        <li><b>Queues and waiting times are not the same goal.</b> The cost minimizes the queues; the
+          waiting times are measured car by car by the simulator. The difference between the two shows
+          up when one road is much busier than the other: put 1150 vehicles an hour from the west and
+          100 from the south, with the rush off. With no weight on the road kept waiting, the few cars
+          from the south wait up to 430 s, because a short queue is cheap to ignore. At 0.5 the longest
+          wait falls to 195 s and even the average improves; push the weight to 3 and the worst wait
+          goes down to 165 s while the average climbs to 44 s. That is the trade-off of the lesson,
+          with a number on it.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The problem being solved</h2>
+      <p>Every 5 s the MPC looks at the queues measured at the two stop lines and chooses the colours
+        for the next 60 s, then applies the first step and throws the rest away. The queues are the
+        state, the colours are the control:</p>
+      <p class="math">m<span class="cm">i+1|k,J</span> = max&#8239;(0,&nbsp; m<span class="cm">i|k,J</span> + v<sup>in</sup><span class="cm">J</span> T &minus; v<sup>out</sup> T g<span class="cm">i|k,J</span>)</p>
+      <p class="math">min &nbsp; &Sigma;<span class="cm">i</span> &Sigma;<span class="cm">J</span> (m<span class="cm">i|k,J</span>)<sup>2</sup> &nbsp;+&nbsp; &rho; &Sigma;<span class="cm">i</span> (w&#772;<span class="cm">i|k</span>)<sup>2</sup></p>
+      <p class="math">g + y + r = 1 &nbsp;&middot;&nbsp; &Sigma;<span class="cm">J</span> (g<span class="cm">i|k,J</span> + y<span class="cm">i|k,J</span>) &le; 1 &nbsp;&middot;&nbsp; r<span class="cm">i+1|k,J</span> &le; 1 &minus; g<span class="cm">i|k,J</span> &nbsp;&middot;&nbsp; y<span class="cm">i+1|k,J</span> &le; 1 &minus; r<span class="cm">i|k,J</span> &nbsp;&middot;&nbsp; g<span class="cm">i+1|k,J</span> &le; 1 &minus; y<span class="cm">i|k,J</span></p>
+      <p>The second term of the cost is the one of the lesson on the waiting times, in the simplest
+        form that fits an intersection with two lights: w&#772;<sub>i|k</sub> is the longest time either
+        road has been held at red, an upper bound over the two roads, and pushing it down keeps the
+        controller from starving the short queue.|k</sub>
+        is an upper bound of the time already spent by the cars still in the queues, and pushing the
+        bound down pushes down the longest wait. The arrivals the controller predicts are the average
+        rate of each road, not the arrivals that actually happen: the forecast is right on average and
+        wrong at every single step, which is the normal condition of a real controller.</p>
+      <p>The transition constraints, the mutual exclusion and the minimum green leave very few
+        admissible colour sequences over a window of twelve steps &mdash; a few hundred &mdash; so the
+        page finds the best one by exploring them all, with a bound that cuts the branches that are
+        already worse than the best found. The result is the exact optimum of the problem above, which
+        is what the mixed-integer formulation of the lesson would return; writing it as a MILP is what
+        you have to do when the intersection is larger, and the number of sequences explodes.</p>
+      <p>Simplifications: no vehicles pass on yellow, the saturation flow is the same on both roads, the
+        two roads are one-way and have no turns, and the queues are counted in whole vehicles only in
+        the simulator &mdash; inside the controller they are continuous, as in the aggregate model of
+        the lesson.</p>
+    </div>
+  </section>
+
+  <footer>
+    Process Identification and Control &middot; Sapienza University of Rome, DIAG &middot;
+    the page runs offline in your browser.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ====================================================================== *
+ *  1. The intersection.                                                   *
+ *                                                                         *
+ *  Two one-way roads, one light each.  The admissible colour sequences    *
+ *  are the paths of a small automaton:                                    *
+ *                                                                         *
+ *      G1 --(min green)--> Y1 --(yellow)--> G2 --(min green)--> Y2 --> G1 *
+ *                                                                         *
+ *  which is exactly what the transition constraints of the lesson say:    *
+ *  green is never followed by red, red is never followed by yellow,       *
+ *  yellow is never followed by green, and the two lights are never green  *
+ *  or yellow together.                                                    *
+ * ====================================================================== */
+
+var G1 = 0, Y1 = 1, G2 = 2, Y2 = 3;      /* the four phases */
+
+function greenOf(phase, road) {           /* is road (0,1) green in this phase */
+  return (road === 0 && phase === G1) || (road === 1 && phase === G2);
+}
+function colourOf(phase, road) {
+  if (road === 0) return phase === G1 ? "g" : (phase === Y1 ? "y" : "r");
+  return phase === G2 ? "g" : (phase === Y2 ? "y" : "r");
+}
+function nextPhase(phase) { return (phase + 1) % 4; }
+function isGreen(phase) { return phase === G1 || phase === G2; }
+
+/* ====================================================================== *
+ *  2. The controller: the best admissible colour sequence over the window.*
+ *                                                                         *
+ *  The queues are the state, the colours the control.  Because the        *
+ *  automaton and the minimum green leave only a few hundred admissible    *
+ *  sequences over the window, the optimum is found by exploring them all, *
+ *  cutting every branch whose cost already exceeds the best one found.    *
+ * ====================================================================== */
+
+function mpcSolve(st, P) {
+  var best = { cost: Infinity, first: null };
+  var yellowSteps = P.yellowSteps, gminSteps = P.gminSteps, N = P.N;
+  var a0 = P.arrivalRate[0], a1 = P.arrivalRate[1], sat = P.sat;
+  var rho = P.wMax;
+
+  /* depth-first over "stay in this phase" / "move to the next one" */
+  function walk(i, phase, timer, q0, q1, r0, r1, cost, firstPhase) {
+    if (cost >= best.cost) return;                    /* bound */
+    if (i === N) {
+      if (cost < best.cost) { best.cost = cost; best.first = firstPhase; }
+      return;
+    }
+    /* staying is always admissible in green; in yellow it is admissible only
+       until the yellow is over, after which the light must change          */
+    var canSwitch = isGreen(phase) ? (timer >= gminSteps) : (timer >= yellowSteps);
+    var stayOk = isGreen(phase) ? true : (timer < yellowSteps);
+    var steps = [];
+    if (stayOk) steps.push({ ph: phase, tm: timer + 1 });
+    if (canSwitch) steps.push({ ph: nextPhase(phase), tm: 1 });
+
+    for (var s = 0; s < steps.length; s++) {
+      var ph = steps[s].ph, tm = steps[s].tm;
+      /* the queues move with the colour that is on during this step */
+      var out0 = greenOf(ph, 0) ? sat : 0;
+      var out1 = greenOf(ph, 1) ? sat : 0;
+      var n0 = q0 + a0 - out0; if (n0 < 0) n0 = 0;
+      var n1 = q1 + a1 - out1; if (n1 < 0) n1 = 0;
+      /* how long each road has been held at red */
+      var nr0 = greenOf(ph, 0) ? 0 : r0 + P.T;
+      var nr1 = greenOf(ph, 1) ? 0 : r1 + P.T;
+      var wbar = Math.max(nr0, nr1) / 10;      /* in units of ten seconds */
+      var add = n0 * n0 + n1 * n1 + rho * wbar * wbar;
+      walk(i + 1, ph, tm, n0, n1, nr0, nr1, cost + add,
+           firstPhase === null ? ph : firstPhase);
+    }
+  }
+  walk(0, st.phase, st.timer, st.q[0], st.q[1], st.red[0], st.red[1], 0, null);
+  if (best.first === null) { best.first = st.phase; best.cost = 0; }
+  return best;
+}
+
+function mpcDecide(st, P) { return mpcSolve(st, P).first; }
+
+/* the fixed plan: a cycle that repeats whatever the traffic does */
+function fixedDecide(st, P) {
+  var dur = [P.fixedGreen[0], P.yellowSteps, P.fixedGreen[1], P.yellowSteps];
+  if (st.timer >= dur[st.phase]) return nextPhase(st.phase);
+  return st.phase;
+}
+
+/* ====================================================================== *
+ *  3. The simulator: the cars themselves.                                *
+ * ====================================================================== */
+
+function runSim(P, decide) {
+  var steps = P.steps, t, r;
+  var q = [[], []];                        /* arrival step of every car waiting */
+  var st = { phase: G1, timer: 1, q: [0, 0], red: [0, 0] };
+  var hist = { q0: [], q1: [], phase: [], served: [], meanWait: [], colour: [] };
+  var waits = [], served = 0, sumWait = 0, worstWait = 0, maxQ = 0, sumQ = 0;
+  var solveMs = 0;
+
+  for (t = 0; t < steps; t++) {
+    /* the controller sees the queues and how long each road has been at red */
+    st.q = [q[0].length, q[1].length];
+    var t0 = (window.performance && performance.now) ? performance.now() : 0;
+    var ph = decide(st, P);
+    solveMs += ((window.performance && performance.now) ? performance.now() : 0) - t0;
+    st.timer = (ph === st.phase) ? st.timer + 1 : 1;
+    st.phase = ph;
+    st.red = [greenOf(ph, 0) ? 0 : st.red[0] + P.T,
+              greenOf(ph, 1) ? 0 : st.red[1] + P.T];
+
+    /* cars cross on green, at the saturation flow */
+    var leftNow = [0, 0];
+    for (r = 0; r < 2; r++) {
+      if (!greenOf(st.phase, r)) continue;
+      var n = Math.min(q[r].length, P.satInt);
+      for (var c = 0; c < n; c++) {
+        var arr = q[r].shift();
+        var w = (t - arr) * P.T;
+        waits.push(w); served++; sumWait += w;
+        if (w > worstWait) worstWait = w;
+      }
+      leftNow[r] = n;
+    }
+    /* and the new ones join */
+    for (r = 0; r < 2; r++) {
+      var k = P.arrivals[r][t];
+      for (var j = 0; j < k; j++) q[r].push(t);
+    }
+    var qq0 = q[0].length, qq1 = q[1].length;
+    sumQ += qq0 + qq1;
+    if (qq0 > maxQ) maxQ = qq0;
+    if (qq1 > maxQ) maxQ = qq1;
+    hist.q0.push(qq0); hist.q1.push(qq1);
+    hist.phase.push(st.phase);
+    hist.served.push(served);
+    hist.meanWait.push(served ? sumWait / served : 0);
+    hist.colour.push([colourOf(st.phase, 0), colourOf(st.phase, 1)]);
+  }
+  return { hist: hist, waits: waits, served: served, sumWait: sumWait,
+           worstWait: worstWait, maxQ: maxQ, meanQ: sumQ / steps,
+           left: q[0].length + q[1].length, solveMs: solveMs,
+           queues: [q[0].length, q[1].length] };
+}
+
+/* ====================================================================== *
+ *  4. The day: arrivals, parameters, the two runs.                       *
+ * ====================================================================== */
+
+var UI = {}, SEED = 11, SIM = null, timer = null, playing = true;
+
+function rng() { SEED = (1103515245 * SEED + 12345) % 2147483648; return SEED / 2147483648; }
+function poisson(lambda) {
+  /* small means: the straightforward product of uniforms */
+  var L = Math.exp(-lambda), k = 0, p = 1;
+  do { k++; p *= rng(); } while (p > L);
+  return k - 1;
+}
+
+function readUI() {
+  var T = 5;                                  /* the step, in seconds */
+  var minutes = 30, steps = Math.round(minutes * 60 / T);
+  var lam = [+UI.lam1.value, +UI.lam2.value];
+  var burst = +UI.burst.value > 0.5;
+  SEED = UI.seed;
+  var arrivals = [[], []], r, t;
+  for (t = 0; t < steps; t++) {
+    for (r = 0; r < 2; r++) {
+      var rate = lam[r];
+      /* the rush: from the tenth minute the south road doubles for ten minutes */
+      if (burst && r === 1 && t * T >= 600 && t * T < 1200) rate *= 2.2;
+      arrivals[r].push(poisson(rate * T / 3600));
+    }
+  }
+  var rateFor = function (r) { return lam[r] * T / 3600; };
+  return {
+    T: T, steps: steps, sat: 2, satInt: 2,            /* vehicles per step */
+    arrivals: arrivals, arrivalRate: [rateFor(0), rateFor(1)],
+    yellowSteps: 1,                                  /* 5 s of yellow */
+    gminSteps: Math.round(+UI.gmin.value / T),
+    fixedGreen: [Math.round(+UI.g1.value / T), Math.round(+UI.g2.value / T)],
+    N: Math.round(+UI.N.value / T),
+    wMax: +UI.wmax.value,
+    lam: lam, burst: burst
+  };
+}
+
+function rebuild() {
+  var P = readUI();
+  var fixed = runSim(P, fixedDecide);
+  var mpc = runSim(P, mpcDecide);
+  SIM = { P: P, fixed: fixed, mpc: mpc, k: 0 };
+  paint();
+}
+
+/* ====================================================================== *
+ *  5. Drawing.                                                           *
+ * ====================================================================== */
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function setup(cv) {
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  return { g: g, w: w, h: h };
+}
+function fmt(v, d) { return v.toFixed(d === undefined ? 1 : d); }
+function mmss(sec) {
+  var m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function drawRoads(canvasId, run, P, k, labelId) {
+  var c = setup(document.getElementById(canvasId)), g = c.g;
+  var w = c.w, h = c.h;
+  var roadW = Math.min(46, h * 0.22);
+  var cx = w * 0.56, cy = h * 0.46;          /* centre of the junction */
+
+  /* the asphalt */
+  g.fillStyle = css("--road");
+  g.fillRect(0, cy - roadW / 2, w, roadW);           /* west to east */
+  g.fillRect(cx - roadW / 2, 0, roadW, h);           /* south to north */
+
+  /* lane marks */
+  g.save();
+  g.strokeStyle = css("--roadline"); g.setLineDash([7, 7]); g.lineWidth = 1.2;
+  g.beginPath(); g.moveTo(0, cy); g.lineTo(cx - roadW / 2, cy); g.stroke();
+  g.beginPath(); g.moveTo(cx + roadW / 2, cy); g.lineTo(w, cy); g.stroke();
+  g.beginPath(); g.moveTo(cx, h); g.lineTo(cx, cy + roadW / 2); g.stroke();
+  g.beginPath(); g.moveTo(cx, cy - roadW / 2); g.lineTo(cx, 0); g.stroke();
+  g.restore();
+
+  var idx = Math.min(k, P.steps - 1);
+  var col = run.hist.colour[idx];
+  var q0 = run.hist.q0[idx], q1 = run.hist.q1[idx];
+
+  /* stop lines */
+  g.strokeStyle = css("--roadline"); g.lineWidth = 2;
+  g.beginPath(); g.moveTo(cx - roadW / 2 - 2, cy - roadW / 2); g.lineTo(cx - roadW / 2 - 2, cy + roadW / 2); g.stroke();
+  g.beginPath(); g.moveTo(cx - roadW / 2, cy + roadW / 2 + 2); g.lineTo(cx + roadW / 2, cy + roadW / 2 + 2); g.stroke();
+
+  /* the queues: the nearest car at the stop line, the others behind it */
+  var carL = 15, carW = 9, gap = 4;
+  var shown0 = Math.min(q0, Math.floor((cx - roadW / 2) / (carL + gap)));
+  var i;
+  g.fillStyle = css("--car1");
+  for (i = 0; i < shown0; i++) {
+    var x = cx - roadW / 2 - 6 - i * (carL + gap) - carL;
+    g.fillRect(x, cy - carW / 2 - 3, carL, carW);
+  }
+  var shown1 = Math.min(q1, Math.floor((h - cy - roadW / 2) / (carL + gap)));
+  g.fillStyle = css("--car2");
+  for (i = 0; i < shown1; i++) {
+    var y = cy + roadW / 2 + 6 + i * (carL + gap);
+    g.fillRect(cx - carW / 2 + 3, y, carW, carL);
+  }
+  /* the cars that have just crossed, to show the direction of travel */
+  if (col[0] === "g" && idx > 0) {
+    g.fillStyle = css("--car1");
+    g.globalAlpha = 0.55;
+    g.fillRect(cx + roadW / 2 + 8, cy - carW / 2 - 3, carL, carW);
+    g.globalAlpha = 1;
+  }
+  if (col[1] === "g" && idx > 0) {
+    g.fillStyle = css("--car2");
+    g.globalAlpha = 0.55;
+    g.fillRect(cx - carW / 2 + 3, cy - roadW / 2 - 8 - carL, carW, carL);
+    g.globalAlpha = 1;
+  }
+
+  /* the two lights */
+  function lamp(x, y, colour) {
+    g.save();
+    g.fillStyle = css("--panel-2"); g.strokeStyle = css("--line"); g.lineWidth = 1;
+    g.beginPath(); g.arc(x, y, 7.5, 0, 6.2832); g.fill(); g.stroke();
+    g.fillStyle = colour === "g" ? css("--go") : (colour === "y" ? css("--sun") : css("--limit"));
+    g.beginPath(); g.arc(x, y, 5, 0, 6.2832); g.fill();
+    g.restore();
+  }
+  lamp(cx - roadW / 2 - 14, cy - roadW / 2 - 12, col[0]);
+  lamp(cx + roadW / 2 + 14, cy + roadW / 2 + 12, col[1]);
+
+  /* how many are waiting */
+  g.font = '12px "IBM Plex Mono", ui-monospace, monospace';
+  g.fillStyle = css("--ink");
+  g.textAlign = "left"; g.textBaseline = "bottom";
+  g.fillText(q0 + (q0 > shown0 ? " →" : ""), 6, cy - roadW / 2 - 8);
+  g.textAlign = "left"; g.textBaseline = "top";
+  g.fillText(q1 + (q1 > shown1 ? " ↑" : ""), cx + roadW / 2 + 8, h - 18);
+
+  if (labelId) {
+    var el = document.getElementById(labelId);
+    if (el) el.textContent = "queues " + q0 + " + " + q1 +
+      " · waited " + fmt(run.hist.meanWait[idx], 0) + " s on average";
+  }
+}
+
+function axes(g, w, h, pad, lo, hi, steps, T) {
+  var i;
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  g.fillStyle = css("--muted");
+  g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+  for (i = 0; i <= 4; i++) {
+    var y = pad.t + (h - pad.t - pad.b) * i / 4;
+    var v = hi - (hi - lo) * i / 4;
+    g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke();
+    g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText(fmt(v, 0), pad.l - 6, y);
+  }
+  var mins = steps * T / 60;
+  g.textAlign = "center"; g.textBaseline = "top";
+  for (i = 0; i <= mins; i += 5) {
+    var x = pad.l + (w - pad.l - pad.r) * i / mins;
+    g.fillText(i + "'", x, h - pad.b + 5);
+  }
+}
+
+function series(g, w, h, pad, data, lo, hi, steps, color, dash, width, upto) {
+  var t, x, y, started = false;
+  g.save(); g.beginPath();
+  g.strokeStyle = color; g.lineWidth = width || 2;
+  if (dash) g.setLineDash(dash);
+  for (t = 0; t < Math.min(upto, data.length); t++) {
+    x = pad.l + (w - pad.l - pad.r) * t / (steps - 1);
+    y = pad.t + (h - pad.t - pad.b) * (hi - data[t]) / (hi - lo);
+    if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+  }
+  g.stroke(); g.restore();
+}
+
+function drawPair(canvasId, a, b, P, k, forceHi) {
+  var c = setup(document.getElementById(canvasId));
+  var pad = { l: 38, r: 10, t: 10, b: 20 };
+  var hi = forceHi || 1, t;
+  for (t = 0; t < P.steps; t++) { hi = Math.max(hi, a[t], b[t]); }
+  hi *= 1.12;
+  axes(c.g, c.w, c.h, pad, 0, hi, P.steps, P.T);
+  series(c.g, c.w, c.h, pad, a, 0, hi, P.steps, css("--base"), [3, 3], 1.7, k + 1);
+  series(c.g, c.w, c.h, pad, b, 0, hi, P.steps, css("--mpc"), null, 2.1, k + 1);
+  /* where we are now */
+  var x = pad.l + (c.w - pad.l - pad.r) * Math.min(k, P.steps - 1) / (P.steps - 1);
+  c.g.save(); c.g.strokeStyle = css("--ink-2"); c.g.lineWidth = 1;
+  c.g.beginPath(); c.g.moveTo(x, pad.t); c.g.lineTo(x, c.h - pad.b); c.g.stroke(); c.g.restore();
+}
+
+/* ====================================================================== *
+ *  6. Paint and play.                                                    *
+ * ====================================================================== */
+
+function paint() {
+  if (!SIM) return;
+  var P = SIM.P, k = Math.min(SIM.k, P.steps - 1);
+  document.getElementById("clock").textContent = mmss(k * P.T);
+  document.getElementById("status").textContent =
+    "MPC: " + fmt(SIM.mpc.solveMs / P.steps, 2) + " ms per decision · window " +
+    P.N + " steps";
+  drawRoads("road-fixed", SIM.fixed, P, k, "lab-fixed");
+  drawRoads("road-mpc", SIM.mpc, P, k, "lab-mpc");
+  drawPair("chart-q1", SIM.fixed.hist.q0, SIM.mpc.hist.q0, P, k);
+  drawPair("chart-q2", SIM.fixed.hist.q1, SIM.mpc.hist.q1, P, k);
+  drawPair("chart-w", SIM.fixed.hist.meanWait, SIM.mpc.hist.meanWait, P, k, 10);
+  printTable(k);
+}
+
+function upto(run, k) {
+  /* the numbers as they stand at the hour reached by the animation */
+  var served = run.hist.served[k], sumQ = 0, maxQ = 0, t;
+  for (t = 0; t <= k; t++) {
+    sumQ += run.hist.q0[t] + run.hist.q1[t];
+    maxQ = Math.max(maxQ, run.hist.q0[t], run.hist.q1[t]);
+  }
+  var waits = run.waits.slice(0, served);
+  var sw = 0, worst = 0, i;
+  for (i = 0; i < waits.length; i++) { sw += waits[i]; if (waits[i] > worst) worst = waits[i]; }
+  return { meanQ: sumQ / (k + 1), maxQ: maxQ, served: served,
+           meanWait: waits.length ? sw / waits.length : 0, worstWait: worst,
+           left: run.hist.q0[k] + run.hist.q1[k] };
+}
+
+function printTable(k) {
+  var f = upto(SIM.fixed, k), m = upto(SIM.mpc, k);
+  var rows = "";
+  rows += row("Fixed plan", f, null);
+  rows += row("MPC", m, f);
+  document.getElementById("result-rows").innerHTML = rows;
+  var txt;
+  if (m.served === 0) txt = "The first cars are still arriving.";
+  else {
+    var gain = f.meanWait > 0 ? 100 * (f.meanWait - m.meanWait) / f.meanWait : 0;
+    txt = "After " + mmss(k * SIM.P.T) + ": the cars that have crossed waited <b>" +
+      fmt(m.meanWait, 0) + " s</b> on average with MPC against <b>" + fmt(f.meanWait, 0) +
+      " s</b> with the fixed plan" + (gain > 0 ? ", that is <b>" + fmt(gain, 0) + "%</b> less" : "") +
+      ". The longest anybody waited is " + fmt(m.worstWait, 0) + " s against " +
+      fmt(f.worstWait, 0) + " s.";
+  }
+  document.getElementById("summary").innerHTML = txt;
+}
+
+function row(name, m, ref) {
+  function cls(a, b, less) {
+    if (!ref) return "";
+    return (less ? a < b - 1e-9 : a > b + 1e-9) ? "better" : ((less ? a > b + 1e-9 : a < b - 1e-9) ? "worse" : "");
+  }
+  return "<tr><td>" + name + "</td><td class='" + cls(m.meanQ, ref && ref.meanQ, true) + "'>" +
+    fmt(m.meanQ, 1) + "</td><td>" + m.maxQ + "</td><td class='" + cls(m.meanWait, ref && ref.meanWait, true) +
+    "'>" + fmt(m.meanWait, 0) + " s</td><td class='" + cls(m.worstWait, ref && ref.worstWait, true) +
+    "'>" + fmt(m.worstWait, 0) + " s</td><td>" + m.served + "</td><td>" + m.left + "</td></tr>";
+}
+
+function tick() {
+  if (!SIM) return;
+  SIM.k++;
+  if (SIM.k >= SIM.P.steps) { SIM.k = SIM.P.steps - 1; setPlaying(false); }
+  paint();
+}
+
+function setPlaying(on) {
+  playing = on;
+  document.getElementById("play").textContent = on ? "Pause" : "Play";
+  if (timer) { clearInterval(timer); timer = null; }
+  if (on) timer = setInterval(tick, 420 / (+UI.speed.value));
+}
+
+var pending = null;
+function rebuildSoon() {
+  if (pending) clearTimeout(pending);
+  pending = setTimeout(function () {
+    pending = null;
+    var k = SIM ? SIM.k : 0;
+    rebuild();
+    SIM.k = Math.min(k, SIM.P.steps - 1);
+    paint();
+  }, 120);
+}
+
+function bindSlider(id, fmtFn, onChange) {
+  var el = document.getElementById(id), out = document.getElementById(id + "-val");
+  UI[id] = el;
+  function sync() { if (out) out.textContent = fmtFn(+el.value); if (onChange) onChange(); }
+  el.addEventListener("input", sync);
+  if (out) out.textContent = fmtFn(+el.value);
+}
+
+function init() {
+  bindSlider("lam1", function (v) { return v + " veh/h"; }, rebuildSoon);
+  bindSlider("lam2", function (v) { return v + " veh/h"; }, rebuildSoon);
+  bindSlider("burst", function (v) { return v > 0.5 ? "on" : "off"; }, rebuildSoon);
+  bindSlider("g1", function (v) { return v + " s"; }, rebuildSoon);
+  bindSlider("g2", function (v) { return v + " s"; }, rebuildSoon);
+  bindSlider("N", function (v) { return v + " s"; }, rebuildSoon);
+  bindSlider("gmin", function (v) { return v + " s"; }, rebuildSoon);
+  bindSlider("wmax", function (v) { return (+v).toFixed(1); }, rebuildSoon);
+  bindSlider("speed", function (v) { return v; }, function () { if (playing) setPlaying(true); });
+  UI.seed = 11;
+  document.getElementById("play").addEventListener("click", function () { setPlaying(!playing); });
+  document.getElementById("step").addEventListener("click", function () { setPlaying(false); tick(); });
+  document.getElementById("reset").addEventListener("click", restart);
+  document.getElementById("redraw").addEventListener("click", function () {
+    UI.seed = Math.floor(Math.random() * 2000000000);
+    restart();
+  });
+  window.addEventListener("resize", function () { paint(); });
+  restart();
+}
+
+function restart() {
+  rebuild();
+  SIM.k = 0;
+  paint();
+  setPlaying(true);
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>
