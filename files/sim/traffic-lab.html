@@ -627,17 +627,24 @@ function drawRoads(canvasId, run, P, k, labelId) {
   g.moveTo(cx - 5, 10); g.lineTo(cx, 2); g.lineTo(cx + 5, 10); g.closePath(); g.fill();
   g.restore();
 
-  /* the two lights */
+  /* the two lights: a head of three lamps, red on top, and only the colour
+     that is on is lit                                                     */
   function lamp(x, y, colour) {
+    var rr = 4.4, pitch = 11.5, boxW = 2 * rr + 8, boxH = 3 * pitch + 5;
+    var order = ["r", "y", "g"], live = { r: css("--limit"), y: css("--sun"), g: css("--go") };
     g.save();
     g.fillStyle = css("--panel-2"); g.strokeStyle = css("--line"); g.lineWidth = 1;
-    g.beginPath(); g.arc(x, y, 7.5, 0, 6.2832); g.fill(); g.stroke();
-    g.fillStyle = colour === "g" ? css("--go") : (colour === "y" ? css("--sun") : css("--limit"));
-    g.beginPath(); g.arc(x, y, 5, 0, 6.2832); g.fill();
+    if (g.roundRect) { g.beginPath(); g.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 3); g.fill(); g.stroke(); }
+    else { g.fillRect(x - boxW / 2, y - boxH / 2, boxW, boxH); g.strokeRect(x - boxW / 2, y - boxH / 2, boxW, boxH); }
+    for (var i = 0; i < 3; i++) {
+      var yy = y - pitch + i * pitch;
+      g.fillStyle = (colour === order[i]) ? live[order[i]] : css("--grid");
+      g.beginPath(); g.arc(x, yy, rr, 0, 6.2832); g.fill();
+    }
     g.restore();
   }
-  lamp(cx - roadW / 2 - 14, cy - roadW / 2 - 12, col[0]);
-  lamp(cx + roadW / 2 + 14, cy + roadW / 2 + 12, col[1]);
+  lamp(cx - roadW / 2 - 15, cy - roadW / 2 - 25, col[0]);
+  lamp(cx + roadW / 2 + 15, cy + roadW / 2 + 25, col[1]);
 
   /* how many are waiting */
   g.font = '12px "IBM Plex Mono", ui-monospace, monospace';
