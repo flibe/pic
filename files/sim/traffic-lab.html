@@ -618,19 +618,14 @@ function drawRoads(canvasId, run, P, k, labelId) {
     var y = cy + roadW / 2 + 6 + i * (carL + gap);
     g.fillRect(cx - carW / 2 + 3, y, carW, carL);
   }
-  /* the cars that have just crossed, to show the direction of travel */
-  if (col[0] === "g" && idx > 0) {
-    g.fillStyle = css("--car1");
-    g.globalAlpha = 0.55;
-    g.fillRect(cx + roadW / 2 + 8, cy - carW / 2 - 3, carL, carW);
-    g.globalAlpha = 1;
-  }
-  if (col[1] === "g" && idx > 0) {
-    g.fillStyle = css("--car2");
-    g.globalAlpha = 0.55;
-    g.fillRect(cx - carW / 2 + 3, cy - roadW / 2 - 8 - carL, carW, carL);
-    g.globalAlpha = 1;
-  }
+  /* which way the one-way roads run */
+  g.save();
+  g.fillStyle = css("--roadline");
+  g.beginPath();
+  g.moveTo(w - 10, cy - 5); g.lineTo(w - 2, cy); g.lineTo(w - 10, cy + 5); g.closePath(); g.fill();
+  g.beginPath();
+  g.moveTo(cx - 5, 10); g.lineTo(cx, 2); g.lineTo(cx + 5, 10); g.closePath(); g.fill();
+  g.restore();
 
   /* the two lights */
   function lamp(x, y, colour) {
