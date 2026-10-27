@@ -246,17 +246,18 @@
           <input type="range" id="N" min="20" max="150" step="5" value="60">
         </div>
         <div class="slider">
-          <label for="gmin">Minimum green <span class="num" id="gmin-val">15 s</span></label>
-          <input type="range" id="gmin" min="5" max="40" step="5" value="15">
+          <label for="ymin">Minimum yellow <span class="num" id="ymin-val">5 s</span></label>
+          <input type="range" id="ymin" min="5" max="25" step="5" value="5">
         </div>
         <div class="slider">
           <label for="wmax">Weight on the road kept waiting <span class="num" id="wmax-val">0.5</span></label>
           <input type="range" id="wmax" min="0" max="3" step="0.1" value="0.5">
         </div>
       </div>
-      <p class="hint" style="margin-top:10px">Both lights hold a 5 s yellow before turning red, and the
-        green of one road can only start after the yellow of the other is over &mdash; the transition
-        constraints of the lesson. The fixed plan repeats its cycle whatever the traffic does.</p>
+      <p class="hint" style="margin-top:10px">A light turns to yellow before red and holds it for at
+        least the minimum above, and the green of one road can only start once the yellow of the other
+        is over: the transition constraints and the safety constraint on the yellow of the lesson. The
+        fixed plan repeats its cycle independently of the traffic.</p>
     </div>
 
     <div class="panel charts">
@@ -269,7 +270,7 @@
         <canvas class="chart-canvas" id="chart-q2" aria-label="Queue on the road from the south, fixed plan against MPC"></canvas>
       </div>
       <div>
-        <div class="chart-title"><span>Waiting time of the cars that have left</span><span class="unit">seconds, running average</span></div>
+        <div class="chart-title"><span>Average wait of the cars that have crossed</span><span class="unit">seconds, from the start of the day</span></div>
         <canvas class="chart-canvas" id="chart-w" aria-label="Average waiting time of the vehicles that have crossed"></canvas>
         <div class="legend">
           <span><i class="key base"></i>fixed plan</span>
@@ -306,21 +307,22 @@
           tenth minute, and the road from the south pays for it &mdash; the longest wait of the day
           goes from 220 s to 455 s, while the MPC, which re-decides every five seconds, stays around
           100 s.</li>
-        <li><b>The minimum green is a safety constraint and it costs performance.</b> Raise it and the
-          MPC is forced to stay on a road it would rather leave; the queues grow. It is the clearest
-          example of a constraint that is not negotiable even though the optimizer would happily break
-          it.</li>
-        <li><b>Looking further ahead is not always better.</b> The prediction window pays until it
+        <li><b>The minimum yellow is a safety constraint, and it is expensive.</b> Every change of
+          phase costs that yellow, during which nobody moves, so the longer it has to be the less
+          often it is worth switching. Taking it from 5 s to 10, 15 and 25 s, the MPC switches 124,
+          72, 56 and 36 times over the half hour, and the average wait goes from 26 s to 43, 86 and
+          132 s. The constraint is not negotiable &mdash; it is what makes the intersection safe to
+          cross &mdash; and the controller can only arrange the rest around it.</li>
+        <li><b>A longer prediction window stops paying.</b> The window improves the result until it
           covers the time the queues need to empty; beyond that the controller is planning for arrivals
           it only knows on average, and the extra horizon buys nothing.</li>
         <li><b>Queues and waiting times are not the same goal.</b> The cost minimizes the queues; the
           waiting times are measured car by car by the simulator. The difference between the two shows
           up when one road is much busier than the other: put 1150 vehicles an hour from the west and
           100 from the south, with the rush off. With no weight on the road kept waiting, the few cars
-          from the south wait up to 430 s, because a short queue is cheap to ignore. At 0.5 the longest
+          from the south wait up to 430 s, because a short queue contributes little to the cost. At 0.5 the longest
           wait falls to 195 s and even the average improves; push the weight to 3 and the worst wait
-          goes down to 165 s while the average climbs to 44 s. That is the trade-off of the lesson,
-          with a number on it.</li>
+          goes down to 165 s while the average climbs to 44 s: the trade-off of the lesson, measured.</li>
       </ul>
     </div>
     <div>
@@ -331,6 +333,11 @@
       <p class="math">m<span class="cm">i+1|k,J</span> = max&#8239;(0,&nbsp; m<span class="cm">i|k,J</span> + v<sup>in</sup><span class="cm">J</span> T &minus; v<sup>out</sup> T g<span class="cm">i|k,J</span>)</p>
       <p class="math">min &nbsp; &Sigma;<span class="cm">i</span> &Sigma;<span class="cm">J</span> (m<span class="cm">i|k,J</span>)<sup>2</sup> &nbsp;+&nbsp; &rho; &Sigma;<span class="cm">i</span> (w&#772;<span class="cm">i|k</span>)<sup>2</sup></p>
       <p class="math">g + y + r = 1 &nbsp;&middot;&nbsp; &Sigma;<span class="cm">J</span> (g<span class="cm">i|k,J</span> + y<span class="cm">i|k,J</span>) &le; 1 &nbsp;&middot;&nbsp; r<span class="cm">i+1|k,J</span> &le; 1 &minus; g<span class="cm">i|k,J</span> &nbsp;&middot;&nbsp; y<span class="cm">i+1|k,J</span> &le; 1 &minus; r<span class="cm">i|k,J</span> &nbsp;&middot;&nbsp; g<span class="cm">i+1|k,J</span> &le; 1 &minus; y<span class="cm">i|k,J</span></p>
+      <p class="math">t<sup>y</sup><span class="cm">i+1|k,J</span> = (t<sup>y</sup><span class="cm">i|k,J</span> + T) y<span class="cm">i|k,J</span> &nbsp;&middot;&nbsp; r<span class="cm">i+1|k,J</span> &le; &lfloor; t<sup>y</sup><span class="cm">i|k,J</span> / t<sup>y,min</sup> &rfloor; + (1 &minus; y<span class="cm">i|k,J</span>)</p>
+      <p>The second line is the safety constraint on the yellow: the timer counts how long the yellow
+        has been displayed, and the light cannot turn red before that timer has reached the minimum.
+        There is no minimum green: a green may end after any step, and what discourages the controller
+        from switching all the time is the yellow itself, during which neither road moves.</p>
       <p>The second term of the cost is the one of the lesson on the waiting times, in the simplest
         form that fits an intersection with two lights: w&#772;<sub>i|k</sub> is the longest time either
         road has been held at red, an upper bound over the two roads, and pushing it down keeps the
@@ -339,7 +346,7 @@
         bound down pushes down the longest wait. The arrivals the controller predicts are the average
         rate of each road, not the arrivals that actually happen: the forecast is right on average and
         wrong at every single step, which is the normal condition of a real controller.</p>
-      <p>The transition constraints, the mutual exclusion and the minimum green leave very few
+      <p>The transition constraints, the mutual exclusion and the minimum yellow leave very few
         admissible colour sequences over a window of twelve steps &mdash; a few hundred &mdash; so the
         page finds the best one by exploring them all, with a bound that cuts the branches that are
         already worse than the best found. The result is the exact optimum of the problem above, which
@@ -391,7 +398,7 @@ function isGreen(phase) { return phase === G1 || phase === G2; }
  *  2. The controller: the best admissible colour sequence over the window.*
  *                                                                         *
  *  The queues are the state, the colours the control.  Because the        *
- *  automaton and the minimum green leave only a few hundred admissible    *
+ *  automaton and the minimum yellow leave only a few hundred admissible   *
  *  sequences over the window, the optimum is found by exploring them all, *
  *  cutting every branch whose cost already exceeds the best one found.    *
  * ====================================================================== */
@@ -411,8 +418,10 @@ function mpcSolve(st, P) {
     }
     /* staying is always admissible in green; in yellow it is admissible only
        until the yellow is over, after which the light must change          */
+    /* a green may end after any step; a yellow must last at least the minimum,
+       and nothing forbids holding it longer, so both options are explored  */
     var canSwitch = isGreen(phase) ? (timer >= gminSteps) : (timer >= yellowSteps);
-    var stayOk = isGreen(phase) ? true : (timer < yellowSteps);
+    var stayOk = true;
     var steps = [];
     if (stayOk) steps.push({ ph: phase, tm: timer + 1 });
     if (canSwitch) steps.push({ ph: nextPhase(phase), tm: 1 });
@@ -440,7 +449,7 @@ function mpcSolve(st, P) {
 
 function mpcDecide(st, P) { return mpcSolve(st, P).first; }
 
-/* the fixed plan: a cycle that repeats whatever the traffic does */
+/* the fixed plan: a cycle that repeats independently of the traffic */
 function fixedDecide(st, P) {
   var dur = [P.fixedGreen[0], P.yellowSteps, P.fixedGreen[1], P.yellowSteps];
   if (st.timer >= dur[st.phase]) return nextPhase(st.phase);
@@ -537,8 +546,8 @@ function readUI() {
   return {
     T: T, steps: steps, sat: 2, satInt: 2,            /* vehicles per step */
     arrivals: arrivals, arrivalRate: [rateFor(0), rateFor(1)],
-    yellowSteps: 1,                                  /* 5 s of yellow */
-    gminSteps: Math.round(+UI.gmin.value / T),
+    yellowSteps: Math.max(1, Math.round(+UI.ymin.value / T)),
+    gminSteps: 1,
     fixedGreen: [Math.round(+UI.g1.value / T), Math.round(+UI.g2.value / T)],
     N: Math.round(+UI.N.value / T),
     wMax: +UI.wmax.value,
@@ -814,7 +823,7 @@ function init() {
   bindSlider("g1", function (v) { return v + " s"; }, rebuildSoon);
   bindSlider("g2", function (v) { return v + " s"; }, rebuildSoon);
   bindSlider("N", function (v) { return v + " s"; }, rebuildSoon);
-  bindSlider("gmin", function (v) { return v + " s"; }, rebuildSoon);
+  bindSlider("ymin", function (v) { return v + " s"; }, rebuildSoon);
   bindSlider("wmax", function (v) { return (+v).toFixed(1); }, rebuildSoon);
   bindSlider("speed", function (v) { return v; }, function () { if (playing) setPlaying(true); });
   UI.seed = 11;

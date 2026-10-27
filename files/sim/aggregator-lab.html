@@ -283,17 +283,17 @@
         <li><b>Flexibility is parked time, not power.</b> A car that stays eight hours to take three
           hours of charge can be moved anywhere inside its window; one that arrives nearly empty and
           leaves in two hours cannot be moved at all. Announce the stop later, or shorten the stays, and
-          the fleet can no longer get out of the way.</li>
-        <li><b>Charging on arrival is the worst of both worlds.</b> The dotted line is the fleet without
-          a controller: a wall of power when the cars arrive and nothing afterwards. It follows no
-          profile, and the drivers are not served any better &mdash; they get their charge either way,
-          just earlier than anyone needed.</li>
+          the fleet can no longer move its consumption away from the window.</li>
+        <li><b>Charging on arrival serves neither goal.</b> The dotted line is the fleet without a
+          controller: all the power is drawn when the cars arrive and none afterwards. It follows no
+          profile, and it does not serve the drivers any better &mdash; they receive the same charge,
+          only earlier than their deadline required.</li>
         <li><b>The priority slider is the weight of the lesson.</b> Towards the grid, the controller
           sacrifices the drivers' requests to follow the profile; towards the drivers, it serves every
           request and follows the profile with what is left over. Sweeping it traces the Pareto frontier
           of the two goals, the picture of the previous lesson.</li>
         <li><b>The request can be impossible, and the problem must survive it.</b> Ask for a stop that
-          covers the only hours in which a car is there, and nothing breaks: the relaxation variables
+          covers the only hours in which a car is there, and the problem remains solvable: the relaxation variables
           take the violation, and the table says how much charge was not delivered. A hard deadline
           would simply report infeasible and leave the controller with nothing to apply.</li>
         <li><b>V2G buys the ability to go down.</b> With discharging allowed the fleet can hold the
@@ -686,7 +686,7 @@ function makeRef(level, from, to, fleet, withStop) {
 
 function makeSegments(square, emax) {
   /* the price of the first piece of the square, so that switching between the
-     two penalties does not quietly change how much a driver is worth       */
+     two penalties does not change how much a driver is worth            */
   if (!square) return [{ width: Infinity, price: emax / 64 }];
   var b = [], v = emax, j;
   for (j = 0; j < 7; j++) { b.unshift(v); v /= 2; }
