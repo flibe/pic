@@ -390,6 +390,24 @@ s.t. p<sub>i</sub> = u<sub>i</sub> + p<sup>pev</sup><sub>i</sub> − p<sup>res</
           twenty-minute controller behaves like the infinite-horizon one.</li>
       </ul>
     </div>
+    <div class="panel">
+      <h2>Where this runs for real</h2>
+      <p>A charging site whose storage lets it deliver more power than its connection can draw is a
+        product you can buy, sold as the answer to a grid connection that would take years to upgrade.</p>
+      <ul>
+        <li><b>ADS-TEC ChargePost.</b> A charger with the battery inside: a grid input of 22 to 87 kW
+          supports an output up to 300 kW. One was installed at a car dealership in Brighton, Australia,
+          in place of a 150 kW charger that the connection could not feed.
+          <a href="https://ads-tec-com.mynewsdesk.com/pressreleases/ads-tec-energy-and-elanga-bring-ultra-fast-charging-to-penske-dealership-in-australia-3442231" target="_blank" rel="noopener">the announcement</a>
+          &mdash; a manufacturer's, so read the numbers as such.</li>
+        <li><b>TotalEnergies, Heiloo.</b> Fast charging up to 320 kW on a connection sized for ordinary
+          consumption: the station charges its battery slowly and releases it quickly, which is the
+          storage of this page with the controller tuned to one purpose.
+          <a href="https://www.mobilityplaza.org/news/totalenergies-overcomes-grid-limitations-for-ev-charging-in-the-netherlands" target="_blank" rel="noopener">the installation</a>.</li>
+      </ul>
+      <p>What the controller of this page adds to those products is the part that is not in the
+        hardware: deciding <i>when</i> to charge the buffer, given a forecast and a tariff.</p>
+    </div>
   </section>
 
   <footer>Simulation for teaching: perfect model of the storage, perfect state measurement and, unless the box
