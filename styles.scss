@@ -68,3 +68,8 @@ h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba($ink, .12); padding-botto
 table.schedule td:first-child { font-variant-numeric: tabular-nums; }
 .lesson-meta { font-size: .9em; opacity: .8; }
 .news { border-left: 4px solid $sapienza; padding: .6rem 1rem; background: rgba($sapienza, .05); }
+
+/* lab figures in the lesson diary: a screenshot of the lab, linked to it */
+.lab-fig { display: block; width: 100%; max-width: 100%; height: auto; margin: .5rem 0 .3rem;
+           border: 1px solid rgba(0,0,0,.12); border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.lab-real { font-size: .95em; }

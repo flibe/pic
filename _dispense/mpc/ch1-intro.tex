@@ -1,0 +1,146 @@
+\section{The receding-horizon idea}
+\label{sec:intro}
+
+\subsection{What a controller has to do}
+
+A \emph{process} is a system whose evolution in time we want to influence: a tank whose
+level has to be kept constant, a storage system whose charge has to follow the needs of a
+building, a traffic light whose colours have to keep the queues short. We act on the process
+through its \emph{control inputs} and we observe it through its \emph{measurements}. A
+\emph{controller} is the rule that, at every sampling time, turns the measurements into the next
+value of the inputs.
+
+Classical controllers, such as the PID, compute the input from the current error with a fixed
+formula. They are simple and robust, but they do not know the limits of the process --- a pump
+that cannot exceed its rated power, a tank that cannot be emptied below a minimum level --- and
+they do not look ahead. Model predictive control (MPC) is a different way of writing a controller:
+at every sampling time it \emph{plans} the inputs over a window of future steps by solving an
+optimization problem, and it uses only the first step of the plan.
+
+\subsection{The receding horizon}
+
+Fix a sampling time $T$ and call $k = 0, 1, 2, \dots$ the sampling instants. At time $k$ the
+controller measures the state $x_k$ of the process, and considers the next $N$ steps, the
+\emph{prediction horizon}. Inside the window it uses a second time index, $i = 0, 1, \dots, N$,
+relative to the beginning of the window: the quantity predicted for step $i$ of the window opened
+at time $k$ is written with the double index $i|k$, as in $x_{\ik{i}}$ and $u_{\ik{i}}$. The
+absolute time of that step is $k + i$.
+
+The controller then solves an optimization problem whose unknowns are the inputs over the
+window, $u_{\ik{0}}, \dots, u_{\ik{N-1}}$, and whose cost measures how well the predicted
+trajectory meets the control goal. Of the optimal sequence only the first element is applied to
+the process, $u_k = u^*_{\ik{0}}$. At time $k+1$ the state is measured again and the whole
+procedure is repeated over a window that has moved one step forward. This is the
+\emph{receding horizon}: the window recedes as time advances (\cref{fig:receding}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=0.9cm,y=0.9cm,>=Stealth]
+  % time axis
+  \draw[->] (-0.5,0) -- (13.5,0) node[right] {time};
+  \foreach \t in {0,...,10} \draw (\t,0.08) -- (\t,-0.08);
+  \node[below] at (3,-0.1) {$k$};
+  \node[below] at (4,-0.1) {$k+1$};
+  \node[below] at (8,-0.1) {$k+N$};
+  % window at k
+  \draw[very thick,mpc] (3,1.5) -- (8,1.5);
+  \draw[mpc] (3,1.3) -- (3,1.7);
+  \draw[mpc] (8,1.3) -- (8,1.7);
+  \node[right,mpc,font=\small] at (8.2,1.5) {window opened at $k$: $i = 0,\dots,N$};
+  \fill[mpc] (3,1.5) circle (0.09);
+  \node[left,mpc,font=\small] at (2.8,1.5) {applied: $u^*_{0|k}$};
+  % window at k+1
+  \draw[very thick,sap] (4,0.75) -- (9,0.75);
+  \draw[sap] (4,0.55) -- (4,0.95);
+  \draw[sap] (9,0.55) -- (9,0.95);
+  \fill[sap] (4,0.75) circle (0.09);
+  \node[right,sap,font=\small] at (9.2,0.75) {window opened at $k+1$};
+  % predicted trajectory sketch
+  \draw[thick,mpc,dashed] plot[smooth] coordinates {(3,3.0) (4,2.7) (5,2.45) (6,2.35) (7,2.3) (8,2.3)};
+  \draw[thick] plot[smooth] coordinates {(0,3.6) (1,3.4) (2,3.25) (3,3.0)};
+  \fill (3,3.0) circle (0.07);
+  \node[above,font=\small] at (1.2,3.45) {measured past};
+  \node[right,mpc,font=\small] at (8.1,2.3) {predicted};
+  \node[left,font=\small] at (-0.1,3.0) {$x$};
+\end{tikzpicture}
+\caption{The receding horizon. At time $k$ the controller measures $x_k$, plans the inputs over
+the next $N$ steps, applies the first one and discards the rest. At $k+1$ it starts again with a
+window moved one step ahead.}
+\label{fig:receding}
+\end{figure}
+
+\subsection{The nominal MPC algorithm}
+
+The procedure can be written as an algorithm. The adjective \emph{nominal} means that the
+controller trusts its model completely: no disturbances, no model errors, a state that can be
+measured.
+
+\begin{keybox}
+\textbf{Nominal MPC.} At every sampling time $k$:
+\begin{enumerate}[label=\arabic*.]
+  \item measure the state $x_k$ of the process;
+  \item solve the optimization problem $\mathcal{P}_N(x_k)$ over the window $i = 0,\dots,N$,
+        obtaining the optimal input sequence $\bu^*_k = \{u^*_{\ik{0}},\dots,u^*_{\ik{N-1}}\}$;
+  \item apply $u_k = u^*_{\ik{0}}$ to the process and discard the rest of the sequence;
+  \item wait for the next sampling time and go back to step 1.
+\end{enumerate}
+\end{keybox}
+
+The first input of the optimal sequence depends on the measured state: $u^*_{\ik{0}} =
+\kappa_N(x_k)$. MPC is therefore a \emph{feedback} controller, not an open-loop plan computed
+once, and $\kappa_N$ is its control law. It is a law that is never written down explicitly: it is
+evaluated, at every step, by solving an optimization problem. This has two consequences that run
+through the whole course. First, MPC is a nonlinear controller even when the process is linear,
+because $\kappa_N$ is the solution of a constrained problem. Second, the time needed to solve the
+problem must be much smaller than the sampling time $T$, which is the main practical limit of
+the technique.
+
+\subsection{Why MPC, and at what price}
+
+The strength of MPC is that the goals of the control problem are written \emph{directly} into
+the optimization problem: the cost says what we want, the constraints say what is admissible.
+Limits on inputs and states --- the power of a pump, the capacity of a battery, the maximum
+number of vehicles a queue can hold --- are constraints, not afterthoughts; several inputs and
+several outputs are handled at once; and known information about the future, such as a forecast
+of the demand or the schedule of a tariff, enters the plan naturally. The formulation is also
+easy to explain to whoever operates the process, because every term has a meaning.
+
+The price is twofold. The controller needs a \emph{model} of the process, good enough for its
+predictions to be useful over the window; obtaining such a model is the subject of the third
+part of the course. And it needs an optimization problem to be solved at every sampling time,
+which rules out, or makes expensive, the cases in which the sampling time is very short or the
+problem is very large.
+
+The problems solved by MPC belong to two families. When all the decision variables are
+continuous and the cost and the constraints are convex --- a quadratic cost with linear
+constraints is the typical case --- the problem is a \emph{continuous program}, solved reliably
+and fast. When some decisions are logical --- start a machine or not, turn a light green or
+not --- they are represented by binary variables and the problem becomes a
+\emph{mixed-integer program}, much harder in general. Both families appear in the case studies.
+
+\subsection{Centralized and decentralized control}
+
+When the process is made of many parts --- the intersections of a city, the buildings of a
+district, the vehicles of a fleet --- one can write a single optimization problem for the whole
+system, which is \emph{centralized} MPC, or one problem per part, each with its own controller,
+which is \emph{decentralized} MPC; when the local controllers exchange information, the scheme
+is called \emph{distributed}. The centralized problem is optimal but large; the local problems
+are small but have to deal with the \emph{coupling constraints} that tie the parts together.
+The case studies of this part are centralized; the question comes back with the aggregation of
+electric vehicles and with the control of several intersections.
+
+\subsection{Hard and soft constraints}
+
+A constraint is \emph{hard} when it must hold without exception: the physical limit of an
+actuator, the safety limit of a tank. It is \emph{soft} when it expresses a preference that may
+be violated at a cost: a reference level, a deadline for a job. Soft constraints are written by
+adding a non-negative \emph{slack} variable that measures the violation and by charging it in the
+cost; \cref{sec:soft} shows the construction. The distinction matters because a problem whose
+hard constraints cannot all be satisfied has no solution, and a controller with no solution has
+nothing to apply.
+
+\begin{reading}
+\refkey{Rawlings\_2017}, sections 1.1 and 1.2 (pp.~1--10), for the setting of the problem and for
+modelling; \refkey{Cannon\_2016}, chapter 1, for an overview of predictive control. The slides on
+MPC of the course website, up to slide 25, cover this chapter.
+\end{reading}

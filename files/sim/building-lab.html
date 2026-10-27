@@ -435,26 +435,6 @@
         time are left out, because with a selling price below the buying one and a round-trip efficiency
         below one the optimal solution never does either. The page checks it on every solution.</p>
     </div>
-    <div>
-      <h2>Where this runs for real</h2>
-      <p>Predictive control of a building is past the stage of simulation, though the measured
-        demonstrations are on offices rather than on houses, where the heating and cooling are the
-        large flexible load.</p>
-      <ul>
-        <li><b>An office in Berkeley.</b> MPC installed on the real heating and ventilation of a
-          building and run for two months against the control already in place, with about 40% less
-          energy for the same comfort. The paper is worth reading for its second result: collecting the
-          data and getting the controller to talk to the plant cost as much effort as the modelling.
-          <a href="https://eta-publications.lbl.gov/publications/field-demonstration-and" target="_blank" rel="noopener">Blum et al., 2022</a>.</li>
-        <li><b>The same laboratory, on prices.</b> A later demonstration on a large office drives the
-          building against four dynamic price profiles over four seasons: the economic objective of
-          this page, on a real plant.
-          <a href="https://eta.lbl.gov/publications/commercial-building-hvac-demand" target="_blank" rel="noopener">the field demonstration</a>.</li>
-      </ul>
-      <p>In a house the same problem is sold in pieces: the home battery that charges on the cheap
-        band, the water heater that waits for the photovoltaic. What a controller adds is doing both at
-        once, against one bill.</p>
-    </div>
   </section>
 
   <footer>

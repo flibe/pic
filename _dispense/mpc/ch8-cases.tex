@@ -1,0 +1,360 @@
+\section{Case studies}
+\label{sec:cases}
+
+The case studies follow the same pattern. The control goals are identified; they are turned
+into a cost; the system is modelled with states, inputs and disturbances; the limits of the
+system and the logic of the application become constraints; and the resulting problem is solved
+at every step on a receding horizon. All of them are economic MPC problems in the sense of
+\cref{sec:economic}, and all use the constructions of \cref{sec:toolbox}. For each of them the
+course website has an interactive laboratory that runs the controller in the browser.
+
+\subsection{The charging service area}
+\label{sec:servicearea}
+
+\paragraph{Problem.} A service area for the fast charging of electric vehicles draws power from
+the grid at a point of connection (POC). Vehicles arrive wanting to recharge as fast as
+possible, so even a few of them produce a large power flow, which means a large connection and
+a heavy bill under a capacity-based tariff. An energy storage system (ESS) is installed to keep
+the power at the point of connection small. On site there may also be a renewable generator.
+
+\paragraph{Variables and model.} With the \emph{consumer sign convention} --- power consumed is
+positive --- the quantities at time $i$ of the window opened at $k$ are: the charging demand of
+the vehicles $p^{pev}_{\ik{i}}$ and the renewable generation $p^{res}_{\ik{i}}$, both known over
+the window (disturbances with a forecast); the storage power $u_{\ik{i}}$, positive when
+charging, which is the control; the energy stored $x_{\ik{i}}$, which is the state; and the power
+at the point of connection $p_{\ik{i}}$, which is the controlled quantity. The balance at the
+point of connection and the dynamics of the storage are
+\begin{equation}
+  p_{\ik{i}} = p^{pev}_{\ik{i}} + u_{\ik{i}} - p^{res}_{\ik{i}}, \qquad
+  x_{\ik{i+1}} = x_{\ik{i}} + \tfrac{T}{3600}\, u_{\ik{i}}, \qquad x_{\ik{0}} = x_k .
+\end{equation}
+
+\paragraph{Problem solved at every step.}
+\begin{equation}
+\begin{aligned}
+  \min_{u} \quad & \sum_{i=0}^{N-1}\Big[\alpha\, p_{\ik{i}}^2 + \beta\,\big(x_{\ik{i}} - x^{ref}\big)^2\Big]
+                   + \beta_f\,\big(x_{\ik{N}} - x^{ref}\big)^2 \\
+  \st \quad & \text{balance, dynamics, } x_{\ik{0}} = x_k, \\
+            & u^{\min} \le u_{\ik{i}} \le u^{\max},\quad x^{\min} \le x_{\ik{i}} \le x^{\max},\quad
+              p^{\min} \le p_{\ik{i}} \le p^{\max}.
+\end{aligned}
+\end{equation}
+The weight $\alpha$ penalizes the power at the point of connection; $\beta$, deliberately
+small, keeps the storage near a reference level so that it is ready for the next event; the
+terminal weight $\beta_f$ is taken from the Riccati equation of the unconstrained problem, as
+\cref{sec:optimality} prescribes. Since $p$ is an affine function of $u$, the limits on $p$ are
+bounds on the control, and the problem is a quadratic program.
+
+\paragraph{Losses and indicators.} A real storage has a charging and a discharging efficiency,
+and the two cases obey different equations. The storage power is split into a charging and a
+discharging power, $p^{ess} = p^{ch} - p^{dis}$, both non-negative, with the indicator variables
+$\delta^{ch}, \delta^{dis}$, the constraints $p^{ch} \le p^{ch,\max}\delta^{ch}$, $p^{dis} \le
+p^{dis,\max}\delta^{dis}$, $\delta^{ch} + \delta^{dis} \le 1$, and the dynamics with the
+efficiencies, as in \cref{sec:toolbox}. The problem becomes a mixed-integer quadratic program.
+We also distinguished the \emph{control model}, which lives inside the MPC problem and is the
+controller's belief about the plant, from the \emph{simulation model}, which replaces the real
+system when the controller is tested.
+
+\paragraph{Code.} The implementation is split in two files on purpose: \texttt{main.jl} is the
+application, which holds the parameters, builds the profiles and runs the receding-horizon loop
+--- measure, call the optimizer, apply the first control, simulate one step, repeat;
+\texttt{MPC\_iteration.jl} is the controller, which builds the optimization problem in the
+modelling language JuMP and hands it to a solver. Changing solver is one line, and the model
+does not change: this separation between how a problem is written and how it is solved is the
+reason for using a modelling language at all.
+
+\begin{labbox}
+The Service Area Lab runs the controller over a full day against the same area without storage;
+the peak at the point of connection halves. The lab also shows the effect of the horizon, of the
+forecast, and of the terminal weight. The Julia code of the lesson is on the website, with the
+formulation it implements. Among real installations, battery-buffered fast chargers sold for
+sites with a weak grid connection are this problem turned into a product.
+\end{labbox}
+
+\subsection{Building energy management}
+\label{sec:building}
+
+\paragraph{Problem.} A building has photovoltaic panels, non-plannable loads, plannable loads,
+an energy storage system and a charging station, all behind one meter at the point of delivery
+(\cref{fig:building}). The first goal is to minimize the electricity bill under a time-of-use
+tariff, with one price $c^{in}$ for the energy consumed and a lower price $c^{out}$ for the
+energy injected into the grid.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth,
+  box/.style={draw,rounded corners=2pt,minimum width=1.9cm,minimum height=0.8cm,font=\small,fill=white}]
+  \draw[rounded corners=4pt,fill=soft] (-0.4,-1.1) rectangle (8.6,3.6);
+  \node[font=\small\bfseries,anchor=north west] at (-0.3,3.55) {building};
+  \node[box,fill=sun!20] (pv) at (0.9,2.7) {PV};
+  \node[box] (npl) at (3.9,2.7) {non-plannable loads};
+  \node[box] (pl) at (7.0,2.7) {plannable loads};
+  \node[box,fill=ess!20] (ess) at (0.9,0.5) {storage};
+  \node[box] (cs) at (3.9,0.5) {charging station};
+  \node[box,fill=mpc!15] (mpc) at (7.0,0.5) {MPC};
+  \node[box,minimum width=1.1cm] (meter) at (10.3,1.6) {meter};
+  \node[draw,cloud,cloud puffs=11,minimum width=2.1cm,minimum height=1.3cm,font=\small] (grid) at (12.9,1.6) {grid};
+  \draw[thick] (8.6,1.6) -- (meter);
+  \draw[thick,<->] (meter) -- (grid) node[midway,above,font=\small] {$P$};
+  \draw[dashed,mpc,->] (mpc.south) -- ++(0,-0.4) -| (ess.south) node[pos=0.75,left,font=\scriptsize,mpc] {$P^{ess}$};
+  \draw[dashed,mpc,->] (mpc) -- (cs) node[midway,above,font=\scriptsize,mpc] {$P^{pev}$};
+  \draw[dashed,mpc,->] (mpc) -- (pl) node[midway,right,font=\scriptsize,mpc] {$s_{j,\ell}$};
+\end{tikzpicture}
+\caption{The building of the second case study. The controller acts on the storage, on the
+charging station and on the start times of the plannable loads; generation and non-plannable
+loads are forecasts; the bill is paid on the power at the meter.}
+\label{fig:building}
+\end{figure}
+
+\paragraph{Plannable loads.} Each plannable load $\ell$ comes with the preferences of the user,
+the earliest start $S_\ell$, the deadline $F_\ell$, the duration $N_\ell$, and with its power
+profile $P_\ell$. Load shifting is the decision of when to start it, written with the one-hot
+variables $s_{\ik{j},\ell}$ of \cref{sec:toolbox}: the load starts exactly once,
+$\sum_{j=S_\ell}^{F_\ell - N_\ell} s_{\ik{j},\ell} = 1$, its power is the shifted profile
+$P^{pl}_{\ik{i},\ell} = \sum_j s_{\ik{j},\ell}\,P_\ell(i-j+1)$, and the total plannable power is
+$P^{pl}_{\ik{i}} = \sum_\ell P^{pl}_{\ik{i},\ell}$. Note the two time indices: $S_\ell$ and
+$F_\ell$ are absolute times, $i|k$ is relative to the window.
+
+\paragraph{The bill.} The power at the meter, $P_{\ik{i}} = P^{npl} + P^{pl} + P^{pev} + P^{ess}
+- P^{pv}$, is a cost when positive and a revenue when negative. It is split as $P = P^{in} -
+P^{out}$ with $P^{in}, P^{out} \ge 0$, the two forbidden from being positive together by the
+indicators $\delta^{in}, \delta^{out}$ and the constraints $P^{in} \le P^{\max}\delta^{in}$,
+$P^{out} \le \abs{P^{\min}}\delta^{out}$, $\delta^{in} + \delta^{out} \le 1$. The bill over the
+window is then linear:
+\begin{equation}
+  J^{cost} = \sum_{i=0}^{N-1} \tfrac{T}{3600}\Big(c^{in}_{\ik{i}} P^{in}_{\ik{i}} - c^{out}_{\ik{i}} P^{out}_{\ik{i}}\Big).
+\end{equation}
+
+\paragraph{Battery ageing.} A storage system has a price $COST^{ess}$ and a finite number of
+full cycles. The energy it will move over its life is $E^{life} = 2\,x^{ess,\max}\cdot
+\mathit{cycles}$, and the ratio $c^{dep} = COST^{ess}/E^{life}$ is what one kWh through the
+battery costs in terms of life consumed --- a few cents. Both charging and discharging consume
+life, so the term is
+\begin{equation}
+  J^{depr} = \sum_{i=0}^{N-1} c^{dep}\,\big(P^{ch}_{\ik{i}} + P^{dis}_{\ik{i}}\big)\,\tfrac{T}{3600},
+\end{equation}
+which is $c^{dep}\abs{P^{ess}}$ written without an absolute value, thanks to the split into two
+non-negative powers. It acts as a friction: the storage is used only when the benefit exceeds
+the loss of life.
+
+\paragraph{The full objective.} With a regulation term on the stored energy and the terminal
+value of \cref{sec:economic},
+\begin{equation}
+  J = J^{cost} + \alpha_x \sum_{i}\big(x^{ess}_{\ik{i}} - x^{ref}\big)^2 + \alpha_{dep}\,J^{depr}
+      - c^{avg}\,x^{ess}_{\ik{N}} ,
+\end{equation}
+subject to the balance at the meter, the dynamics of the storage with its efficiencies, the
+measured initial state, the one-hot constraints of the loads, the indicator constraints and the
+bounds on all variables. Without the last term the battery ends every day empty, because selling
+its energy is a profit inside the window; with it, the energy left is valued at the average
+purchase price and the controller keeps it. The weights are chosen as in \cref{sec:economic},
+and they can be normalized to sum to one.
+
+\paragraph{What was left out.} The model is electrical only. A real battery management system
+also tracks the state of charge in percent, the state of health, which cell balancing protects,
+and the state of power, the power the battery can deliver in the near future. The thermal part
+of the building --- wall and room temperatures driven by the weather and by heating and
+cooling, humidity, air quality, ventilation --- would add comfort terms to the objective and
+constraints of its own. The building information model is the source from which the parameters
+of all these models can be updated as the building changes.
+
+\begin{labbox}
+The Building Energy Lab runs this problem on a detached house with five appliances under a
+time-of-use tariff, and compares the plan with an uncontrolled house and with a rule-based
+battery. Two experiments belong to this chapter: removing the terminal value and watching the
+battery end the day empty, and asking the house for a flexibility service --- a power cap or a
+power curve --- with a fee for delivering it and a penalty for failing. Measured
+demonstrations of predictive control on real buildings exist, on offices, with savings of the
+order of tens of percent on the energy for heating and cooling.
+\end{labbox}
+
+\subsection{An aggregator of electric vehicles}
+\label{sec:aggregator}
+
+\paragraph{Context.} Electricity is traded on wholesale markets by generators, retailers and
+the market operator. Next to them, the transmission and distribution system operators buy on
+the \emph{ancillary services} or \emph{flexibility} markets what they need to keep frequency
+and voltage at their references. The providers are large consumers or \emph{aggregators} of
+many small resources, managed as one entity to reach the minimum bidding size --- of the order
+of a megawatt for a given window. A fleet of charging vehicles is such an aggregation: the goal
+of the aggregator is to make the \emph{total} charging power of the fleet track a profile agreed
+with the market, while every driver still receives the charge requested.
+
+\paragraph{Model.} For each vehicle $p$ connected during the window, a charging and a
+discharging power, $P^{ch}_{\ik{i},p}, P^{dis}_{\ik{i},p} \ge 0$, with their indicators and
+mutual exclusion; the stored energy with the efficiencies,
+$x_{\ik{i+1},p} = x_{\ik{i},p} + \eta^{ch}\,T\,P^{ch}_{\ik{i},p} - \tfrac{1}{\eta^{dis}}\,T\,P^{dis}_{\ik{i},p}$;
+and the fact that a charger cannot deliver an arbitrarily small power, the semi-continuous
+constraint \eqref{eq:semicont}, $\delta^{ch}_{\ik{i},p}P^{ch,\min}_p \le P^{ch}_{\ik{i},p} \le
+\delta^{ch}_{\ik{i},p}P^{\max}_p$. The total power is $P_{\ik{i}} = \sum_p \big(P^{ch}_{\ik{i},p}
+- P^{dis}_{\ik{i},p}\big)$.
+
+\paragraph{User preferences.} Each driver states a final charging time $F_p$ and a desired
+state of charge $x^{ref}_p$. If the vehicle leaves inside the window, $F_p \le k + N$, the
+request is a constraint, $x_{F_p|k,p} \ge x^{ref}_p$; if it leaves after the window, the request
+enters the cost as a term $(x_{\ik{N},p} - x^{ref}_p)^2$. The constraint can be impossible to
+meet --- a vehicle that arrives too empty or stays too little --- and it is therefore
+\emph{relaxed} as in \cref{sec:soft}:
+\begin{equation}
+  x_{F_p|k,p} \ge x^{ref}_p - \varepsilon_p, \qquad \varepsilon_p \ge 0 .
+\end{equation}
+
+\paragraph{Objective.}
+\begin{equation}
+  J = d_1 \sum_{i=0}^{N-1}\big(P_{\ik{i}} - P^{ref}_{\ik{i}}\big)^2
+    + d_2 \sum_{p:\,F_p > k+N}\big(x_{\ik{N},p} - x^{ref}_p\big)^2
+    + d_3 \sum_{p} \varepsilon_p^2 .
+\end{equation}
+The weight $d_3$ decides the behaviour: small, and the controller disappoints a driver to follow
+the grid better; large, and it disappoints a driver only when the request cannot be met at all.
+Sweeping it traces the Pareto frontier between the two goals.
+
+\begin{labbox}
+The PEV Aggregator Lab runs the problem in closed loop over a day, with the request for a stop
+in the aggregate power arriving at a chosen hour: until then the controller spreads the charge,
+and at that hour the plan is rearranged. In Italy the role described here is regulated: Terna's
+UVAM pilot admits aggregates of loads, storage and vehicles of at least one megawatt into the
+balancing market, paid for availability and for the energy actually moved.
+\end{labbox}
+
+\subsection{Traffic lights at an intersection}
+\label{sec:traffic}
+
+\paragraph{Problem.} One intersection with a set $\mathcal{J}$ of traffic lights, one per
+approaching road (\cref{fig:intersection}). Two goals belong to two different people: the
+traffic manager wants short queues, the drivers want short waiting times.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth]
+  \fill[gray!15] (-3,-0.5) rectangle (3,0.5);
+  \fill[gray!15] (-0.5,-2.5) rectangle (0.5,2.5);
+  \draw[gray!50,dashed] (-3,0) -- (-0.5,0);
+  \draw[gray!50,dashed] (0.5,0) -- (3,0);
+  \draw[gray!50,dashed] (0,-2.5) -- (0,-0.5);
+  \draw[gray!50,dashed] (0,0.5) -- (0,2.5);
+  \draw[thick] (-0.55,-0.5) -- (-0.55,0.5);
+  \draw[thick] (-0.5,-0.55) -- (0.5,-0.55);
+  \foreach \i in {0,...,3} \fill[mpc] (-0.95-0.55*\i,-0.17) rectangle (-0.6-0.55*\i,0.17);
+  \foreach \i in {0,1} \fill[sap!70] (-0.17,-0.95-0.55*\i) rectangle (0.17,-0.6-0.55*\i);
+  \node[font=\small,mpc] at (-2.1,0.75) {queue $m_{\ik{i},1}$};
+  \node[font=\small,sap!80!black] at (1.35,-1.6) {queue $m_{\ik{i},2}$};
+  \draw[->,thick] (2.4,0) -- (2.9,0);
+  \draw[->,thick] (0,2.4) -- (0,2.9);
+  \node[circle,draw,fill=ess,minimum size=5pt,inner sep=0] at (-0.85,0.85) {};
+  \node[font=\scriptsize,above] at (-0.85,0.95) {light 1};
+  \node[circle,draw,fill=sap,minimum size=5pt,inner sep=0] at (0.85,-0.85) {};
+  \node[font=\scriptsize,right] at (0.95,-0.85) {light 2};
+\end{tikzpicture}
+\caption{The intersection of the fourth case study: two one-way roads, one light each, queues
+counted at the stop lines.}
+\label{fig:intersection}
+\end{figure}
+
+\paragraph{Control variables.} The colours: for each light $J$ three binaries
+$g_{\ik{i},J}, y_{\ik{i},J}, r_{\ik{i},J} \in \{0,1\}$, exactly one of which is on,
+\begin{equation}
+  g_{\ik{i},J} + y_{\ik{i},J} + r_{\ik{i},J} = 1 .
+\end{equation}
+The admissible transitions are green $\to$ yellow $\to$ red $\to$ green, and each forbidden
+transition is a linear inequality: green cannot be followed by red, red by yellow, yellow by
+green,
+\begin{equation}
+  r_{\ik{i+1},J} \le 1 - g_{\ik{i},J}, \qquad
+  y_{\ik{i+1},J} \le 1 - r_{\ik{i},J}, \qquad
+  g_{\ik{i+1},J} \le 1 - y_{\ik{i},J}.
+\end{equation}
+The same inequalities, written between the first step of the window and the colour actually
+displayed at $k-1$, tie the plan to the current state of the lights. Conflicting lights cannot
+be green or yellow at the same time, $\sum_{J}\big(g_{\ik{i},J} + y_{\ik{i},J}\big) \le 1$.
+
+\paragraph{The yellow.} Safety requires a minimum duration of the yellow. A timer counts how
+long the yellow has been on, $t^y_{\ik{i+1},J} = (t^y_{\ik{i},J} + T)\,y_{\ik{i},J}$, a product
+of a real variable and a binary linearized as in \cref{sec:product}, and the light cannot turn
+red before the timer reaches the minimum:
+\begin{equation}
+  r_{\ik{i+1},J} \le \frac{t^y_{\ik{i},J}}{t^{y,\min}_J} + \big(1 - y_{\ik{i},J}\big).
+\end{equation}
+While the timer is short of the minimum the first term is strictly less than one, and since
+$r$ is binary the constraint forces $r_{\ik{i+1},J} = 0$; the second term makes the constraint
+irrelevant when the light is not yellow.
+
+\paragraph{Queues and waiting times.} Two models. The \emph{aggregate} model keeps one state
+per light, the number of vehicles waiting, with the dynamics
+\begin{equation}
+  m_{\ik{i+1},J} = m_{\ik{i},J} + v^{in}_{\ik{i},J}\,T - v^{out}_{J}\,T\,g_{\ik{i},J},
+  \qquad m_{\ik{0},J} = m_{k,J} \text{ measured},\quad m \ge 0,
+\end{equation}
+where $v^{in}$ is the arrival rate and $v^{out}$ the discharge rate on green; the constraint
+$m \ge 0$ is an approximation of the fact that a queue cannot become negative. Average waiting
+times then follow from Little's law. The \emph{detailed} model keeps position, speed and
+acceleration of every vehicle, the acceleration being a model of the driver for human-driven
+cars and a command for automated ones, and a binary $\delta_{\ik{i},v}$ that says whether the
+vehicle is still in the queue, so that its waiting time grows as $w_{\ik{i+1},v} = (w_{\ik{i},v}
++ T)\,\delta_{\ik{i},v}$ and the queue length is the sum of the indicators.
+
+\paragraph{Objective.} On the queues, $J^m = \sum_i \sum_J m_{\ik{i},J}^2$: the square
+shortens the queues and balances them, since for a given total it prefers two queues of five
+to one of ten. On the waiting times the goal is to minimize the \emph{largest} of them, written
+with an epigraph variable $\bar w_{\ik{i}}$, $w_{\ik{i},v} \le \bar w_{\ik{i}}$ for every vehicle
+present, and $J^w = \sum_i \bar w_{\ik{i}}^2$ in the cost. The problem is a mixed-integer
+quadratic program; a city is many intersections tied by coupling constraints, which is where
+centralized and distributed MPC return.
+
+\begin{labbox}
+The Traffic Light Lab runs the intersection of \cref{fig:intersection} with the same vehicles
+arriving on both sides of the screen, a fixed-time plan on the left and the MPC on the right,
+with queues and waiting times compared as the day goes on. With two lights the transition
+constraints leave few enough admissible colour sequences over the window for the page to
+enumerate them and find the best one exactly; the mixed-integer formulation is what is needed
+when the intersection is larger. Systems of this kind run in cities: Surtrac in Pittsburgh re-plans every intersection on
+a rolling horizon about once a second, and UTOPIA, born in Turin, has been in operation since
+the nineteen-eighties.
+\end{labbox}
+
+\subsection{Task scheduling in an assembly line}
+\label{sec:scheduling}
+
+\emph{This section covers what was done in class up to the lesson of 26 October; it will be
+completed after the next lesson.}
+
+\paragraph{Problem.} A \emph{job} --- the assembly of a vehicle --- is made of elementary
+\emph{tasks}, executed on \emph{workstations} and requiring \emph{resources}: tools, people,
+energy. Among the possible goals --- cost, quality, scrap, balanced use of the workstations ---
+the one taken here is the total completion time of the job, the \emph{makespan}, read on a
+Gantt chart. The orders of magnitude are what makes the problem hard: ten thousand tasks over
+sixty days.
+
+\paragraph{Sets and parameters.} The tasks $\mathcal{T}$, the workstations $\mathcal{W}$ and,
+for each task, the subset $\mathcal{W}_t \subseteq \mathcal{W}$ of workstations that can execute
+it. Each task $t$ carries an earliest start $S_t$, a deadline $F_t$, an estimate $d_t$ of the
+number of steps it needs, and the number $R^{\#}_{t,r}$ of resources of each type $r \in
+\mathcal{R}$ it consumes; $R^{a}_r$ is the number available.
+
+\paragraph{Decision variables and dynamics.} One binary per task, workstation and time,
+$e_{\ik{i},t,w} \in \{0,1\}$, equal to one when task $t$ runs at time $i|k$ on workstation $w$.
+A task runs on at most one workstation at a time,
+\begin{equation}
+  \sum_{w \in \mathcal{W}_t} e_{\ik{i},t,w} \le 1, \qquad
+  e_{\ik{i},t} = \sum_{w \in \mathcal{W}_t} e_{\ik{i},t,w} \in \{0,1\},
+\end{equation}
+where the auxiliary $e_{\ik{i},t}$ says whether the task is running. The state is the time left
+to complete each task, decremented by one unit for every step actually worked,
+\begin{equation}
+  d_{\ik{i+1},t} = d_{\ik{i},t} - \sum_{w \in \mathcal{W}_t} e_{\ik{i},t,w},
+\end{equation}
+and the deadline is $d_{F_t,t} = 0$ for every task whose deadline falls inside the window.
+
+\paragraph{Precedence constraints.} The relations that make a schedule a schedule:
+finish-to-start, finish-to-finish, start-to-start, start-to-finish. The first, task $t_2$ cannot
+run until $t_1$ is finished, is the one to be written as an inequality in the next lesson,
+together with the resource constraints and the objective.
+
+\begin{reading}
+For the modelling constructions of all five case studies, \refkey{Hax\_1977}, chapter 9, and
+\refkey{Borrelli\_2017}. For the market context of the aggregator, \refkey{Kirschen\_2019},
+chapter 3 on markets for electrical energy and chapter 6 on power system operation; background
+reading. For the traffic and the scheduling applications, the papers \refkey{Liberati\_2025a}
+and \refkey{Liberati\_2025b} show the same formulations on real problems; background reading,
+not examination material.
+\end{reading}

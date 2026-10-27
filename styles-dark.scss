@@ -25,3 +25,6 @@ h2 { margin-top: 2.2rem; border-bottom: 2px solid rgba(255,255,255,.15); padding
 /* home page figure: in dark mode swap the two variants */
 .hero-figure .hero-light { display: none; }
 .hero-figure .hero-dark { display: block; }
+
+/* lab figures: screenshots are light, soften them in dark mode */
+.lab-fig { border-color: rgba(255,255,255,.15); box-shadow: none; filter: brightness(.88); }

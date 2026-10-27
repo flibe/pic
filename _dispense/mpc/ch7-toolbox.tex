@@ -1,0 +1,151 @@
+\section{Writing logic as constraints}
+\label{sec:toolbox}
+
+Many decisions in the case studies are logical: a storage charges or discharges, an appliance
+starts or does not, a light is green or red, a task runs on a machine or not. Optimization
+solvers do not handle logic; they handle linear inequalities. This chapter collects the
+constructions that translate the one into the other. Each uses \emph{binary variables},
+$\delta \in \{0,1\}$, and the result is a mixed-integer linear program --- harder than a
+continuous one, but far more tractable than a nonlinear one. The constructions are used
+repeatedly in \cref{sec:cases}.
+
+\subsection{Indicator variables and the big-M constraint}
+\label{sec:bigM}
+
+Let $p \ge 0$ be a continuous variable with a known upper bound $p^{\max}$, and let $\delta$ be
+the binary that is meant to indicate whether $p$ is positive. The \emph{indicator constraint}
+\begin{equation}
+  p \le M\,\delta, \qquad M \ge p^{\max},
+  \label{eq:bigM}
+\end{equation}
+forces $p = 0$ when $\delta = 0$ and leaves $p$ free in $[0, M]$ when $\delta = 1$. It does not
+force $\delta = 1$ whenever $p > 0$ by itself; that direction is not needed when the cost makes
+an unnecessary $\delta = 1$ never cheaper, which is the usual situation. The constant $M$ should
+be as small as the bounds allow, $M = p^{\max}$, so that the relaxation of the problem --- the
+one obtained by letting $\delta$ take values in $[0,1]$, which solvers use to guide the search
+--- is as tight as possible.
+
+\subsection{Mutually exclusive events}
+
+Two events that cannot happen at the same time --- charging and discharging a battery, importing
+and exporting power at a meter --- are written with one indicator each and the constraint
+\begin{equation}
+  \delta^{a} + \delta^{b} \le 1 .
+\end{equation}
+Combined with \eqref{eq:bigM} on each power, at most one of the two powers can be positive at a
+time. The construction is what makes it possible to write a quantity with two different models
+in the two cases, for instance a storage with a charging efficiency and a different discharging
+efficiency:
+\begin{equation}
+\begin{gathered}
+  p^{ess} = p^{ch} - p^{dis}, \qquad
+  x_{k+1} = x_k + \eta^{ch}\,T\,p^{ch}_k - \tfrac{1}{\eta^{dis}}\,T\,p^{dis}_k, \\
+  p^{ch} \le p^{ch,\max}\delta^{ch},\qquad p^{dis} \le p^{dis,\max}\delta^{dis},\qquad
+  \delta^{ch} + \delta^{dis} \le 1 ,
+\end{gathered}
+\end{equation}
+which is linear, whereas the same model written with $\max\{0,p\}$ and $\min\{0,p\}$ is not.
+
+\subsection{Semi-continuous variables}
+
+A device that is either off or working between a minimum and a maximum level --- a charger that
+cannot deliver an arbitrarily small power --- has a \emph{semi-continuous} variable: $p = 0$ or
+$p^{\min} \le p \le p^{\max}$. With one indicator the two inequalities
+\begin{equation}
+  \delta\,p^{\min} \;\le\; p \;\le\; \delta\,p^{\max}
+  \label{eq:semicont}
+\end{equation}
+force $p = 0$ when $\delta = 0$ and $p \in [p^{\min}, p^{\max}]$ when $\delta = 1$.
+
+\subsection{One start per job: one-hot variables}
+
+A job with a known duration and a known power profile has to be executed once, inside a window
+between an earliest start $S$ and a deadline $F$. The decision is \emph{when} to start it, and it
+is written with one binary per admissible start time, $s_j \in \{0,1\}$ for $j = S, \dots,
+F - N_{job}$, where $N_{job}$ is the duration in steps and the upper limit is the last instant
+at which the job still finishes before the deadline. Exactly one of them is one:
+\begin{equation}
+  \sum_{j=S}^{F-N_{job}} s_j = 1 .
+  \label{eq:onehot}
+\end{equation}
+The power of the job at time $i$ is then the profile placed where the start variable says,
+\begin{equation}
+  p_i = \sum_{j} s_j\, P(i - j + 1),
+  \label{eq:shifted}
+\end{equation}
+a convolution of the profile $P(\cdot)$ with the one-hot sequence (\cref{fig:onehot}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=0.75cm,y=0.9cm,>=Stealth]
+  \draw[->] (0,0) -- (14,0) node[right,font=\small] {time};
+  \foreach \t in {0,...,13} \draw (\t,0.06) -- (\t,-0.06);
+  \node[below,font=\small] at (2,-0.05) {$S$};
+  \node[below,font=\small] at (11,-0.05) {$F$};
+  \draw[mpc,thick] (2,-0.5) -- (2,2.2);
+  \draw[mpc,thick] (11,-0.5) -- (11,2.2);
+  \node[mpc,font=\small,above] at (6.5,2.1) {admissible starts $j = S,\dots,F-N_{job}$};
+  % one-hot row
+  \foreach \j/\v in {2/0,3/0,4/0,5/1,6/0,7/0,8/0} \node[font=\scriptsize] at (\j+0.5,-0.55) {$s_{\j}{=}\v$};
+  % profile placed at j=5
+  \fill[sun!60] (5,0) rectangle (6,1.4);
+  \fill[sun!60] (6,0) rectangle (7,0.9);
+  \fill[sun!60] (7,0) rectangle (8,1.1);
+  \node[sun!70!black,font=\small] at (6.5,1.75) {$P(1),P(2),P(3)$ placed at $j=5$};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror}] (5,-0.95) -- (8,-0.95) node[midway,below=4pt,font=\small] {$N_{job}=3$ steps};
+\end{tikzpicture}
+\caption{Load shifting with one-hot start variables. Exactly one $s_j$ equals one inside the
+admissible range, and the power profile of the job is placed at that start.}
+\label{fig:onehot}
+\end{figure}
+
+\subsection{The product of a real variable and a binary}
+\label{sec:product}
+
+A term $q\,b$, with $q \in [\underline q, \bar q]$ real and $b \in \{0,1\}$, is not linear. It
+is replaced by a new variable $p$ and two pairs of inequalities:
+\begin{equation}
+  \underline q\, b \le p \le \bar q\, b, \qquad
+  q - M(1-b) \le p \le q + M(1-b), \qquad M \ge \max\{\abs{\underline q}, \abs{\bar q}\} .
+  \label{eq:product}
+\end{equation}
+When $b = 0$ the first pair forces $p = 0$ and the second says nothing; when $b = 1$ the second
+pair forces $p = q$ and the first is vacuous. The construction recurs in every formulation with
+timers, such as the duration of a traffic-light colour, $t_{i+1} = (t_i + T)\,y_i$.
+
+\subsection{Maxima and absolute values}
+
+A goal of the form ``minimize the largest of several quantities'' is not a sum. It is handled
+with an \emph{epigraph} variable: to minimize $\max_v w_v$ over a set of quantities $w_v$,
+introduce $\bar w$ with the constraints $w_v \le \bar w$ for every $v$, and minimize $\bar w$.
+The bound is pushed down until it rests on the largest $w_v$. The same device writes an
+absolute value in a cost: $\abs{x}$ is replaced by $x^{+} + x^{-}$ with $x = x^{+} - x^{-}$,
+$x^{+}, x^{-} \ge 0$, exact as long as the cost is increasing in both; this is how a tracking
+error $\abs{P - P^{ref}}$ enters a linear program. A convex piecewise-linear cost, such as an
+approximation of a square, is written in the same way with several pieces of increasing price.
+
+\subsection{Soft constraints and slack variables}
+\label{sec:soft}
+
+A constraint that may be impossible to satisfy --- a deadline for a charge when the vehicle
+arrives too late, a stop requested in the only hours in which a load can run --- must not be
+written as a hard constraint, or the problem becomes infeasible and the controller has nothing
+to apply. It is \emph{relaxed} with a non-negative slack variable that measures the violation,
+and the violation is paid for in the cost:
+\begin{equation}
+  g(x) \le 0 \quad\longrightarrow\quad g(x) \le \varepsilon,\ \ \varepsilon \ge 0,
+  \qquad J \leftarrow J + d\,\varepsilon \ \text{ or } \ J + d\,\varepsilon^2 .
+  \label{eq:slack}
+\end{equation}
+The weight $d$ sets the behaviour: small, and the controller violates the constraint when that
+improves the other goals; large, and it violates it only when the constraint cannot be met at
+all. With several relaxed constraints the quadratic form $\sum_p \varepsilon_p^2$ is preferable
+to the linear one, because it prefers many small violations to one large one --- it is fairer.
+
+\begin{reading}
+\refkey{Hax\_1977}, chapter 9, for integer programming and the modelling of logical conditions:
+indicator variables, big-M, mutually exclusive alternatives, fixed charges.
+\refkey{Borrelli\_2017} for the same constructions inside an MPC problem, in the framework of
+mixed logical dynamical systems. \refkey{Boyd\_2004}, section 4.1.3, for the epigraph form of an
+optimization problem.
+\end{reading}

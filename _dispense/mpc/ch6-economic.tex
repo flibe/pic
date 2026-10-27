@@ -1,0 +1,93 @@
+\section{Economic MPC and the design of the cost}
+\label{sec:economic}
+
+\subsection{Tracking and economic objectives}
+
+The theory of the previous chapters was developed for \emph{regulation} and \emph{tracking}
+problems: the control goals are first translated into reference values for the state or the
+output, and the cost penalizes the distance from those references. Such a cost is positive
+definite by construction, which is what the stability proof requires.
+
+In many applications the goal is not a reference but a quantity with a direct meaning, usually
+money: the electricity bill of a building, the cost of running a plant, the revenue of a service.
+\emph{Economic MPC} writes that quantity directly as the cost, solves the problem, and applies
+the first input. Nothing is tracked. The formulation is more natural, and the price is that the
+assumptions of the theory are properties of the cost that an economic cost need not have: a bill
+is not positive definite in the state, and the stability and optimality results of
+\cref{sec:stability} do not apply as they stand. The case studies of \cref{sec:cases} are economic
+MPC problems; their properties are studied, in the literature, with tools beyond this course.
+
+\subsection{Several goals: the weighted sum}
+
+A real controller has several goals at once: a bill to minimize, a storage to keep near a
+reference, a service to deliver, a device to spare. The standard way to handle them is to write
+one term per goal and to take a \emph{weighted sum},
+\begin{equation}
+  J = \alpha_1 J_1 + \alpha_2 J_2 + \dots + \alpha_r J_r, \qquad \alpha_j \ge 0 .
+  \label{eq:weighted}
+\end{equation}
+Multiplying all the weights by the same positive constant does not change the minimizer, so
+the weights can be normalized to sum to one, $\sum_j \alpha_j = 1$: only their ratios matter.
+
+The set of cost pairs $(J_1, J_2)$ that admissible decisions can achieve, for two goals, is
+sketched in \cref{fig:pareto}. Its lower-left boundary is the \emph{Pareto frontier}: the
+solutions that cannot be improved in one goal without worsening the other. Minimizing the
+weighted sum \eqref{eq:weighted} with a given pair of weights selects one point of the frontier
+(this is the \emph{scalarization} of a vector optimization problem); sweeping the weights traces
+the frontier --- all of it when the problem is convex, as in \cref{fig:pareto}, and only its
+convex part otherwise. A rule-based controller, not being optimal, sits above the frontier; a better
+algorithm moves the whole frontier towards the origin. Choosing the weights is therefore a
+design decision about trade-offs, taken by whoever operates the process, not a mathematical one
+--- and it is a decision that can be learned from data, which is one of the points where
+reinforcement learning enters the picture.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,>=Stealth]
+  \draw[->] (0,0) -- (6,0) node[right] {$J_1$};
+  \draw[->] (0,0) -- (0,4.2) node[above] {$J_2$};
+  \fill[mpc!10] plot[smooth] coordinates {(0.6,3.8) (1.0,2.3) (1.8,1.4) (3.0,0.9) (4.5,0.6) (5.5,0.55)} -- (5.5,4) -- (0.6,4) -- cycle;
+  \draw[thick,mpc] plot[smooth] coordinates {(0.6,3.8) (1.0,2.3) (1.8,1.4) (3.0,0.9) (4.5,0.6) (5.5,0.55)};
+  \node[mpc,font=\small,above right] at (3.0,0.95) {Pareto frontier};
+  \fill[mpc] (0.6,3.8) circle (0.06) node[right,font=\small] {$(\alpha_1,\alpha_2)=(1,0)$};
+  \fill[mpc] (5.5,0.55) circle (0.06) node[above,font=\small] {$(0,1)$};
+  \fill[mpc] (1.8,1.4) circle (0.06) node[above right,font=\small] {$(0.5,0.5)$};
+  \fill[sap] (3.4,2.6) circle (0.07) node[right,font=\small,sap] {rule-based controller};
+  \draw[thick,dashed,ess] plot[smooth] coordinates {(0.4,3.0) (0.8,1.7) (1.6,0.95) (3.0,0.55) (5.5,0.3)};
+  \node[ess,font=\small,anchor=north] at (2.3,0.45) {a better algorithm};
+  \draw[->,ess] (2.3,0.47) -- (2.3,0.72);
+\end{tikzpicture}
+\caption{Two goals to minimize. The weighted sum with a given pair of weights selects one point
+of the Pareto frontier; a rule-based controller lies above it; an algorithm with a larger
+decision space pushes the frontier down.}
+\label{fig:pareto}
+\end{figure}
+
+\subsection{The terminal value of a stored resource}
+
+Economic problems have their own version of the terminal cost, and the building case study
+(\cref{sec:building}) shows it. A controller that minimizes a bill over a window of one day
+sells the energy stored in a battery before the window ends, because within the window that
+sale is a profit and what happens afterwards does not exist. The behaviour is correct for the
+problem written, and wrong for the application.
+
+The remedy is to maximize the \emph{total value} over the window: the value of the state the
+controller starts from, plus the profits minus the costs of what it plans, plus the value of
+the state it leaves behind. The first term does not depend on the decisions, so maximizing the
+total value is the same as minimizing
+\begin{equation}
+  J^{cost} - V(x_{\ik{N}}),
+\end{equation}
+where $V(x_{\ik{N}})$ is the price put on the resource still stored at the end of the window ---
+for a battery, $V(x) = c^{avg}\,x$ with $c^{avg}$ the average purchase price of energy over the
+day. This is the terminal cost of \cref{sec:optimality} seen from the side of the application:
+it prices what happens after the horizon, and without it the controller is myopic in exactly
+the way the theory predicts.
+
+\begin{reading}
+\refkey{Rawlings\_2017}, section 2.8, ``Economic Model Predictive Control'' (pp.~153--160): how
+the economic problem differs from the tracking one, and which assumptions replace the positive
+definite cost. \refkey{Boyd\_2004}, section 4.7, ``Vector optimization'' (pp.~174--187), in
+particular 4.7.3 on Pareto optimal points and 4.7.4 on scalarization, which is the weighted sum
+\eqref{eq:weighted} and the reason the weights can be normalized.
+\end{reading}
