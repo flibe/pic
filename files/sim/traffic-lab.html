@@ -357,6 +357,32 @@
         the simulator &mdash; inside the controller they are continuous, as in the aggregate model of
         the lesson.</p>
     </div>
+    <div>
+      <h2>Where this runs for real</h2>
+      <p>Signal control of this kind is not only a classroom exercise. Three systems are worth
+        looking at, and they differ in exactly the way the lesson distinguishes.</p>
+      <ul>
+        <li><b>Surtrac</b>, Pittsburgh. Every intersection re-plans on a rolling horizon about once a
+          second and sends its neighbours the flow it is about to release: decentralized MPC under
+          another name. The pilot on nine intersections in East Liberty reported travel times, stops
+          and waiting times down by more than a quarter.
+          <a href="https://www.ri.cmu.edu/pub_files/2013/1/13-0315.pdf" target="_blank" rel="noopener">the field-test paper</a>,
+          <a href="https://www.itskrs.its.dot.gov/2013-b00822" target="_blank" rel="noopener">the US DOT evaluation</a>.</li>
+        <li><b>TUC</b>, from the Technical University of Crete. Network-wide signal control written on
+          a store-and-forward model and solved as a quadratic program on a rolling horizon, first
+          tested in the field in Glasgow and then in Chania, Munich and Southampton.
+          <a href="https://research-collection.ethz.ch/bitstream/handle/20.500.11850/277686/2/Aboudolas_EtAl_TRC_2010.pdf" target="_blank" rel="noopener">the rolling-horizon formulation</a>.</li>
+        <li><b>UTOPIA</b>, born in Turin at the Fiat Research Centre with Italtel and Mizar, running in
+          the city since the nineteen-eighties and now in tens of European cities: adaptive, and
+          hierarchical and decentralized like the architecture we drew.
+          <a href="https://trid.trb.org/View/494482" target="_blank" rel="noopener">the catalogue record</a>.</li>
+        <li><b>SCOOT and SCATS</b>, the two most widely installed adaptive systems in the world, work
+          in a third way: they adjust cycle, split and offset by small increments as the measured
+          flows change, without optimizing a cost over a horizon. They sit between the two columns of
+          this page.
+          <a href="https://www.scats.nsw.gov.au/" target="_blank" rel="noopener">SCATS</a>.</li>
+      </ul>
+    </div>
   </section>
 
   <footer>
