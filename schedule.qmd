@@ -30,7 +30,7 @@ toc: false
 | 13 | Wed 21/10 | [MPC]{.part .part-mpc} | End of the building case study; tuning and the Pareto frontier; large-scale EV charging |
 | 14 | Thu 22/10 | [MPC]{.part .part-mpc} | End of the large-scale charging example; MPC for traffic control |
 | 15 | Mon 26/10 | [MPC]{.part .part-mpc} | Task scheduling in an assembly line; logical constraints at work |
-| 16 | Wed 28/10 | [RL]{.part .part-rl} | From MPC to dynamic programming; introduction to RL |
+| 16 | Wed 28/10 | [MPC]{.part .part-mpc} [RL]{.part .part-rl} | End of task scheduling; introduction to RL: agent, reward and return, policy, value function |
 | 17 | Thu 29/10 | [RL]{.part .part-rl} | MDPs, value functions, Bellman equations |
 | 18 | Mon 02/11 | [RL]{.part .part-rl} | Dynamic programming: policy and value iteration; numerical experiment |
 | 19 | Wed 04/11 | [RL]{.part .part-rl} | Monte Carlo and temporal-difference methods; Q-learning |
