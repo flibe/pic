@@ -208,9 +208,10 @@
       <div class="row">
         <label class="pick">Casino
           <select id="casino">
-            <option value="lesson">The three machines of the lesson</option>
-            <option value="close">Three machines, close payouts</option>
-            <option value="ten">Ten machines</option>
+            <option value="close" selected>Three machines, close payouts: 4, 6, 8</option>
+            <option value="lesson">The three machines of the lesson: 3, 1, 10</option>
+            <option value="random3">Three machines, payouts drawn at random</option>
+            <option value="ten">Ten machines, payouts drawn at random</option>
           </select>
         </label>
         <button id="redraw">Another casino</button>
@@ -300,8 +301,9 @@
           the best machine settles at 90% plus a third of 10%, about 93%, and not at 100%.</li>
         <li><b>&epsilon; = 0.01 is slow and ends up better.</b> It needs many more pulls to try every machine
           enough times, but once the estimates are right it wastes only 1% of the pulls. In the averaged
-          panel its payout curve starts below the one of &epsilon; = 0.1 and crosses it: which value of &epsilon;
-          is better depends on how long you plan to play.</li>
+          panel its payout curve starts well below the one of &epsilon; = 0.1 and catches up with it towards
+          the end of the thousand pulls; over 2000 pulls it puts 99% of them on the best machine against
+          94%. Which value of &epsilon; is better depends on how long you plan to play.</li>
         <li><b>A fixed &epsilon; is not the best one can do: decrease it as the estimates settle.</b> A
           constant &epsilon; keeps paying for exploration after it has stopped being useful, which is why
           &epsilon; = 0.1 never passes 93%. Tick "let &epsilon; decrease": the agent explores a lot at first, when the
@@ -313,15 +315,17 @@
           time, the agent would need to keep exploring, and a constant &epsilon; is the usual choice.</li>
         <li><b>Optimism replaces exploration.</b> Put &epsilon; back to zero and raise the initial estimate
           to 20, above any payout. Every machine disappoints the agent in turn, so every machine is tried,
-          and the greedy agent ends on the best one with no random pulls at all. This works because the
-          machines do not change; it would not help if they did.</li>
+          and the greedy agent ends on the best one in about nine runs out of ten, with no random pulls
+          at all; on the machines of the lesson, further apart, in practically all of them. This works
+          because the machines do not change; it would not help if they did.</li>
         <li><b>1/n or a constant step.</b> With the step 1/n the estimate is the sample average and it
           settles down, because each new number weighs less and less. With a constant &alpha; the estimate
           keeps moving by a fraction &alpha; of the last surprise and never settles; what it buys is the
           ability to follow a machine whose payout drifts, which the casino of this page does not do.</li>
-        <li><b>Close payouts are hard.</b> Choose the casino with close payouts: the difference between
-          machines is of the order of the noise of a single pull, and even 2000 pulls can leave the
-          estimates in the wrong order.</li>
+        <li><b>The machines of the lesson are the easy case.</b> Switch to them, 3, 1 and 10: the best one
+          stands out after a handful of pulls and every method finds it quickly. Choose instead the machines
+          drawn at random, whose expected payouts can differ by less than the noise of a single pull: even
+          2000 pulls can leave the estimates in the wrong order.</li>
       </ul>
     </div>
     <div>
@@ -340,9 +344,10 @@
         the expected value shown as a dashed line and a spread of its own; the agent sees the numbers,
         never the distributions. "Total paid" is the return, the sum of the rewards, which is what the
         agent is trying to maximize.</p>
-      <p>The three machines of the lesson pay 3, 1 and 10 on average; the other casinos draw the expected
-        payouts at random. The averaged panel repeats the run 500 times with fresh luck, keeping the
-        machines fixed, and plots the mean at every pull.</p>
+      <p>The page opens on three machines paying 4, 6 and 8 on average, each with a spread of 2: closer
+        than the 3, 1 and 10 of the lesson, which are one click away, and therefore harder to tell apart.
+        The other casinos draw the expected payouts at random. The averaged panel repeats the run 500 times
+        with fresh luck, keeping the machines fixed, and plots the mean at every pull.</p>
     </div>
   </section>
 
@@ -370,8 +375,9 @@ Rng.prototype.int = function (n) { return Math.floor(this.next() * n) % n; };
    means[a], sds[a]: the distributions of the machines (unknown to the agent).  */
 function makeBandit(kind, rng) {
   var means = [], sds = [], k, a;
-  if (kind === "lesson") { means = [3, 1, 10]; sds = [2, 1, 3]; }
-  else if (kind === "close") { k = 3; for (a = 0; a < k; a++) { means.push(4 + 2 * rng.next()); sds.push(2); } }
+  if (kind === "close") { means = [4, 6, 8]; sds = [2, 2, 2]; }
+  else if (kind === "lesson") { means = [3, 1, 10]; sds = [2, 1, 3]; }
+  else if (kind === "random3") { k = 3; for (a = 0; a < k; a++) { means.push(3 + 5 * rng.next()); sds.push(2); } }
   else { k = 10; for (a = 0; a < k; a++) { means.push(10 * rng.next()); sds.push(1.5 + 2 * rng.next()); } }
   var best = 0;
   for (a = 1; a < means.length; a++) if (means[a] > means[best]) best = a;
@@ -436,7 +442,7 @@ function averagedRun(bandit, eps, q0, stepMode, alpha, runs, T, seed, decay) {
   var RUN_T = 2000, AVG_RUNS = 500, AVG_T = 1000;
   var SPEEDS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000];
 
-  var P = { eps: 0.1, q0: 0, stepMode: "avg", alpha: 0.1, casino: "lesson", showTrue: true, speed: 10, decay: false };
+  var P = { eps: 0.1, q0: 0, stepMode: "avg", alpha: 0.1, casino: "close", showTrue: true, speed: 10, decay: false };
   var casinoSeed = 20261029, luckSeed = 7;
   var bandit, agent, rng, hist, last, playing = true, acc = 0, lastTs = 0, anim = null;
 
