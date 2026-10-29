@@ -22,10 +22,6 @@ Summary of the lesson.
 **Recordings.** The lessons of this edition are not recorded. The recordings of the previous edition of the course remain available, and cover most of the same topics: you can find them on the [previous course website](https://sites.google.com/diag.uniroma1.it/liberati/home/teaching).
 :::
 
-::: {.news}
-**Course notes.** [Model Predictive Control — course notes, part I](files/notes/mpc-notes-part1.pdf){target="_blank" rel="noopener"} (PDF): the MPC part of the course so far, from the receding horizon to the theory of optimality, feasibility and stability and to the case studies, with the references for a deeper study at the end of each chapter, the same as in this diary. Version of 27 October 2026, to be completed after the lesson on task scheduling.
-:::
-
 ## Lesson 1 (23/09/2026): Introduction to the course and to MPC {#lesson-1}
 
 [Intro]{.part .part-gen} [MPC]{.part .part-mpc}

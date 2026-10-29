@@ -13,7 +13,6 @@ toc: false
 **News**
 
 - Please join the [Google Class of the course](https://classroom.google.com/c/ODcwNjE0OTgyMTgz?cjc=4ae3h4ly) using only your Sapienza email (@studenti.uniroma1.it).
-- The [course notes on Model Predictive Control](files/notes/mpc-notes-part1.pdf){target="_blank" rel="noopener"} (part I, PDF) are available; they will be completed after the lesson on task scheduling.
 :::
 
 ## About the course
