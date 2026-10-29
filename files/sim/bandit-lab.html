@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Three slot machines with unknown payouts, an agent that learns which one to play with sample averages and an epsilon-greedy policy. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>Slot Machine Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef; --panel: #ffffff; --panel-2: #faf8f6; --line: #ddd7d0; --grid: #e8e3dd;
+    --ink: #1f2a36; --ink-2: #55606d; --muted: #7d8794;
+    --mpc: #2f6690; --base: #8a939d; --ess: #3a7d44; --sun: #c8891a; --load: #7b5ea7; --limit: #8a1c2f;
+    --cab: #f0ebe4; --cab-2: #e2dbd2; --win: #1f2a36;
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+      --cab: #2a323b; --cab-2: #343e48; --win: #0e1216;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  body { background: var(--bg); color: var(--ink);
+         font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+         font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 0 0 8px; font-weight: 700; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+  .stage { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .status { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
+
+  canvas { display: block; width: 100%; }
+  .machines { height: 250px; }
+  .estimates { height: 170px; }
+  .chart-canvas { height: 170px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.mpc { border-color: var(--mpc); } .key.ess { border-color: var(--ess); } .key.sun { border-color: var(--sun); }
+  .key.load { border-color: var(--load); } .key.base { border-color: var(--base); border-top-style: dotted; }
+  .key.limit { border-color: var(--limit); border-top-style: dashed; }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  input[type="range"], input[type="checkbox"], input[type="radio"], select { accent-color: var(--mpc); }
+  select { font: inherit; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 9px; font-size: 13.5px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 6px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .clock { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; color: var(--ink-2);
+           font-variant-numeric: tabular-nums; margin-left: auto; }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+  button.primary { background: var(--mpc); border-color: var(--mpc); color: #fff; min-width: 86px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #10161c; } }
+
+  .lastpull { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; color: var(--ink-2);
+              margin: 8px 0 0; min-height: 1.5em; }
+  .lastpull b { color: var(--ink); font-weight: 500; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+         padding: 1px 7px; border-radius: 999px; border: 1px solid; vertical-align: 1px; }
+  .tag.greedy { color: var(--mpc); border-color: var(--mpc); }
+  .tag.explore { color: var(--sun); border-color: var(--sun); }
+
+  table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  table.results th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  table.results th:first-child, table.results td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  td.best { color: var(--ess); }
+  .table-wrap { overflow-x: auto; }
+  .note-line { margin: 12px 0 0; color: var(--ink-2); font-size: 13.5px; }
+  .note-line b { color: var(--ink); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  .math .cm { color: var(--muted); }
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control &middot; Lesson 17</p>
+    <h1>Slot Machine Lab</h1>
+    <p class="lede">Three slot machines, each paying a number drawn from a distribution the player does
+      not know. The agent of the lesson keeps a sample average of what each machine has paid and
+      pulls, most of the time, the one with the highest estimate; with probability &epsilon; it pulls a
+      machine at random. The casino runs in your browser, as fast as you like, and you choose
+      &epsilon;, the step size and the initial guess.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The casino</h2>
+        <span class="status" id="status">&nbsp;</span>
+      </div>
+
+      <div class="transport">
+        <button class="primary" id="play">Pause</button>
+        <button id="step">Pull once</button>
+        <button id="reset">Restart</button>
+        <label class="pick">Speed
+          <input type="range" id="speed" min="0" max="10" step="1" value="3" style="width:90px">
+        </label>
+        <span class="clock" id="clock">pull 0</span>
+      </div>
+
+      <canvas id="machines" class="machines" style="margin-top:12px" aria-label="The slot machines"></canvas>
+      <p class="lastpull" id="lastpull">&nbsp;</p>
+
+      <h3 style="margin-top:14px">The agent</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="eps">Exploration rate &epsilon; <span class="num" id="eps-val">0.10</span></label>
+          <input type="range" id="eps" min="0" max="100" step="1" value="10">
+        </div>
+        <div class="slider">
+          <label for="q0">Initial estimate Q<sub>1</sub> <span class="num" id="q0-val">0</span></label>
+          <input type="range" id="q0" min="0" max="20" step="1" value="0">
+        </div>
+      </div>
+      <div class="toggles" style="margin-top:10px">
+        <label><input type="radio" name="step" id="step-avg" value="avg" checked> step 1/n (sample average)</label>
+        <label><input type="radio" name="step" id="step-const" value="const"> constant step &alpha;</label>
+      </div>
+      <div class="sliders" style="margin-top:8px">
+        <div class="slider">
+          <label for="alpha">&alpha; <span class="num" id="alpha-val">0.10</span></label>
+          <input type="range" id="alpha" min="1" max="50" step="1" value="10">
+        </div>
+      </div>
+      <div class="toggles" style="margin-top:10px">
+        <label><input type="checkbox" id="decay"> let &epsilon; decrease during the run: &epsilon;<sub>t</sub> = &epsilon; &middot; 100 / (100 + t)</label>
+      </div>
+
+      <h3 style="margin-top:14px">The machines</h3>
+      <div class="row">
+        <label class="pick">Casino
+          <select id="casino">
+            <option value="lesson">The three machines of the lesson</option>
+            <option value="close">Three machines, close payouts</option>
+            <option value="ten">Ten machines</option>
+          </select>
+        </label>
+        <button id="redraw">Another casino</button>
+      </div>
+      <div class="toggles" style="margin-top:8px">
+        <label><input type="checkbox" id="showtrue" checked> show the true expected payouts</label>
+      </div>
+      <p class="hint" style="margin-top:10px">A run is 2000 pulls. The random numbers are the same at
+        every restart, so two settings can be compared on the same luck; "Another casino" draws new
+        machines and new luck.</p>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Estimates Q<sub>n</sub>(a) and true expected payouts</span><span class="unit">units displayed</span></div>
+        <canvas id="estimates" class="estimates" aria-label="Estimated and true value of each machine"></canvas>
+        <div class="legend">
+          <span><span class="key mpc"></span>estimate Q<sub>n</sub>(a), with the number of pulls</span>
+          <span><span class="key limit"></span>true expected payout q*(a)</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Average payout per pull, this run</span><span class="unit">units per pull</span></div>
+        <canvas id="c-reward" class="chart-canvas" aria-label="Average reward per pull over the run"></canvas>
+        <div class="legend">
+          <span><span class="key mpc"></span>the agent</span>
+          <span><span class="key limit"></span>always the best machine</span>
+          <span><span class="key base"></span>a machine at random</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>Pulls on the best machine, this run</span><span class="unit">% of pulls so far</span></div>
+        <canvas id="c-opt" class="chart-canvas" aria-label="Share of pulls on the best machine"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>The same casino, 500 times</h2>
+      <span class="status" id="avg-status">&nbsp;</span>
+    </div>
+    <p class="hint" style="margin-bottom:10px">One run is luck. These curves average 500 runs of 1000
+      pulls on the machines above, for three fixed values of &epsilon; and for your settings, all with step
+      1/n unless you chose a constant step. They are recomputed when you move a slider.</p>
+    <div class="stage" style="grid-template-columns: 1fr 1fr">
+      <div>
+        <div class="chart-title"><span>Average payout per pull</span><span class="unit">mean over 500 runs</span></div>
+        <canvas id="a-reward" class="chart-canvas" aria-label="Average reward, mean over runs"></canvas>
+      </div>
+      <div>
+        <div class="chart-title"><span>Pulls on the best machine</span><span class="unit">% of runs, at each pull</span></div>
+        <canvas id="a-opt" class="chart-canvas" aria-label="Share of optimal pulls, mean over runs"></canvas>
+      </div>
+    </div>
+    <div class="legend" style="margin-top:8px">
+      <span><span class="key base"></span>&epsilon; = 0, greedy</span>
+      <span><span class="key sun"></span>&epsilon; = 0.01</span>
+      <span><span class="key ess"></span>&epsilon; = 0.1</span>
+      <span><span class="key mpc"></span>your settings</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:10px">The run, in numbers</h2>
+    <div class="table-wrap">
+      <table class="results" id="table">
+        <thead><tr><th>Machine</th><th>True payout q*(a)</th><th>Estimate Q<sub>n</sub>(a)</th><th>Pulls</th><th>Share of pulls</th><th>Total paid</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="note-line" id="summary">&nbsp;</p>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>With &epsilon; = 0 the agent gets stuck.</b> Set &epsilon; to zero and restart a few casinos.
+          All estimates start at zero, the first pull goes to a machine chosen at random, and as soon as
+          that machine pays a positive number its estimate is the largest: the greedy agent never leaves
+          it, whether it is the best one or not. The averaged panel shows the consequence: the share of
+          pulls on the best machine stays near one third, because the first machine is the best one in
+          one case out of three.</li>
+        <li><b>&epsilon; = 0.1 finds the best machine quickly and then wastes a tenth of its pulls.</b>
+          Every exploratory pull goes to a random machine, the best one included, so the share of pulls on
+          the best machine settles at 90% plus a third of 10%, about 93%, and not at 100%.</li>
+        <li><b>&epsilon; = 0.01 is slow and ends up better.</b> It needs many more pulls to try every machine
+          enough times, but once the estimates are right it wastes only 1% of the pulls. In the averaged
+          panel its payout curve starts below the one of &epsilon; = 0.1 and crosses it: which value of &epsilon;
+          is better depends on how long you plan to play.</li>
+        <li><b>A fixed &epsilon; is not the best one can do: decrease it as the estimates settle.</b> A
+          constant &epsilon; keeps paying for exploration after it has stopped being useful, which is why
+          &epsilon; = 0.1 never passes 93%. Tick "let &epsilon; decrease": the agent explores a lot at first, when the
+          estimates are poor, and less and less afterwards, and in the averaged panel the share of pulls on
+          the best machine climbs above 99% while the payout curve ends above both fixed values. The schedule
+          has to go to zero slowly enough that every machine is still tried infinitely often (the sum of the
+          &epsilon;<sub>t</sub> must diverge, and 1/t does): this is what guarantees that the estimates still
+          converge. The argument holds because the machines do not change; with payouts that drift over
+          time, the agent would need to keep exploring, and a constant &epsilon; is the usual choice.</li>
+        <li><b>Optimism replaces exploration.</b> Put &epsilon; back to zero and raise the initial estimate
+          to 20, above any payout. Every machine disappoints the agent in turn, so every machine is tried,
+          and the greedy agent ends on the best one with no random pulls at all. This works because the
+          machines do not change; it would not help if they did.</li>
+        <li><b>1/n or a constant step.</b> With the step 1/n the estimate is the sample average and it
+          settles down, because each new number weighs less and less. With a constant &alpha; the estimate
+          keeps moving by a fraction &alpha; of the last surprise and never settles; what it buys is the
+          ability to follow a machine whose payout drifts, which the casino of this page does not do.</li>
+        <li><b>Close payouts are hard.</b> Choose the casino with close payouts: the difference between
+          machines is of the order of the noise of a single pull, and even 2000 pulls can leave the
+          estimates in the wrong order.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The problem being solved</h2>
+      <p>The multi-armed bandit of the lesson. There is one state, so the value function depends on the
+        action only: the value of a machine is the expected number it displays,</p>
+      <div class="math">q*(a) = E{ R<sub>t</sub> | A<sub>t</sub> = a }</div>
+      <p>and the agent has to learn it from the numbers it sees. After the machine has been pulled n&minus;1
+        times its estimate is the sample average, kept in the incremental form of the lesson,</p>
+      <div class="math">Q<sub>n+1</sub>(a) = Q<sub>n</sub>(a) + (1/n) &middot; ( R<sub>n</sub> &minus; Q<sub>n</sub>(a) )</div>
+      <p>which is the general shape <i>old value &larr; old value + step &middot; (target &minus; old value)</i>, with
+        the last payout as target. The constant-step option replaces 1/n with &alpha;. The policy is
+        &epsilon;-greedy:</p>
+      <div class="math">A<sub>t</sub> = argmax<sub>a</sub> Q(a) with probability 1&minus;&epsilon;,<br>a random machine with probability &epsilon;</div>
+      <p>ties in the argmax are broken at random. Each machine pays a normally distributed number with
+        the expected value shown as a dashed line and a spread of its own; the agent sees the numbers,
+        never the distributions. "Total paid" is the return, the sum of the rewards, which is what the
+        agent is trying to maximize.</p>
+      <p>The three machines of the lesson pay 3, 1 and 10 on average; the other casinos draw the expected
+        payouts at random. The averaged panel repeats the run 500 times with fresh luck, keeping the
+        machines fixed, and plots the mean at every pull.</p>
+    </div>
+  </section>
+
+  <footer>
+    Process Identification and Control &middot; Sapienza University of Rome, DIAG &middot;
+    the page runs offline in your browser &middot; built with Claude Code.
+  </footer>
+</div>
+
+<script>
+/* CORE-BEGIN */
+/* ------------------------------------------------------------ random numbers ---
+   A small seeded generator (Park-Miller), so that a restart replays the same luck.  */
+function Rng(seed) { this.s = (seed % 2147483647) || 1; }
+Rng.prototype.next = function () { this.s = (this.s * 16807) % 2147483647; return (this.s - 1) / 2147483646; };
+Rng.prototype.gauss = function () {
+  var u = 0, v = 0;
+  while (u <= 1e-12) u = this.next();
+  v = this.next();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+Rng.prototype.int = function (n) { return Math.floor(this.next() * n) % n; };
+
+/* ---------------------------------------------------------------- the bandit ---
+   means[a], sds[a]: the distributions of the machines (unknown to the agent).  */
+function makeBandit(kind, rng) {
+  var means = [], sds = [], k, a;
+  if (kind === "lesson") { means = [3, 1, 10]; sds = [2, 1, 3]; }
+  else if (kind === "close") { k = 3; for (a = 0; a < k; a++) { means.push(4 + 2 * rng.next()); sds.push(2); } }
+  else { k = 10; for (a = 0; a < k; a++) { means.push(10 * rng.next()); sds.push(1.5 + 2 * rng.next()); } }
+  var best = 0;
+  for (a = 1; a < means.length; a++) if (means[a] > means[best]) best = a;
+  return { means: means, sds: sds, best: best };
+}
+
+/* ------------------------------------------------------------------ the agent ---
+   Q[a] estimates, N[a] pull counts. One pull: epsilon-greedy choice, reward, update. */
+function newAgent(k, q0) {
+  var Q = [], N = [], a;
+  for (a = 0; a < k; a++) { Q.push(q0); N.push(0); }
+  return { Q: Q, N: N, t: 0, sumR: 0, nOpt: 0 };
+}
+
+function argmaxRandomTie(Q, rng) {
+  var best = -Infinity, ties = [], a;
+  for (a = 0; a < Q.length; a++) {
+    if (Q[a] > best + 1e-12) { best = Q[a]; ties = [a]; }
+    else if (Math.abs(Q[a] - best) <= 1e-12) ties.push(a);
+  }
+  return ties[rng.int(ties.length)];
+}
+
+/* returns {a, r, greedy} */
+function pull(agent, bandit, eps, stepMode, alpha, rng) {
+  var k = agent.Q.length, greedy = true, a, r, step;
+  if (rng.next() < eps) { a = rng.int(k); greedy = false; }
+  else a = argmaxRandomTie(agent.Q, rng);
+  r = bandit.means[a] + bandit.sds[a] * rng.gauss();
+  agent.N[a] += 1;
+  step = stepMode === "const" ? alpha : 1 / agent.N[a];
+  agent.Q[a] += step * (r - agent.Q[a]);
+  agent.t += 1; agent.sumR += r;
+  if (a === bandit.best) agent.nOpt += 1;
+  return { a: a, r: r, greedy: greedy };
+}
+
+/* the exploration rate at pull t: constant, or decreasing as 1/t so that it goes to
+   zero while its sum still diverges (every machine keeps being tried) */
+function epsAt(eps, t, decay) { return decay ? eps * 100 / (100 + t) : eps; }
+
+/* mean curves over `runs` runs of `T` pulls: avgR[t], pctOpt[t] */
+function averagedRun(bandit, eps, q0, stepMode, alpha, runs, T, seed, decay) {
+  var sumR = [], sumOpt = [], t, i, ag, res, rng = new Rng(seed);
+  for (t = 0; t < T; t++) { sumR.push(0); sumOpt.push(0); }
+  for (i = 0; i < runs; i++) {
+    ag = newAgent(bandit.means.length, q0);
+    for (t = 0; t < T; t++) {
+      res = pull(ag, bandit, epsAt(eps, t, decay), stepMode, alpha, rng);
+      sumR[t] += res.r;
+      if (res.a === bandit.best) sumOpt[t] += 1;
+    }
+  }
+  var avgR = [], pctOpt = [];
+  for (t = 0; t < T; t++) { avgR.push(sumR[t] / runs); pctOpt.push(100 * sumOpt[t] / runs); }
+  return { avgR: avgR, pctOpt: pctOpt };
+}
+/* CORE-END */
+
+(function () {
+  "use strict";
+  var RUN_T = 2000, AVG_RUNS = 500, AVG_T = 1000;
+  var SPEEDS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000];
+
+  var P = { eps: 0.1, q0: 0, stepMode: "avg", alpha: 0.1, casino: "lesson", showTrue: true, speed: 10, decay: false };
+  var casinoSeed = 20261029, luckSeed = 7;
+  var bandit, agent, rng, hist, last, playing = true, acc = 0, lastTs = 0, anim = null;
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function $(id) { return document.getElementById(id); }
+
+  function resetRun() {
+    agent = newAgent(bandit.means.length, P.q0);
+    rng = new Rng(luckSeed);
+    hist = { avgR: [], pctOpt: [], paid: [] };
+    var a; for (a = 0; a < bandit.means.length; a++) hist.paid.push(0);
+    last = null; anim = null; acc = 0;
+    playing = false; setPlayLabel(); /* a restart stops: Play, or Pull once, starts again */
+    $("lastpull").innerHTML = "&nbsp;";
+  }
+  function newCasino() {
+    casinoSeed = (casinoSeed * 48271) % 2147483647;
+    luckSeed = (luckSeed * 69621) % 2147483647 || 7;
+    bandit = makeBandit(P.casino, new Rng(casinoSeed));
+    resetRun(); scheduleAveraged();
+  }
+
+  function onePull() {
+    if (agent.t >= RUN_T) { playing = false; setPlayLabel(); return false; }
+    var res = pull(agent, bandit, epsAt(P.eps, agent.t, P.decay), P.stepMode, P.alpha, rng);
+    hist.avgR.push(agent.sumR / agent.t);
+    hist.pctOpt.push(100 * agent.nOpt / agent.t);
+    hist.paid[res.a] += res.r;
+    last = res;
+    anim = { a: res.a, t0: performance.now() };
+    $("lastpull").innerHTML = "pull " + agent.t + ": machine " + (res.a + 1) +
+      ' <span class="tag ' + (res.greedy ? "greedy" : "explore") + '">' + (res.greedy ? "greedy" : "explore") +
+      "</span> paid <b>" + res.r.toFixed(2) + "</b> &rarr; Q(" + (res.a + 1) + ") = " + agent.Q[res.a].toFixed(2) +
+      " after " + agent.N[res.a] + (agent.N[res.a] === 1 ? " pull" : " pulls");
+    return true;
+  }
+
+  /* ------------------------------------------------------------- drawing ---- */
+  function setup(cv) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    var g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return { g: g, w: w, h: h };
+  }
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+    g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+    g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+  }
+
+  function drawMachines() {
+    var c = setup($("machines")), g = c.g, k = bandit.means.length;
+    var gap = 10, mw = Math.min(110, (c.w - gap * (k + 1)) / k), total = k * mw + (k - 1) * gap;
+    var x0 = (c.w - total) / 2, mh = Math.min(200, c.h - 30), y0 = (c.h - mh) / 2 - 6, a;
+    var now = performance.now(), ph = anim ? Math.min(1, (now - anim.t0) / 350) : 1;
+    for (a = 0; a < k; a++) {
+      var x = x0 + a * (mw + gap), active = anim && anim.a === a && ph < 1;
+      var pulled = last && last.a === a;
+      /* cabinet */
+      g.fillStyle = css("--cab"); g.strokeStyle = pulled ? (last.greedy ? css("--mpc") : css("--sun")) : css("--line");
+      g.lineWidth = pulled ? 2 : 1;
+      roundRect(g, x, y0, mw - 14, mh, 8); g.fill(); g.stroke();
+      /* top */
+      g.fillStyle = css("--cab-2"); roundRect(g, x + 6, y0 + 8, mw - 26, 14, 4); g.fill();
+      /* window */
+      var wx = x + 8, wy = y0 + 30, ww = mw - 30, wh = 48;
+      g.fillStyle = css("--win"); roundRect(g, wx, wy, ww, wh, 5); g.fill();
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = '500 18px "IBM Plex Mono", ui-monospace, monospace';
+      if (pulled) {
+        var shown = active && ph < 0.6 ? (Math.floor(rng ? (1 + Math.sin(now / 23) * 50) : 0) % 100) : last.r.toFixed(1);
+        g.fillStyle = active && ph < 0.6 ? "#9aa5b1" : (last.greedy ? "#8fc1ea" : "#f0c060");
+        g.fillText(active && ph < 0.6 ? "···" : String(shown), wx + ww / 2, wy + wh / 2);
+      } else {
+        g.fillStyle = "#55606d"; g.fillText("—", wx + ww / 2, wy + wh / 2);
+      }
+      /* label */
+      g.fillStyle = css("--ink-2"); g.font = '600 13px "Source Sans 3", sans-serif';
+      g.fillText("machine " + (a + 1), x + (mw - 14) / 2, wy + wh + 18);
+      /* estimate and count */
+      g.font = '12px "IBM Plex Mono", ui-monospace, monospace'; g.fillStyle = css("--mpc");
+      g.fillText("Q = " + agent.Q[a].toFixed(2), x + (mw - 14) / 2, wy + wh + 40);
+      g.fillStyle = css("--muted");
+      g.fillText("n = " + agent.N[a], x + (mw - 14) / 2, wy + wh + 58);
+      if (P.showTrue) { g.fillStyle = css("--limit"); g.fillText("q* = " + bandit.means[a].toFixed(1), x + (mw - 14) / 2, wy + wh + 76); }
+      /* lever */
+      var lx = x + mw - 10, ly = y0 + 40, ang = active ? Math.sin(ph * Math.PI) * 1.1 : 0;
+      g.strokeStyle = css("--muted"); g.lineWidth = 3; g.lineCap = "round";
+      g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx + Math.sin(ang) * 26, ly - Math.cos(ang) * 26); g.stroke();
+      g.fillStyle = pulled ? (last.greedy ? css("--mpc") : css("--sun")) : css("--base");
+      g.beginPath(); g.arc(lx + Math.sin(ang) * 26, ly - Math.cos(ang) * 26, 5, 0, 2 * Math.PI); g.fill();
+      g.fillStyle = css("--cab-2"); g.fillRect(lx - 4, ly - 3, 8, 10);
+    }
+  }
+
+  function drawEstimates() {
+    var c = setup($("estimates")), g = c.g, k = bandit.means.length, a;
+    var pad = { l: 40, r: 10, t: 10, b: 28 };
+    var hi = 0, lo = 0;
+    for (a = 0; a < k; a++) { hi = Math.max(hi, bandit.means[a] + 1.5 * bandit.sds[a], agent.Q[a], P.q0); lo = Math.min(lo, agent.Q[a]); }
+    hi = Math.ceil(hi + 0.5); lo = Math.floor(lo - 0.5);
+    var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (hi - v) / (hi - lo); };
+    var i; g.strokeStyle = css("--grid"); g.lineWidth = 1; g.fillStyle = css("--muted");
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace'; g.textAlign = "right"; g.textBaseline = "middle";
+    for (i = 0; i <= 4; i++) { var v = hi - (hi - lo) * i / 4, y = Y(v); g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(c.w - pad.r, y + .5); g.stroke(); g.fillText(v.toFixed(0), pad.l - 6, y); }
+    var slot = (c.w - pad.l - pad.r) / k, bw = Math.min(44, slot * 0.5);
+    for (a = 0; a < k; a++) {
+      var xc = pad.l + slot * (a + 0.5);
+      g.fillStyle = css("--mpc"); g.globalAlpha = 0.85;
+      var y1 = Y(agent.Q[a]), y0 = Y(0);
+      g.fillRect(xc - bw / 2, Math.min(y0, y1), bw, Math.abs(y0 - y1)); g.globalAlpha = 1;
+      if (P.showTrue) {
+        g.save(); g.strokeStyle = css("--limit"); g.setLineDash([5, 4]); g.lineWidth = 2;
+        g.beginPath(); g.moveTo(xc - bw / 2 - 10, Y(bandit.means[a]) + .5); g.lineTo(xc + bw / 2 + 10, Y(bandit.means[a]) + .5); g.stroke(); g.restore();
+      }
+      g.fillStyle = css("--ink-2"); g.textAlign = "center"; g.textBaseline = "top"; g.font = '12px "Source Sans 3", sans-serif';
+      g.fillText("machine " + (a + 1) + "  (" + agent.N[a] + ")", xc, c.h - pad.b + 6);
+    }
+    g.strokeStyle = css("--muted"); g.beginPath(); g.moveTo(pad.l, Y(0) + .5); g.lineTo(c.w - pad.r, Y(0) + .5); g.stroke();
+  }
+
+  function axesT(g, w, h, pad, lo, hi, T, ydec) {
+    var i; g.strokeStyle = css("--grid"); g.lineWidth = 1; g.fillStyle = css("--muted");
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    for (i = 0; i <= 4; i++) {
+      var y = pad.t + (h - pad.t - pad.b) * i / 4, v = hi - (hi - lo) * i / 4;
+      g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke();
+      g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(v.toFixed(ydec), pad.l - 6, y);
+    }
+    g.textAlign = "center"; g.textBaseline = "top";
+    for (i = 0; i <= 4; i++) { var x = pad.l + (w - pad.l - pad.r) * i / 4; g.fillText(String(Math.round(T * i / 4)), x, h - pad.b + 5); }
+  }
+  function polyline(g, w, h, pad, data, lo, hi, T, color, dash, width) {
+    var t; if (!data.length) return;
+    g.save(); g.beginPath(); g.strokeStyle = color; g.lineWidth = width || 2; if (dash) g.setLineDash(dash);
+    for (t = 0; t < data.length; t++) {
+      var x = pad.l + (w - pad.l - pad.r) * (t + 1) / T, y = pad.t + (h - pad.t - pad.b) * (hi - data[t]) / (hi - lo);
+      if (t === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke(); g.restore();
+  }
+  function hline(g, w, pad, y, color, dash) {
+    g.save(); g.strokeStyle = color; g.lineWidth = 1.5; if (dash) g.setLineDash(dash);
+    g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke(); g.restore();
+  }
+  function meanOf(arr) { var s = 0, i; for (i = 0; i < arr.length; i++) s += arr[i]; return s / arr.length; }
+
+  function drawRunCharts() {
+    var pad = { l: 44, r: 24, t: 8, b: 24 };
+    var c = setup($("c-reward")), g = c.g, best = bandit.means[bandit.best], rnd = meanOf(bandit.means);
+    var lo = Math.min(0, Math.floor(Math.min.apply(null, hist.avgR.length ? hist.avgR : [0]))), hi = Math.ceil(best + 1);
+    axesT(g, c.w, c.h, pad, lo, hi, RUN_T, 0);
+    var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (hi - v) / (hi - lo); };
+    hline(g, c.w, pad, Y(best), css("--limit"), [5, 4]); hline(g, c.w, pad, Y(rnd), css("--base"), [2, 3]);
+    polyline(g, c.w, c.h, pad, hist.avgR, lo, hi, RUN_T, css("--mpc"), null, 2);
+    c = setup($("c-opt")); g = c.g;
+    axesT(g, c.w, c.h, pad, 0, 100, RUN_T, 0);
+    polyline(g, c.w, c.h, pad, hist.pctOpt, 0, 100, RUN_T, css("--mpc"), null, 2);
+  }
+
+  /* -------------------------------------------------------- averaged panel ---- */
+  var AVG = null, avgTimer = null;
+  function scheduleAveraged() {
+    if (!bandit) return;
+    if (avgTimer) clearTimeout(avgTimer);
+    $("avg-status").textContent = "computing…";
+    avgTimer = setTimeout(computeAveraged, 120);
+  }
+  function computeAveraged() {
+    var t0 = performance.now(), seed = 424242;
+    AVG = {
+      g0: averagedRun(bandit, 0, 0, "avg", 0.1, AVG_RUNS, AVG_T, seed),
+      g001: averagedRun(bandit, 0.01, 0, "avg", 0.1, AVG_RUNS, AVG_T, seed),
+      g01: averagedRun(bandit, 0.1, 0, "avg", 0.1, AVG_RUNS, AVG_T, seed),
+      mine: averagedRun(bandit, P.eps, P.q0, P.stepMode, P.alpha, AVG_RUNS, AVG_T, seed, P.decay)
+    };
+    $("avg-status").textContent = AVG_RUNS + " runs × " + AVG_T + " pulls · " + Math.round(performance.now() - t0) + " ms";
+    drawAveraged();
+  }
+  function drawAveraged() {
+    if (!AVG) return;
+    var pad = { l: 44, r: 24, t: 8, b: 24 }, best = bandit.means[bandit.best];
+    var c = setup($("a-reward")), g = c.g, lo = 0, hi = Math.ceil(best + 1);
+    axesT(g, c.w, c.h, pad, lo, hi, AVG_T, 0);
+    var Y = function (v) { return pad.t + (c.h - pad.t - pad.b) * (hi - v) / (hi - lo); };
+    hline(g, c.w, pad, Y(best), css("--limit"), [5, 4]);
+    polyline(g, c.w, c.h, pad, AVG.g0.avgR, lo, hi, AVG_T, css("--base"), [2, 3], 1.8);
+    polyline(g, c.w, c.h, pad, AVG.g001.avgR, lo, hi, AVG_T, css("--sun"), null, 1.8);
+    polyline(g, c.w, c.h, pad, AVG.g01.avgR, lo, hi, AVG_T, css("--ess"), null, 1.8);
+    polyline(g, c.w, c.h, pad, AVG.mine.avgR, lo, hi, AVG_T, css("--mpc"), null, 2.4);
+    c = setup($("a-opt")); g = c.g;
+    axesT(g, c.w, c.h, pad, 0, 100, AVG_T, 0);
+    polyline(g, c.w, c.h, pad, AVG.g0.pctOpt, 0, 100, AVG_T, css("--base"), [2, 3], 1.8);
+    polyline(g, c.w, c.h, pad, AVG.g001.pctOpt, 0, 100, AVG_T, css("--sun"), null, 1.8);
+    polyline(g, c.w, c.h, pad, AVG.g01.pctOpt, 0, 100, AVG_T, css("--ess"), null, 1.8);
+    polyline(g, c.w, c.h, pad, AVG.mine.pctOpt, 0, 100, AVG_T, css("--mpc"), null, 2.4);
+  }
+
+  /* ---------------------------------------------------------------- table ---- */
+  function updateTable() {
+    var rows = "", a, k = bandit.means.length;
+    for (a = 0; a < k; a++) {
+      rows += "<tr><td>machine " + (a + 1) + (a === bandit.best ? " (best)" : "") + "</td>" +
+        "<td>" + (P.showTrue ? bandit.means[a].toFixed(2) : "?") + "</td>" +
+        "<td>" + agent.Q[a].toFixed(2) + "</td><td>" + agent.N[a] + "</td>" +
+        '<td class="' + (a === bandit.best ? "best" : "") + '">' + (agent.t ? (100 * agent.N[a] / agent.t).toFixed(1) : "0.0") + " %</td>" +
+        "<td>" + hist.paid[a].toFixed(1) + "</td></tr>";
+    }
+    $("tbody").innerHTML = rows;
+    var best = bandit.means[bandit.best];
+    $("summary").innerHTML = agent.t === 0 ? "&nbsp;" :
+      "After " + agent.t + " pulls the return is <b>" + agent.sumR.toFixed(1) + "</b>, that is <b>" +
+      (agent.sumR / agent.t).toFixed(2) + "</b> per pull; always pulling the best machine would have paid about " +
+      best.toFixed(2) + " per pull, so the shortfall is <b>" + (agent.t * best - agent.sumR).toFixed(1) + "</b>. " +
+      "The best machine received <b>" + (100 * agent.nOpt / agent.t).toFixed(1) + "%</b> of the pulls.";
+    $("clock").textContent = "pull " + agent.t + (agent.t >= RUN_T ? " · end of run" : "");
+    $("status").textContent = (P.decay ? "ε₀ = " + P.eps.toFixed(2) + ", now " + epsAt(P.eps, agent.t, true).toFixed(3) : "ε = " + P.eps.toFixed(2)) +
+      " · " + (P.stepMode === "avg" ? "step 1/n" : "α = " + P.alpha.toFixed(2)) + " · Q₁ = " + P.q0;
+  }
+
+  function render() { drawMachines(); drawEstimates(); drawRunCharts(); updateTable(); }
+
+  /* ------------------------------------------------------------------ loop ---- */
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(0.25, (ts - lastTs) / 1000); lastTs = ts;
+    if (playing) {
+      acc += dt * P.speed; var guard = 0;
+      while (acc >= 1 && guard < 400) { acc -= 1; guard++; if (!onePull()) break; }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+  function setPlayLabel() { $("play").textContent = agent && agent.t >= RUN_T ? "Replay" : (playing ? "Pause" : "Play"); }
+
+  /* -------------------------------------------------------------- controls ---- */
+  function bindSlider(id, fn) {
+    var el = $(id), out = $(id + "-val");
+    function upd() { var s = fn(parseFloat(el.value)); if (out) out.textContent = s; }
+    el.addEventListener("input", upd); upd();
+  }
+  bindSlider("eps", function (v) { P.eps = v / 100; scheduleAveraged(); return P.eps.toFixed(2); });
+  bindSlider("q0", function (v) { P.q0 = v; scheduleAveraged(); return String(v); });
+  bindSlider("alpha", function (v) { P.alpha = v / 100; if (P.stepMode === "const") scheduleAveraged(); return P.alpha.toFixed(2); });
+  bindSlider("speed", function (v) { P.speed = SPEEDS[v]; return ""; });
+  $("step-avg").addEventListener("change", function () { P.stepMode = "avg"; scheduleAveraged(); });
+  $("step-const").addEventListener("change", function () { P.stepMode = "const"; scheduleAveraged(); });
+  $("showtrue").addEventListener("change", function (e) { P.showTrue = e.target.checked; });
+  $("decay").addEventListener("change", function (e) { P.decay = e.target.checked; scheduleAveraged(); });
+  $("casino").addEventListener("change", function (e) { P.casino = e.target.value; newCasino(); });
+  $("redraw").addEventListener("click", newCasino);
+  $("play").addEventListener("click", function () {
+    if (agent.t >= RUN_T) { resetRun(); playing = true; setPlayLabel(); return; }
+    playing = !playing; setPlayLabel();
+  });
+  $("step").addEventListener("click", function () { playing = false; setPlayLabel(); onePull(); });
+  $("reset").addEventListener("click", function () { resetRun(); });
+  window.addEventListener("resize", function () { render(); drawAveraged(); });
+
+  bandit = makeBandit(P.casino, new Rng(casinoSeed));
+  resetRun(); playing = true; setPlayLabel(); /* the page opens playing */
+  computeAveraged();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

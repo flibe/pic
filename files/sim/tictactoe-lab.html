@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An agent that learns to play tic-tac-toe from scratch with a table of state values, an epsilon-greedy policy and temporal-difference backups. Process Identification and Control, Sapienza University of Rome, DIAG.">
+<!-- The page runs entirely in the browser and contacts nobody: the policy below
+     forbids every network request, so nothing about the reader can leave. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<style>
+  html { color-scheme: light; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f2ef; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: block; max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; font-size: 13.5px; }
+  .back a { color: #8a1c2f; text-decoration: none; }
+  .back a:hover { text-decoration: underline; }
+  @media (prefers-color-scheme: dark) {
+    html { color-scheme: dark; }
+    body { background: #14181d; }
+    .back a { color: #e0697f; }
+  }
+</style>
+</head>
+<body>
+<p class="back"><a href="../../lessons.html">&larr; Lesson diary &middot; Process Identification and Control</a></p>
+<title>Tic-Tac-Toe Lab</title>
+
+<style>
+  /* Fonts served from this site: no third-party request. SIL Open Font Licence 1.1. */
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-mono-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/ibm-plex-mono-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-var.woff2) format("woff2"); }
+  @font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-serif-4-var.woff2) format("woff2"); }
+
+  :root {
+    color-scheme: light;
+    --bg: #f4f2ef; --panel: #ffffff; --panel-2: #faf8f6; --line: #ddd7d0; --grid: #e8e3dd;
+    --ink: #1f2a36; --ink-2: #55606d; --muted: #7d8794;
+    --mpc: #2f6690; --base: #8a939d; --ess: #3a7d44; --sun: #c8891a; --load: #7b5ea7; --limit: #8a1c2f;
+    --shadow: 0 1px 2px rgba(31, 42, 54, .06), 0 8px 24px rgba(31, 42, 54, .05);
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #14181d; --panel: #1b2026; --panel-2: #20262d; --line: #2f3841; --grid: #2a323a;
+      --ink: #e9ecef; --ink-2: #b3bcc6; --muted: #8a949f;
+      --mpc: #6aa9dc; --base: #99a3ad; --ess: #6fbb7d; --sun: #e0a93f; --load: #ab8fd4; --limit: #e0697f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  body { background: var(--bg); color: var(--ink);
+         font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+         font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px;
+          display: flex; flex-direction: column; gap: 22px; }
+  header .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase;
+                    color: var(--limit); font-weight: 700; }
+  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 700;
+       font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; margin: 0 0 8px;
+       text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; max-width: 66ch; color: var(--ink-2); font-size: 16px; }
+  h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 19px; margin: 0 0 2px; font-weight: 600; }
+  h3 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+       margin: 0 0 8px; font-weight: 700; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+           box-shadow: var(--shadow); padding: 16px 18px; }
+  .stage { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 950px) { .stage { grid-template-columns: 1fr; } }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .status { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted);
+            font-variant-numeric: tabular-nums; }
+
+  canvas { display: block; width: 100%; }
+  .board { height: 300px; cursor: default; }
+  .board.human { cursor: pointer; }
+  .chart-canvas { height: 170px; }
+  .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+                 font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+                 color: var(--muted); margin-bottom: 4px; }
+  .chart-title .unit { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 400;
+                       letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .charts { display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key { width: 22px; height: 0; border-top-width: 2.5px; border-top-style: solid; display: inline-block; }
+  .key.ess { border-color: var(--ess); } .key.base { border-color: var(--base); }
+  .key.limit { border-color: var(--limit); } .key.mpc { border-color: var(--mpc); }
+
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; }
+  .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .slider .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] { width: 100%; }
+  input[type="range"], input[type="checkbox"], select { accent-color: var(--mpc); }
+  select { font: inherit; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 9px; font-size: 13.5px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; margin-top: 6px; }
+  .toggles label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .clock { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; color: var(--ink-2);
+           font-variant-numeric: tabular-nums; margin-left: auto; }
+  .hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .pick { font-size: 13.5px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button { font: inherit; font-weight: 600; color: var(--ink); background: var(--panel-2);
+           border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--mpc); outline-offset: 2px; }
+  button.primary { background: var(--mpc); border-color: var(--mpc); color: #fff; min-width: 86px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #10161c; } }
+
+  .log { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12.5px; color: var(--ink-2);
+         margin: 10px 0 0; min-height: 3.2em; line-height: 1.5; }
+  .log b { color: var(--ink); font-weight: 500; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+         padding: 1px 7px; border-radius: 999px; border: 1px solid; vertical-align: 1px; }
+  .tag.greedy { color: var(--mpc); border-color: var(--mpc); }
+  .tag.explore { color: var(--sun); border-color: var(--sun); }
+  .tag.opp { color: var(--limit); border-color: var(--limit); }
+
+  table.results { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table.results th, table.results td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+           font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  table.results th { font-family: "Source Sans 3", sans-serif; font-size: 11.5px; letter-spacing: .05em;
+       text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  table.results th:first-child, table.results td:first-child { text-align: left; font-family: "Source Sans 3", sans-serif; font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  .note-line { margin: 12px 0 0; color: var(--ink-2); font-size: 13.5px; }
+  .note-line b { color: var(--ink); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+  .notes p, .notes li { color: var(--ink-2); font-size: 14px; }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin-bottom: 7px; }
+  .notes li b { color: var(--ink); font-weight: 600; }
+  .math { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; background: var(--panel-2);
+          border: 1px solid var(--line); border-left: 3px solid var(--mpc); border-radius: 6px;
+          padding: 10px 12px; margin: 10px 0 0; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+  a { color: var(--limit); }
+  footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Process Identification and Control &middot; Lesson 17</p>
+    <h1>Tic-Tac-Toe Lab</h1>
+    <p class="lede">The agent of the lesson plays X and learns from nothing but the result of its games.
+      It keeps a table with one number per board, its estimate of the probability of winning from
+      there, starts every entry at one half, moves &epsilon;-greedily and, after each greedy move, pulls the
+      value of the board it left towards the value of the board it reached. Watch it play, make it play
+      ten thousand games in a second, change &epsilon; and the learning rate, and then sit down against it.</p>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>The board</h2>
+        <span class="status" id="status">&nbsp;</span>
+      </div>
+
+      <div class="transport">
+        <button class="primary" id="play">Pause</button>
+        <button id="step">One move</button>
+        <button id="turbo">10 000 games</button>
+        <button id="reset">Forget all</button>
+        <label class="pick">Speed
+          <input type="range" id="speed" min="0" max="10" step="1" value="3" style="width:90px">
+        </label>
+        <span class="clock" id="clock">game 0</span>
+      </div>
+
+      <canvas id="board" class="board" style="margin-top:12px" aria-label="The tic-tac-toe board"></canvas>
+      <p class="log" id="log">&nbsp;</p>
+
+      <h3 style="margin-top:14px">The agent (X)</h3>
+      <div class="sliders">
+        <div class="slider">
+          <label for="eps">Exploration rate &epsilon; <span class="num" id="eps-val">0.10</span></label>
+          <input type="range" id="eps" min="0" max="100" step="1" value="10">
+        </div>
+        <div class="slider">
+          <label for="alpha">Learning rate &alpha; <span class="num" id="alpha-val">0.10</span></label>
+          <input type="range" id="alpha" min="1" max="100" step="1" value="10">
+        </div>
+      </div>
+      <div class="toggles" style="margin-top:8px">
+        <label><input type="checkbox" id="drawhalf"> a draw is worth 0.5, not 0</label>
+        <label><input type="checkbox" id="learnexplore"> back up after exploratory moves too</label>
+      </div>
+
+      <h3 style="margin-top:14px">The opponent (O)</h3>
+      <div class="row">
+        <label class="pick">Plays
+          <select id="opp">
+            <option value="random">at random</option>
+            <option value="basic" selected>sensibly: wins when it can, blocks when it must</option>
+            <option value="perfect">perfectly</option>
+          </select>
+        </label>
+        <label class="pick">First move
+          <select id="first">
+            <option value="agent" selected>the agent</option>
+            <option value="opp">the opponent</option>
+            <option value="alt">alternate</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="human">Play against it</button>
+        <span class="hint" id="humanhint">You play O; the agent plays greedily with what it has learnt, and does not learn from you.</span>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div>
+        <div class="chart-title"><span>Results of the last 200 games</span><span class="unit">% of games</span></div>
+        <canvas id="c-res" class="chart-canvas" aria-label="Win, draw and loss rates over the games played"></canvas>
+        <div class="legend">
+          <span><span class="key ess"></span>wins</span>
+          <span><span class="key base"></span>draws</span>
+          <span><span class="key limit"></span>losses</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>What the agent believes about its opening</span><span class="unit">V of the best first move</span></div>
+        <canvas id="c-v" class="chart-canvas" aria-label="Value of the best opening move over the games"></canvas>
+        <div class="legend">
+          <span><span class="key mpc"></span>largest value among the boards reachable with the first move</span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title"><span>States met so far</span><span class="unit">different board configurations stored in the table</span></div>
+        <canvas id="c-n" class="chart-canvas" aria-label="Number of different board configurations met so far"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:10px">The games, in numbers</h2>
+    <div class="table-wrap">
+      <table class="results">
+        <thead><tr><th>&nbsp;</th><th>Games</th><th>Wins</th><th>Draws</th><th>Losses</th><th>Win rate</th><th>Loss rate</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="note-line" id="summary">&nbsp;</p>
+  </section>
+
+  <section class="panel notes">
+    <div>
+      <h2>What to notice</h2>
+      <ul>
+        <li><b>Learning is visible in a few hundred games.</b> Against the opponent that blocks and wins when it
+          can, the agent starts by losing most games; watch the green curve climb while the table fills. Press
+          "10 000 games" to see where it settles.</li>
+        <li><b>Values change from the end of the game backwards.</b> Step through the first games and the empty
+          cells all read 0.50: a backup moves a value only towards the value of the <i>next</i> board, and in
+          the first games every next board is still at 0.5. Only the last board before the result moves at
+          first, towards 1 or 0; the board before it moves in a later game, once that line is played again,
+          and so on. With these settings the opening values leave 0.50 after about 60 to 200 games, and after
+          500 the best opening is already valued near 0.85. This one-step propagation is the price of the
+          temporal-difference rule, and it is what the longer backups of the next lessons speed up. Values that
+          have moved are shown in blue when above 0.5 and in red when below.</li>
+        <li><b>&epsilon; = 0 is not a trap here, and it is worth seeing why.</b> Forget all, set &epsilon; to zero
+          and play ten thousand games against the sensible opponent: the greedy agent ends up winning <i>more</i>
+          often than with &epsilon; = 0.1, about 85% of the games against 74%. The reason is the initial value
+          0.5: a board that leads to a loss is pulled towards 0, falls below the untried boards still at 0.5, and
+          the greedy choice moves on to them. The optimistic start does the exploring, as the optimistic initial
+          estimate does in the slot machine lab. The price shows in the table: the greedy agent meets about 1300
+          boards against 2100, so it knows less of the game and would be caught out by an opponent that plays
+          differently.</li>
+        <li><b>&epsilon; is paid for during play.</b> With a large &epsilon; the agent explores a lot, learns a wide
+          table, and loses games it knew how to win, because one move in three is random. The learning curve
+          and the playing strength are two different things: this is why &epsilon; is usually reduced as learning
+          proceeds.</li>
+        <li><b>The learning rate decides how much the last game counts.</b> With &alpha; close to one each value
+          becomes the value of the next board, and the table jumps with every game; with a small &alpha; it
+          settles slowly but smoothly. Against a random opponent the outcome of one game is mostly luck, and a
+          small &alpha; is what averages the luck out.</li>
+        <li><b>What a draw is worth changes what the agent wants.</b> With a draw worth 0, as in the lesson, the
+          agent sees no difference between drawing and losing; against the perfect opponent, which it can never
+          beat, nothing it learns raises its values above 0 and its play stays indifferent. Tick "a draw is worth
+          0.5" and it learns to force the draw instead.</li>
+        <li><b>Exploratory moves and backups.</b> By default the value of a board is not updated when the agent
+          leaves it with an exploratory move, because that move is not what its policy would do. Tick the box to
+          back up anyway and compare: the values then also reflect what happens after random moves, which
+          makes them estimates of the &epsilon;-greedy policy rather than of the greedy one.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>The problem being solved</h2>
+      <p>The tic-tac-toe of the lesson, section 1.5 of Sutton and Barto. The state is the board; the table
+        holds V(s), the agent's estimate of its probability of winning from s, for every board it has met:</p>
+      <div class="math">V(s) = 1 if X has won, 0 if O has won, 0 (or 0.5) for a draw, 0.5 at first for every other board</div>
+      <p>Before each move the agent considers the boards reachable with one X, reads their values, and with
+        probability 1&minus;&epsilon; moves to the one with the largest value (the <b>greedy</b> move, ties broken at
+        random); with probability &epsilon; it moves at random (an <b>exploratory</b> move). After a greedy move,
+        the board it left is backed up:</p>
+      <div class="math">V(S<sub>t</sub>) &larr; V(S<sub>t</sub>) + &alpha; [ V(S<sub>t+1</sub>) &minus; V(S<sub>t</sub>) ]</div>
+      <p>where S<sub>t</sub> is the board after the agent's previous move and S<sub>t+1</sub> the board after
+        the greedy move. When the game ends, the last board the agent produced is backed up towards the value of
+        the final position, 1, 0 or the value of a draw. This is the temporal-difference rule of the lesson,
+        <i>old value &larr; old value + step &middot; (target &minus; old value)</i>, with a constant step &alpha;.</p>
+      <p>The opponent does not learn. "Sensibly" means: complete three in a row if possible, otherwise block
+        the agent's three in a row, otherwise move at random. "Perfectly" is the minimax player, which never
+        loses; against it the best the agent can do is to draw. The values shown in the empty cells are the
+        current values of the boards the agent would reach by moving there; the highlighted cell is the move
+        it chose.</p>
+    </div>
+  </section>
+
+  <footer>
+    Process Identification and Control &middot; Sapienza University of Rome, DIAG &middot;
+    the page runs offline in your browser &middot; built with Claude Code.
+  </footer>
+</div>
+
+<script>
+/* CORE-BEGIN */
+function Rng(seed) { this.s = (seed % 2147483647) || 1; }
+Rng.prototype.next = function () { this.s = (this.s * 16807) % 2147483647; return (this.s - 1) / 2147483646; };
+Rng.prototype.int = function (n) { return Math.floor(this.next() * n) % n; };
+
+var LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+var X = 1, O = 2;
+
+function keyOf(b) { return b.join(""); }
+function winnerOf(b) {
+  var i, l;
+  for (i = 0; i < 8; i++) { l = LINES[i]; if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[1]] === b[l[2]]) return b[l[0]]; }
+  return 0;
+}
+function isFull(b) { var i; for (i = 0; i < 9; i++) if (!b[i]) return false; return true; }
+function empties(b) { var e = [], i; for (i = 0; i < 9; i++) if (!b[i]) e.push(i); return e; }
+function withMove(b, cell, who) { var c = b.slice(); c[cell] = who; return c; }
+
+/* value table: terminal boards have fixed values, the others start at 0.5 */
+function Learner(drawValue) { this.V = {}; this.count = 0; this.drawValue = drawValue; }
+Learner.prototype.terminalValue = function (b) {
+  var w = winnerOf(b);
+  if (w === X) return 1; if (w === O) return 0; if (isFull(b)) return this.drawValue; return null;
+};
+Learner.prototype.get = function (b, k) {
+  k = k || keyOf(b);
+  if (this.V[k] !== undefined) return this.V[k];
+  var tv = this.terminalValue(b), v = tv === null ? 0.5 : tv;
+  this.V[k] = v; this.count += 1;
+  return v;
+};
+Learner.prototype.peek = function (b) {
+  var k = keyOf(b); if (this.V[k] !== undefined) return this.V[k];
+  var tv = this.terminalValue(b); return tv === null ? 0.5 : tv;
+};
+
+/* epsilon-greedy choice among afterstates; returns {cell, greedy, values[]} */
+Learner.prototype.choose = function (b, eps, rng) {
+  var e = empties(b), vals = [], best = -1, ties = [], i, v, after;
+  for (i = 0; i < e.length; i++) {
+    after = withMove(b, e[i], X); v = this.get(after);
+    vals.push({ cell: e[i], v: v });
+    if (v > best + 1e-12) { best = v; ties = [e[i]]; } else if (Math.abs(v - best) <= 1e-12) ties.push(e[i]);
+  }
+  if (rng.next() < eps) return { cell: e[rng.int(e.length)], greedy: false, values: vals };
+  return { cell: ties[rng.int(ties.length)], greedy: true, values: vals };
+};
+
+/* opponents */
+function oppRandom(b, rng) { var e = empties(b); return e[rng.int(e.length)]; }
+function oppBasic(b, rng) {
+  var e = empties(b), i;
+  for (i = 0; i < e.length; i++) if (winnerOf(withMove(b, e[i], O)) === O) return e[i];
+  for (i = 0; i < e.length; i++) if (winnerOf(withMove(b, e[i], X)) === X) return e[i];
+  return e[rng.int(e.length)];
+}
+var MM = {};
+function minimax(b, who) { /* value for O: +1 O wins, 0 draw, -1 X wins; `who` to move */
+  var k = keyOf(b) + who; if (MM[k] !== undefined) return MM[k];
+  var w = winnerOf(b), v, e, i, best, c;
+  if (w === O) v = 1; else if (w === X) v = -1; else if (isFull(b)) v = 0;
+  else {
+    e = empties(b); best = who === O ? -2 : 2;
+    for (i = 0; i < e.length; i++) {
+      c = minimax(withMove(b, e[i], who), who === O ? X : O);
+      if (who === O) { if (c > best) best = c; } else { if (c < best) best = c; }
+    }
+    v = best;
+  }
+  MM[k] = v; return v;
+}
+function oppPerfect(b, rng) {
+  var e = empties(b), best = -2, ties = [], i, c;
+  for (i = 0; i < e.length; i++) {
+    c = minimax(withMove(b, e[i], O), X);
+    if (c > best) { best = c; ties = [e[i]]; } else if (c === best) ties.push(e[i]);
+  }
+  return ties[rng.int(ties.length)];
+}
+function opponentMove(kind, b, rng) {
+  if (kind === "random") return oppRandom(b, rng);
+  if (kind === "perfect") return oppPerfect(b, rng);
+  return oppBasic(b, rng);
+}
+
+/* one whole game without animation; returns 1 win, 0.5 draw, 0 loss (for X) */
+function playGame(L, opp, eps, alpha, learnExplore, agentFirst, rng) {
+  var b = [0, 0, 0, 0, 0, 0, 0, 0, 0], turn = agentFirst ? X : O, lastAfter = null, ch, k, tv;
+  while (true) {
+    if (turn === X) {
+      ch = L.choose(b, eps, rng);
+      b = withMove(b, ch.cell, X); k = keyOf(b);
+      if (lastAfter !== null && (ch.greedy || learnExplore)) L.V[lastAfter] += alpha * (L.get(b, k) - L.V[lastAfter]);
+      lastAfter = k;
+      tv = L.terminalValue(b); if (tv !== null) return winnerOf(b) === X ? 1 : 0.5;
+      turn = O;
+    } else {
+      b = withMove(b, opponentMove(opp, b, rng), O); k = keyOf(b);
+      tv = L.terminalValue(b);
+      if (tv !== null) { if (lastAfter !== null) L.V[lastAfter] += alpha * (L.get(b, k) - L.V[lastAfter]); return winnerOf(b) === O ? 0 : 0.5; }
+      turn = X;
+    }
+  }
+}
+/* CORE-END */
+
+(function () {
+  "use strict";
+  var SPEEDS = [1, 2, 4, 8, 16, 50, 200, 1000, 5000, 20000, 100000]; /* moves per second */
+  var P = { eps: 0.1, alpha: 0.1, drawValue: 0, learnExplore: false, opp: "basic", first: "agent", speed: 8 };
+  var L, rng, G, hist, playing = true, acc = 0, lastTs = 0, mode = "train", humanState = null;
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function $(id) { return document.getElementById(id); }
+
+  function newGame() {
+    var agentFirst = P.first === "agent" || (P.first === "alt" && hist.games % 2 === 0);
+    G = { b: [0, 0, 0, 0, 0, 0, 0, 0, 0], turn: agentFirst ? X : O, lastAfter: null, over: false, result: null,
+          lastCell: -1, lastKind: "", firstDone: false };
+  }
+  function resetAll() {
+    L = new Learner(P.drawValue); rng = new Rng(20261029);
+    playing = false; setPlayLabel(); /* forgetting stops: Play, or One move, starts again */
+    hist = { games: 0, w: 0, d: 0, l: 0, res: [], rates: [], vopen: [], nstates: [], last200: [] };
+    newGame(); $("log").innerHTML = "&nbsp;";
+  }
+
+  function recordResult(r) {
+    hist.games += 1; if (r === 1) hist.w += 1; else if (r === 0) hist.l += 1; else hist.d += 1;
+    hist.last200.push(r); if (hist.last200.length > 200) hist.last200.shift();
+    var i, w = 0, d = 0, l = 0;
+    for (i = 0; i < hist.last200.length; i++) { if (hist.last200[i] === 1) w++; else if (hist.last200[i] === 0) l++; else d++; }
+    var n = hist.last200.length;
+    hist.rates.push([100 * w / n, 100 * d / n, 100 * l / n]);
+    hist.nstates.push(L.count);
+  }
+  function recordOpening(values) {
+    var best = -1, i; for (i = 0; i < values.length; i++) if (values[i].v > best) best = values[i].v;
+    hist.vopen.push(best);
+  }
+
+  /* one ply of the animated game */
+  function oneMove() {
+    if (G.over) { newGame(); }
+    var k, tv, ch;
+    if (G.turn === X) {
+      ch = L.choose(G.b, P.eps, rng);
+      if (!G.firstDone) { recordOpening(ch.values); G.firstDone = true; }
+      var before = G.lastAfter, vBefore = before !== null ? L.V[before] : null;
+      G.b = withMove(G.b, ch.cell, X); k = keyOf(G.b);
+      var msg = "X plays cell " + (ch.cell + 1) + ' <span class="tag ' + (ch.greedy ? "greedy" : "explore") + '">' + (ch.greedy ? "greedy" : "explore") + "</span>";
+      if (before !== null && (ch.greedy || P.learnExplore)) {
+        L.V[before] += P.alpha * (L.get(G.b, k) - L.V[before]);
+        msg += "<br>backup: V(board left) " + vBefore.toFixed(3) + " &rarr; <b>" + L.V[before].toFixed(3) + "</b> = " + vBefore.toFixed(3) + " + " + P.alpha.toFixed(2) + " × (" + L.get(G.b, k).toFixed(3) + " − " + vBefore.toFixed(3) + ")";
+      } else if (before !== null) msg += "<br>no backup after an exploratory move";
+      G.lastAfter = k; G.lastCell = ch.cell; G.lastKind = ch.greedy ? "greedy" : "explore";
+      tv = L.terminalValue(G.b);
+      if (tv !== null) { G.over = true; G.result = winnerOf(G.b) === X ? 1 : 0.5; recordResult(G.result); msg += "<br><b>" + (G.result === 1 ? "X wins" : "draw") + "</b>"; }
+      else G.turn = O;
+      $("log").innerHTML = msg;
+    } else {
+      var cell = opponentMove(P.opp, G.b, rng);
+      G.b = withMove(G.b, cell, O); k = keyOf(G.b); G.lastCell = cell; G.lastKind = "opp";
+      var m2 = 'O plays cell ' + (cell + 1) + ' <span class="tag opp">opponent</span>';
+      tv = L.terminalValue(G.b);
+      if (tv !== null) {
+        if (G.lastAfter !== null) {
+          var vb = L.V[G.lastAfter];
+          L.V[G.lastAfter] += P.alpha * (L.get(G.b, k) - L.V[G.lastAfter]);
+          m2 += "<br>backup at the end: V(last board) " + vb.toFixed(3) + " &rarr; <b>" + L.V[G.lastAfter].toFixed(3) + "</b> (target " + L.get(G.b, k).toFixed(1) + ")";
+        }
+        G.over = true; G.result = winnerOf(G.b) === O ? 0 : 0.5; recordResult(G.result);
+        m2 += "<br><b>" + (G.result === 0 ? "O wins" : "draw") + "</b>";
+      } else G.turn = X;
+      $("log").innerHTML = m2;
+    }
+  }
+
+  function runGames(n) {
+    var i, agentFirst, r;
+    if (!G.over && (G.b.join("") !== "000000000")) { G.over = true; } /* abandon the half-played animated game */
+    for (i = 0; i < n; i++) {
+      agentFirst = P.first === "agent" || (P.first === "alt" && hist.games % 2 === 0);
+      /* record the opening belief as the animated loop does */
+      var b0 = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      if (!agentFirst) b0 = withMove(b0, opponentMove(P.opp, b0, new Rng(rng.s)), O);
+      recordOpening(L.choose(b0, 0, new Rng(rng.s)).values);
+      r = playGame(L, P.opp, P.eps, P.alpha, P.learnExplore, agentFirst, rng);
+      recordResult(r);
+    }
+    newGame();
+  }
+
+  /* -------------------------------------------------------------- drawing ---- */
+  function setup(cv) {
+    var dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    var g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    return { g: g, w: w, h: h };
+  }
+  function boardGeom(c) { var s = Math.min(c.w, c.h) - 10, x0 = (c.w - s) / 2, y0 = (c.h - s) / 2; return { s: s, x0: x0, y0: y0, cs: s / 3 }; }
+
+  function drawBoard() {
+    var cv = $("board"), c = setup(cv), g = c.g, geo = boardGeom(c), i, r, col, x, y;
+    var b = mode === "human" ? humanState.b : G.b;
+    var showVals = mode === "human" ? (humanState.turn === X && !humanState.over) : (G.turn === X && !G.over);
+    g.strokeStyle = css("--line"); g.lineWidth = 2;
+    for (i = 1; i < 3; i++) {
+      g.beginPath(); g.moveTo(geo.x0 + i * geo.cs, geo.y0); g.lineTo(geo.x0 + i * geo.cs, geo.y0 + geo.s); g.stroke();
+      g.beginPath(); g.moveTo(geo.x0, geo.y0 + i * geo.cs); g.lineTo(geo.x0 + geo.s, geo.y0 + i * geo.cs); g.stroke();
+    }
+    var lastCell = mode === "human" ? humanState.lastCell : G.lastCell, lastKind = mode === "human" ? humanState.lastKind : G.lastKind;
+    for (i = 0; i < 9; i++) {
+      r = Math.floor(i / 3); col = i % 3; x = geo.x0 + col * geo.cs; y = geo.y0 + r * geo.cs;
+      if (i === lastCell) {
+        g.fillStyle = lastKind === "greedy" ? css("--mpc") : lastKind === "explore" ? css("--sun") : css("--limit");
+        g.globalAlpha = 0.12; g.fillRect(x + 3, y + 3, geo.cs - 6, geo.cs - 6); g.globalAlpha = 1;
+      }
+      g.lineCap = "round"; g.lineWidth = Math.max(4, geo.cs * 0.08);
+      if (b[i] === X) {
+        g.strokeStyle = css("--mpc"); var m = geo.cs * 0.26;
+        g.beginPath(); g.moveTo(x + m, y + m); g.lineTo(x + geo.cs - m, y + geo.cs - m); g.stroke();
+        g.beginPath(); g.moveTo(x + geo.cs - m, y + m); g.lineTo(x + m, y + geo.cs - m); g.stroke();
+      } else if (b[i] === O) {
+        g.strokeStyle = css("--limit");
+        g.beginPath(); g.arc(x + geo.cs / 2, y + geo.cs / 2, geo.cs * 0.27, 0, 2 * Math.PI); g.stroke();
+      } else if (showVals && mode === "train") {
+        var v = L.peek(withMove(b, i, X));
+        g.fillStyle = Math.abs(v - 0.5) < 0.0005 ? css("--muted") : (v > 0.5 ? css("--mpc") : css("--limit"));
+        g.font = '500 ' + Math.max(12, geo.cs * 0.17) + 'px "IBM Plex Mono", ui-monospace, monospace';
+        g.textAlign = "center"; g.textBaseline = "middle";
+        g.fillText(v.toFixed(2), x + geo.cs / 2, y + geo.cs / 2);
+      }
+    }
+    /* winning line */
+    var w = winnerOf(b);
+    if (w) {
+      for (i = 0; i < 8; i++) { var l = LINES[i]; if (b[l[0]] === w && b[l[1]] === w && b[l[2]] === w) {
+        g.strokeStyle = w === X ? css("--mpc") : css("--limit"); g.lineWidth = 3; g.globalAlpha = 0.5;
+        g.beginPath();
+        g.moveTo(geo.x0 + (l[0] % 3 + 0.5) * geo.cs, geo.y0 + (Math.floor(l[0] / 3) + 0.5) * geo.cs);
+        g.lineTo(geo.x0 + (l[2] % 3 + 0.5) * geo.cs, geo.y0 + (Math.floor(l[2] / 3) + 0.5) * geo.cs);
+        g.stroke(); g.globalAlpha = 1; break; } }
+    }
+  }
+
+  function axesN(g, w, h, pad, lo, hi, N, ydec) {
+    var i; g.strokeStyle = css("--grid"); g.lineWidth = 1; g.fillStyle = css("--muted");
+    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    for (i = 0; i <= 4; i++) {
+      var y = pad.t + (h - pad.t - pad.b) * i / 4, v = hi - (hi - lo) * i / 4;
+      g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(w - pad.r, y + .5); g.stroke();
+      g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(v.toFixed(ydec), pad.l - 6, y);
+    }
+    g.textAlign = "center"; g.textBaseline = "top";
+    for (i = 0; i <= 4; i++) { var x = pad.l + (w - pad.l - pad.r) * i / 4; g.fillText(String(Math.round(N * i / 4)), x, h - pad.b + 5); }
+  }
+  function series(g, w, h, pad, data, pick, lo, hi, N, color, width) {
+    var n = data.length, i, step = Math.max(1, Math.floor(n / 400)); if (!n) return;
+    g.save(); g.beginPath(); g.strokeStyle = color; g.lineWidth = width || 2;
+    for (i = 0; i < n; i += step) {
+      var x = pad.l + (w - pad.l - pad.r) * (i + 1) / N, y = pad.t + (h - pad.t - pad.b) * (hi - pick(data[i])) / (hi - lo);
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    if ((n - 1) % step !== 0) { var xl = pad.l + (w - pad.l - pad.r) * n / N, yl = pad.t + (h - pad.t - pad.b) * (hi - pick(data[n - 1])) / (hi - lo); g.lineTo(xl, yl); }
+    g.stroke(); g.restore();
+  }
+  function drawCharts() {
+    var pad = { l: 40, r: 24, t: 8, b: 24 }, N = Math.max(200, hist.games), c, g;
+    c = setup($("c-res")); g = c.g; axesN(g, c.w, c.h, pad, 0, 100, N, 0);
+    series(g, c.w, c.h, pad, hist.rates, function (r) { return r[0]; }, 0, 100, N, css("--ess"), 2);
+    series(g, c.w, c.h, pad, hist.rates, function (r) { return r[1]; }, 0, 100, N, css("--base"), 1.6);
+    series(g, c.w, c.h, pad, hist.rates, function (r) { return r[2]; }, 0, 100, N, css("--limit"), 1.6);
+    c = setup($("c-v")); g = c.g; axesN(g, c.w, c.h, pad, 0, 1, Math.max(200, hist.vopen.length), 2);
+    series(g, c.w, c.h, pad, hist.vopen, function (v) { return v; }, 0, 1, Math.max(200, hist.vopen.length), css("--mpc"), 2);
+    c = setup($("c-n")); g = c.g;
+    var hiN = Math.max(100, Math.ceil((hist.nstates.length ? hist.nstates[hist.nstates.length - 1] : 0) / 500) * 500);
+    axesN(g, c.w, c.h, pad, 0, hiN, N, 0);
+    series(g, c.w, c.h, pad, hist.nstates, function (v) { return v; }, 0, hiN, N, css("--load"), 2);
+  }
+  function updateTable() {
+    var n = hist.last200.length, i, w = 0, d = 0, l = 0;
+    for (i = 0; i < n; i++) { if (hist.last200[i] === 1) w++; else if (hist.last200[i] === 0) l++; else d++; }
+    function row(name, G_, W_, D_, L_) {
+      return "<tr><td>" + name + "</td><td>" + G_ + "</td><td>" + W_ + "</td><td>" + D_ + "</td><td>" + L_ + "</td><td>" +
+        (G_ ? (100 * W_ / G_).toFixed(1) : "–") + " %</td><td>" + (G_ ? (100 * L_ / G_).toFixed(1) : "–") + " %</td></tr>";
+    }
+    $("tbody").innerHTML = row("All games", hist.games, hist.w, hist.d, hist.l) + row("Last 200", n, w, d, l);
+    $("summary").innerHTML = "States met so far: <b>" + L.count + "</b> different board configurations, of the 5478 legal ones" +
+      (hist.vopen.length ? "; the agent currently values its best opening at <b>" + hist.vopen[hist.vopen.length - 1].toFixed(3) + "</b>" : "") + ".";
+    $("clock").textContent = "game " + hist.games;
+    $("status").textContent = (mode === "human" ? "you are playing · " : "") + "ε = " + P.eps.toFixed(2) + " · α = " + P.alpha.toFixed(2) + " · O " + P.opp;
+  }
+  function render() { drawBoard(); drawCharts(); updateTable(); }
+
+  /* ------------------------------------------------------------------ loop ---- */
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(0.25, (ts - lastTs) / 1000); lastTs = ts;
+    if (playing && mode === "train") {
+      acc += dt * P.speed;
+      if (P.speed >= 1000) { /* whole games at once */
+        var games = Math.floor(acc / 9); if (games > 0) { runGames(Math.min(games, 3000)); acc = 0; }
+      } else {
+        var guard = 0; while (acc >= 1 && guard < 60) { acc -= 1; guard++; oneMove(); }
+      }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+  function setPlayLabel() { $("play").textContent = playing ? "Pause" : "Play"; }
+
+  /* ------------------------------------------------------------ human play ---- */
+  function startHuman() {
+    mode = "human"; playing = false; setPlayLabel();
+    humanState = { b: [0, 0, 0, 0, 0, 0, 0, 0, 0], turn: X, over: false, lastCell: -1, lastKind: "" };
+    $("board").classList.add("human"); $("human").textContent = "Back to training";
+    $("humanhint").textContent = "Click an empty cell to place your O. The agent moves first.";
+    agentHumanMove();
+  }
+  function stopHuman() {
+    mode = "train"; humanState = null; $("board").classList.remove("human"); $("human").textContent = "Play against it";
+    $("humanhint").textContent = "You play O; the agent plays greedily with what it has learnt, and does not learn from you.";
+    newGame(); $("log").innerHTML = "&nbsp;";
+  }
+  function agentHumanMove() {
+    var hs = humanState; if (!hs || hs.over || hs.turn !== X) return;
+    var ch = L.choose(hs.b, 0, rng); hs.b = withMove(hs.b, ch.cell, X); hs.lastCell = ch.cell; hs.lastKind = "greedy";
+    var tv = L.terminalValue(hs.b);
+    if (tv !== null) { hs.over = true; $("log").innerHTML = "<b>" + (winnerOf(hs.b) === X ? "The agent wins." : "Draw.") + "</b> Click the board for another game."; }
+    else { hs.turn = O; $("log").innerHTML = "X played cell " + (ch.cell + 1) + " (value " + L.peek(hs.b).toFixed(2) + "). Your move."; }
+  }
+  $("board").addEventListener("click", function (ev) {
+    if (mode !== "human") return;
+    var hs = humanState;
+    if (hs.over) { humanState = { b: [0, 0, 0, 0, 0, 0, 0, 0, 0], turn: X, over: false, lastCell: -1, lastKind: "" }; agentHumanMove(); return; }
+    if (hs.turn !== O) return;
+    var cv = $("board"), rect = cv.getBoundingClientRect(), c = { w: cv.clientWidth, h: cv.clientHeight }, geo = boardGeom(c);
+    var px = ev.clientX - rect.left - geo.x0, py = ev.clientY - rect.top - geo.y0;
+    if (px < 0 || py < 0 || px >= geo.s || py >= geo.s) return;
+    var cell = Math.floor(py / geo.cs) * 3 + Math.floor(px / geo.cs);
+    if (hs.b[cell]) return;
+    hs.b = withMove(hs.b, cell, O); hs.lastCell = cell; hs.lastKind = "opp";
+    var tv = L.terminalValue(hs.b);
+    if (tv !== null) { hs.over = true; $("log").innerHTML = "<b>" + (winnerOf(hs.b) === O ? "You win." : "Draw.") + "</b> Click the board for another game."; return; }
+    hs.turn = X; setTimeout(agentHumanMove, 350);
+  });
+
+  /* -------------------------------------------------------------- controls ---- */
+  function bindSlider(id, fn) { var el = $(id), out = $(id + "-val"); function upd() { var s = fn(parseFloat(el.value)); if (out) out.textContent = s; } el.addEventListener("input", upd); upd(); }
+  bindSlider("eps", function (v) { P.eps = v / 100; return P.eps.toFixed(2); });
+  bindSlider("alpha", function (v) { P.alpha = v / 100; return P.alpha.toFixed(2); });
+  bindSlider("speed", function (v) { P.speed = SPEEDS[v]; return ""; });
+  $("drawhalf").addEventListener("change", function (e) { P.drawValue = e.target.checked ? 0.5 : 0; resetAll(); });
+  $("learnexplore").addEventListener("change", function (e) { P.learnExplore = e.target.checked; });
+  $("opp").addEventListener("change", function (e) { P.opp = e.target.value; newGame(); });
+  $("first").addEventListener("change", function (e) { P.first = e.target.value; newGame(); });
+  $("play").addEventListener("click", function () { if (mode === "human") stopHuman(); playing = !playing; setPlayLabel(); });
+  $("step").addEventListener("click", function () { if (mode === "human") stopHuman(); playing = false; setPlayLabel(); oneMove(); });
+  $("turbo").addEventListener("click", function () { if (mode === "human") stopHuman(); runGames(10000); });
+  $("reset").addEventListener("click", function () { if (mode === "human") stopHuman(); resetAll(); });
+  $("human").addEventListener("click", function () { if (mode === "human") stopHuman(); else startHuman(); });
+  window.addEventListener("resize", render);
+
+  resetAll(); playing = true; setPlayLabel(); /* the page opens playing */
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
