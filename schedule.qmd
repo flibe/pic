@@ -32,7 +32,7 @@ toc: false
 | 15 | Mon 26/10 | [MPC]{.part .part-mpc} | Task scheduling in an assembly line; logical constraints at work |
 | 16 | Wed 28/10 | [MPC]{.part .part-mpc} [RL]{.part .part-rl} | End of task scheduling; introduction to RL: agent, reward and return, policy, value function |
 | 17 | Thu 29/10 | [RL]{.part .part-rl} | Value functions, greedy and ε-greedy policies; tic-tac-toe and the multi-armed bandit |
-| 18 | Mon 02/11 | [RL]{.part .part-rl} | Finite Markov decision processes: the model of the environment, the cleaning robot, the discounted return, the value functions $v_pi$ and $q_pi$ |
+| 18 | Mon 02/11 | [RL]{.part .part-rl} | Finite Markov decision processes: the model of the environment, the cleaning robot, the discounted return, the value functions $v_\pi$ and $q_\pi$ |
 | 19 | Wed 04/11 | [RL]{.part .part-rl} | Monte Carlo and temporal-difference methods; Q-learning |
 | 20 | Thu 05/11 | [RL]{.part .part-rl} | Function approximation and deep RL (DDPG) |
 | 21 | Mon 09/11 | [RL]{.part .part-rl} | Hybrid MPC–RL algorithms; learning the weights and the terminal cost of an MPC |
