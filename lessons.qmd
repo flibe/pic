@@ -346,3 +346,48 @@ Two examples, one for $V$ and one for $Q$. **Tic-tac-toe**: we play X against an
 
   [*Where this runs for real.* The update rule of this page, with a neural network in place of the table, is how [TD-Gammon](https://bkgm.com/articles/tesauro/tdl.html){target="_blank" rel="noopener"} learnt backgammon from self-play in 1992 and reached the level of the best human players, the first result of its kind. The same ingredients — a value function learnt from the outcome of games, a policy that improves by looking at it, exploration — are at the heart of [AlphaGo](https://www.nature.com/articles/nature16961){target="_blank" rel="noopener"}, which in 2016 beat a professional Go player, and of the self-play systems that followed it.]{.lab-real}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto) from the beginning up to section 2.4 included (pp. 1–32).
+
+## Lesson 18 (02/11/2026): Finite Markov decision processes: the model of the environment, the return, the value functions $v_\pi$ and $q_\pi$ {#lesson-18}
+
+[RL]{.part .part-rl}
+
+The formal setting of reinforcement learning, which is the setting of **sequential decision making**: at $t = 0, 1, 2, \dots$ the agent observes $S_t$, selects $A_t$, and the environment returns $R_{t+1}$ and $S_{t+1}$, producing the **trajectory** $S_0, A_0, R_1, S_1, A_1, R_2, S_2, \dots$. Upper-case letters are random variables, lower-case letters their values. $\mathcal{S}$ is the set of states, $\mathcal{A}$ the set of actions, $\mathcal{A}(s) \subseteq \mathcal{A}$ the actions available in $s$, $\mathcal{R}$ the set of rewards. When the three sets are finite we have a **finite Markov decision process**.
+
+The **model of the environment** is the probability of landing in $s'$ with reward $r$ after taking $a$ in $s$,
+$$
+p(s', r \mid s, a) \triangleq \Pr\{S_t = s', R_t = r \mid S_{t-1} = s, A_{t-1} = a\}, \qquad s, s' \in \mathcal{S},\ a \in \mathcal{A}(s),\ r \in \mathcal{R},
+$$
+a table with one entry for every combination of $(s, a)$ and $(s', r)$. That it depends on the last state and action only, and not on the whole history, is the **Markov property**. From $p$ follow the state-transition probabilities and the expected reward of a state–action pair,
+$$
+p(s' \mid s, a) = \sum_{r \in \mathcal{R}} p(s', r \mid s, a), \qquad
+r(s, a) \triangleq \mathbb{E}\{R_t \mid S_{t-1} = s, A_{t-1} = a\} = \sum_{r \in \mathcal{R}} r \sum_{s' \in \mathcal{S}} p(s', r \mid s, a),
+$$
+the second one being the usual expected value of a discrete random variable, $\mathbb{E}\{Y\} = \sum_i y_i\, \Pr\{Y = y_i\}$, with the marginal $p(r \mid s, a)$ obtained by summing the table over $s'$.
+
+**Example, the cleaning robot** collecting trash: states $\mathcal{S} = \{\text{high}, \text{low}\}$, the battery level; actions $\mathcal{A} = \{\text{search}, \text{wait}, \text{recharge}\}$, with $\mathcal{A}(\text{high}) = \{\text{search}, \text{wait}\}$ and $\mathcal{A}(\text{low}) = \{\text{search}, \text{wait}, \text{recharge}\}$; rewards $\mathcal{R} = \{r_\text{search}, r_\text{wait}, 0, -2\}$ with $r_\text{search} > r_\text{wait}$, $0$ for recharging and $-2$ when the robot runs out of battery while searching and has to be rescued. The dynamics are summarized by two numbers: $\alpha$, the probability that the battery is still high after searching from high, and $\beta$, the probability that it is still low after searching from low. The **transition graph** collects everything: from each state node an arc per action to an action node, and from each action node an arc per outcome, labelled with the probability and the reward — from high, search leads to high with $(\alpha, r_\text{search})$ and to low with $(1-\alpha, r_\text{search})$; from low, search leads to low with $(\beta, r_\text{search})$ and to high with $(1-\beta, -2)$; wait leaves the state unchanged with $(1, r_\text{wait})$; recharge brings low to high with $(1, 0)$.
+
+The **return** at time $t$ is the sum of the future rewards, $G_t = R_{t+1} + R_{t+2} + \dots$, and it depends on the policy and on $p$. In the episodic case the sum stops at the terminal time $T$; in the continuing case it does not stop, and a **discount factor** $\gamma \in [0, 1]$ is introduced,
+$$
+G_t \triangleq \sum_{k=0}^{\infty} \gamma^k R_{t+k+1} = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots,
+$$
+a converging series, hence a finite number, when the rewards are bounded and $\gamma < 1$. Small $\gamma$ gives a myopic agent that cares about the next rewards, large $\gamma$ an agent that weighs the long term. With $\varepsilon$ and $\alpha$, $\gamma$ is the third parameter of every method of this part of the course. Collecting the terms after the first one gives the recursion used everywhere in the following,
+$$
+G_t = R_{t+1} + \gamma\, G_{t+1}.
+$$
+
+The **policy**, in the stochastic form, is the probability of selecting $a$ in $s$, $\pi(a \mid s) \triangleq \Pr\{A_t = a \mid S_t = s\}$. The two **value functions** of a policy, written in lower case from now on as in the book:
+$$
+v_\pi(s) \triangleq \mathbb{E}_\pi\{G_t \mid S_t = s\} = \mathbb{E}_\pi\{R_{t+1} + \gamma\, G_{t+1} \mid S_t = s\}, \qquad v_\pi : \mathcal{S} \to \mathbb{R},
+$$
+the expected discounted return obtained by starting from $s$ and following $\pi$ thereafter, and
+$$
+q_\pi(s, a) \triangleq \mathbb{E}_\pi\{G_t \mid S_t = s, A_t = a\}, \qquad q_\pi : \mathcal{S} \times \mathcal{A} \to \mathbb{R},
+$$
+the expected discounted return obtained by selecting $a$ in $s$ and following $\pi$ thereafter: how good a given action is from a given state, under a given policy. The two are linked through the policy alone, with no model of the environment: from the state node $s$ the policy picks the action node $(s, a)$ with probability $\pi(a \mid s)$, and the value of $s$ is the expected value of the action values,
+$$
+v_\pi(s) = \sum_{a \in \mathcal{A}(s)} \pi(a \mid s)\, q_\pi(s, a),
+$$
+as in the example with $\pi(a_1 \mid s) = 0.1$, $q_\pi(s, a_1) = 50$, $\pi(a_2 \mid s) = 0.3$, $q_\pi(s, a_2) = 120$, and so on, giving $v_\pi(s) = 100$. Both $v_\pi$ and $q_\pi$ satisfy a recursive condition, the **Bellman equation**, which is where the next lesson starts.
+
+- [Blackboard notes](files/notes/lesson-18-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 3.1 to 3.5, stopping in section 3.5 at the definitions of $v_\pi$ and $q_\pi$, before the Bellman equation (pp. 47–59).
