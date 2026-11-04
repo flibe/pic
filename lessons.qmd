@@ -391,3 +391,33 @@ as in the example with $\pi(a_1 \mid s) = 0.1$, $q_\pi(s, a_1) = 50$, $\pi(a_2 \
 
 - [Blackboard notes](files/notes/lesson-18-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 3.1 to 3.5, stopping in section 3.5 at the definitions of $v_\pi$ and $q_\pi$, before the Bellman equation (pp. 47–59).
+
+## Lesson 19 (04/11/2026): The Bellman equation; optimal policies and optimal value functions; the Bellman optimality equation {#lesson-19}
+
+[RL]{.part .part-rl}
+
+A short recap of the setting: the model $p(s', r \mid s, a)$, the trajectory $S_0, A_0, R_1, S_1, A_1, R_2, \dots$, the discounted return $G_t = \sum_{k \ge 0} \gamma^k R_{t+k+1}$ with its recursion $G_t = R_{t+1} + \gamma G_{t+1}$, and the two value functions $v_\pi(s) = \mathbb{E}_\pi\{G_t \mid S_t = s\}$ and $q_\pi(s,a) = \mathbb{E}_\pi\{G_t \mid S_t = s, A_t = a\}$. Today the question is how to compute them, and how to find the optimal policy, when the environment is known: this is **dynamic programming**.
+
+**The Bellman equation for $v_\pi$.** From the state node $s$ the agent picks $a$ with probability $\pi(a \mid s)$, the environment picks the pair $(s', r)$ with probability $p(s', r \mid s, a)$, and from there on the expected return is $v_\pi(s')$ by definition. Along one particular transition $s \to (s,a) \to (s', r)$ the expected return is therefore $r + \gamma v_\pi(s')$: the recursion $G_t = R_{t+1} + \gamma G_{t+1}$ with $R_{t+1} = r$ and $\mathbb{E}_\pi\{G_{t+1} \mid S_{t+1} = s'\} = v_\pi(s')$. The value of $s$ is the average of these returns over all the cases, each weighted by its probability $\pi(a \mid s)\, p(s', r \mid s, a)$:
+$$
+v_\pi(s) = \sum_{a \in \mathcal{A}(s)} \pi(a \mid s) \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \mid s, a)\, \big[ r + \gamma\, v_\pi(s') \big], \qquad \forall\, s \in \mathcal{S}.
+$$
+It links the value of a state to the values of its successor states, and it must hold for every value function. For a finite MDP with $m$ states it is a system of $m$ **linear** equations in the $m$ unknowns $v_\pi(s_1), \dots, v_\pi(s_m)$, with $\pi$ and $p$ known: in principle, given a policy and a known environment, policy evaluation is the solution of a linear system. In practice the number of states of real problems is far too large for this to be done, and that is what the methods of the next lessons address. Exercise left for home: write the Bellman equation for $q_\pi(s, a)$. The relation between the two, from the agent's side alone, is the one of the last lesson, $v_\pi(s) = \sum_a \pi(a \mid s)\, q_\pi(s, a)$.
+
+**Optimal policies.** A finite MDP has a finite number of deterministic policies. The value functions give a way to compare them: $\pi'$ is better than $\pi$, written $\pi' \ge \pi$, when $v_{\pi'}(s) \ge v_\pi(s)$ for every $s$, that is, when following $\pi'$ gives on average a higher return from every state. This is a **partial order**: two policies may be incomparable. A policy $\pi^*$ is **optimal** when $\pi^* \ge \pi$ for every $\pi$. There is always at least one optimal policy, possibly more than one, and all of them share the same value functions, the **optimal value functions**
+$$
+v^*(s) = \max_\pi v_\pi(s) \quad \forall\, s \in \mathcal{S}, \qquad q^*(s, a) = \max_\pi q_\pi(s, a) \quad \forall\, s \in \mathcal{S},\ a \in \mathcal{A}(s).
+$$
+Given $q^*$, the optimal policy is immediate: in $s$ take the action with the largest optimal action value, $\pi^*(s) = \arg\max_a q^*(s, a)$, the **greedy policy with respect to $q^*$** — in the example, with $q^*(s, a_1) = 10$, $q^*(s, a_2) = 500$, $q^*(s, a_3) = 100$, $q^*(s, a_4) = 500$, either $a_2$ or $a_4$, and $v^*(s) = 500$. The relation between the two optimal value functions follows: since $\pi^*$ puts all the probability on a maximizing action, the average $\sum_a \pi(a \mid s)\, q_\pi(s,a)$ becomes a maximum,
+$$
+v^*(s) = \max_{a \in \mathcal{A}(s)} q^*(s, a), \qquad \forall\, s \in \mathcal{S}.
+$$
+
+**The Bellman optimality equation.** From the state–action node, the environment's side is the same as before, with $v^*(s')$ at the successor states: $q^*(s, a) = \sum_{s', r} p(s', r \mid s, a)\,[r + \gamma v^*(s')]$ for every $(s, a)$, which is the Bellman equation for $q^*$ once $v^*(s') = \max_{a'} q^*(s', a')$ is substituted. Combining it with the maximum over the actions,
+$$
+v^*(s) = \max_{a \in \mathcal{A}(s)} \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \mid s, a)\, \big[ r + \gamma\, v^*(s') \big], \qquad \forall\, s \in \mathcal{S},
+$$
+the **Bellman optimality equation**: a system of $m$ equations in the $m$ unknowns $v^*(s_1), \dots, v^*(s_m)$, **nonlinear** because of the max, with no policy in it. Its solution gives $v^*$, hence $q^*$, hence $\pi^*$ as the greedy policy. Solving it directly is hard, and the scheme of the next lesson is the alternation already sketched in lesson 17: from a policy $\pi_0$, **policy evaluation** computes $v_{\pi_0}$ and $q_{\pi_0}$ by solving the Bellman equation, **policy improvement** builds $\pi_1 \ge \pi_0$ as the greedy policy with respect to $q_{\pi_0}$, and the two steps repeat until $\pi^*$ is reached.
+
+- [Blackboard notes](files/notes/lesson-19-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 3.5 to 3.8 (pp. 58–69).
