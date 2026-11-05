@@ -421,3 +421,36 @@ the **Bellman optimality equation**: a system of $m$ equations in the $m$ unknow
 
 - [Blackboard notes](files/notes/lesson-19-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 3.5 to 3.8 (pp. 58–69).
+
+## Lesson 20 (05/11/2026): Dynamic programming: iterative policy evaluation, policy improvement, policy iteration and value iteration; introduction to Monte Carlo methods {#lesson-20}
+
+[RL]{.part .part-rl}
+
+Two families of methods, distinguished by what is known of the environment: **dynamic programming**, where the model $p(s', r \mid s, a)$ is known, and **Monte Carlo** methods, where it is not and the agent has to learn from experience.
+
+A recap first. The Bellman equation for $v_\pi$ is a system of $|\mathcal{S}|$ linear equations in the $|\mathcal{S}|$ values. The optimal policy is greedy with respect to $q^*$, $\pi^*(s) = \arg\max_a q^*(s, a)$, deterministic, and $v^*(s) = \max_a q^*(s, a)$ with $q^*(s, a) = \sum_{s', r} p(s', r \mid s, a)\,[r + \gamma v^*(s')]$, which gives the Bellman optimality equation: $|\mathcal{S}|$ **nonlinear** equations in the $|\mathcal{S}|$ values, with a unique solution $v^*$, but not solvable in practice because of the nonlinearity and of the size of the state spaces. Written in terms of $v^*$ the optimal policy is $\pi^*(s) = \arg\max_a \sum_{s', r} p(s', r \mid s, a)\,[r + \gamma v^*(s')]$: a one-step look-ahead, the same structure as an MPC with $N = 1$ and $v^*$ as terminal cost, and like MPC it needs the model. Learning $q^*$ directly, so that $\pi^*$ follows without the model, is the idea behind **Q-learning**, to come.
+
+**Iterative policy evaluation.** The problem: given $\pi$, compute $v_\pi$. Solving the linear system is ruled out; instead the Bellman equation is used as an update rule. Call $v^k_\pi$ the $k$-th estimate of $v_\pi$ and $v^0_\pi$ an initial guess; the right-hand side of the Bellman equation is the **Bellman operator**, and applying it to the current estimate gives the next one,
+$$
+v^{k+1}_\pi(s) = \sum_{a \in \mathcal{A}(s)} \pi(a \mid s) \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \mid s, a)\, \big[ r + \gamma\, v^k_\pi(s') \big], \qquad \forall\, s \in \mathcal{S},\ k = 0, 1, 2, \dots
+$$
+a Picard iteration. It can be proved that $v^k_\pi \to v_\pi$ as $k \to \infty$ (fixed-point theorem: the operator is a contraction, and $\max_s |v_\pi(s) - v^k_\pi(s)|$ shrinks at every step), so in theory the method needs infinitely many iterations, in practice it stops when the change is small. Each step is an **expected update**: the new value of $s$ is an average over all the successors, weighted with $\pi$ and $p$, of a target built on the current estimates, which makes the method a **bootstrapping** one. The iteration can be organized as a full sweep of the state space, computing the new table $v^{k+1}_\pi$ from the old one, or **in place**, overwriting each value as soon as it is computed and using the fresh values for the states that follow, which also converges and is usually faster. The question of what to do when the state space is too large to sweep (focused updates) is left for later.
+
+**Policy improvement**, for deterministic policies $\pi(s)$. In $s$ the policy selects $\pi(s)$, and $v_\pi(s) = q_\pi(s, \pi(s))$; how good would it be to select another action $a \ne \pi(s)$ once and follow $\pi$ afterwards? The answer is $q_\pi(s, a) = \sum_{s', r} p(s', r \mid s, a)\,[r + \gamma v_\pi(s')]$, computable from $v_\pi$ and the model, and if $q_\pi(s, a) > v_\pi(s)$ the policy that picks $a$ in $s$ is better — in the example, $v_\pi(s) = 8$ with $\pi(s) = a_1$, while $q_\pi(s, a_2) = 10$. In general, the **policy improvement theorem**: given $\pi$ and $\pi'$, if $q_\pi(s, \pi'(s)) \ge v_\pi(s)$ for every $s$, then $\pi' \ge \pi$. The improved policy is therefore the greedy policy with respect to $q_\pi$,
+$$
+\pi'(s) = \arg\max_{a \in \mathcal{A}(s)} q_\pi(s, a), \qquad \forall\, s \in \mathcal{S},
+$$
+which satisfies the hypothesis of the theorem by construction, so $v_{\pi'}(s) \ge v_\pi(s)$ for every $s$.
+
+**Policy iteration** alternates the two: $\pi_0 \xrightarrow{E} v_{\pi_0} \xrightarrow{I} \pi_1 \xrightarrow{E} v_{\pi_1} \xrightarrow{I} \pi_2 \to \dots \to \pi^*$, where $E$ is iterative policy evaluation (infinitely many steps in theory) and $I$ is the greedy improvement. A finite MDP has a finite number of deterministic policies, $|\mathcal{A}|^{|\mathcal{S}|}$, and every improvement step gives a policy at least as good, so at some point the improved policy is as good as the previous one, $v_{\pi'}(s) = v_\pi(s)$ for every $s$. What does this mean? Since $\pi'$ is greedy with respect to $q_\pi$, $v_{\pi'}(s) = \max_a q_\pi(s, a) = \max_a \sum_{s', r} p(s', r \mid s, a)\,[r + \gamma v_\pi(s')]$, and replacing $v_\pi$ with the equal $v_{\pi'}$,
+$$
+v_{\pi'}(s) = \max_{a \in \mathcal{A}(s)} \sum_{s' \in \mathcal{S}} \sum_{r \in \mathcal{R}} p(s', r \mid s, a)\, \big[ r + \gamma\, v_{\pi'}(s') \big], \qquad \forall\, s \in \mathcal{S},
+$$
+which is the Bellman optimality equation: $v_{\pi'} = v^*$ and $\pi'$ is optimal. The optimal policies are exactly the policies that are greedy with respect to their own value function. The diagram of the lesson shows it: two lines, one where the value function is consistent with the policy ($v = v_\pi$), one where the policy is greedy with respect to the value function ($\pi = \text{greedy}(v)$); evaluation moves to the first, improvement to the second, and the two meet at $(\pi^*, v^*)$.
+
+**Value iteration** is the variant that uses the Bellman optimality equation as the update rule, with the max over the actions inside the sweep, instead of evaluating each policy to convergence. Both are dynamic programming methods, built on policy iteration and on expected updates: each update of a state looks at the whole tree of its successors through $p$.
+
+**Monte Carlo methods**, introduced at the end: episodic tasks, with a terminal state, and no knowledge of $p$. The approach stays the same, policy evaluation plus policy improvement, and the problem is the first step: given $\pi$, how is $v_\pi(s)$ evaluated without the model? The answer, next lesson, is the definition of $v_\pi$ itself: $v_\pi(s)$ is an expected return, and expected values are estimated by averaging the returns actually observed from $s$ along the episodes.
+
+- [Blackboard notes](files/notes/lesson-20-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 4.1 to 4.4 (pp. 73–85).

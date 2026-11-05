@@ -34,7 +34,7 @@ toc: false
 | 17 | Thu 29/10 | [RL]{.part .part-rl} | Value functions, greedy and ε-greedy policies; tic-tac-toe and the multi-armed bandit |
 | 18 | Mon 02/11 | [RL]{.part .part-rl} | Finite Markov decision processes: the model of the environment, the cleaning robot, the discounted return, the value functions $v_\pi$ and $q_\pi$ |
 | 19 | Wed 04/11 | [RL]{.part .part-rl} | The Bellman equation; optimal policies and optimal value functions $v^*$ and $q^*$; the Bellman optimality equation |
-| 20 | Thu 05/11 | [RL]{.part .part-rl} | Function approximation and deep RL (DDPG) |
+| 20 | Thu 05/11 | [RL]{.part .part-rl} | Dynamic programming: iterative policy evaluation, policy improvement, policy iteration, value iteration; introduction to Monte Carlo methods |
 | 21 | Mon 09/11 | [RL]{.part .part-rl} | Hybrid MPC–RL algorithms; learning the weights and the terminal cost of an MPC |
 | 22 | Wed 11/11 | [ID]{.part .part-id} | Introduction to identification; statistical estimators and their properties |
 | 23 | Thu 12/11 | [ID]{.part .part-id} | Linear and weighted least squares; regularization |
