@@ -477,3 +477,44 @@ Finally, the GPI form of Monte Carlo: after every episode the values of the stat
 
 - [Blackboard notes](files/notes/lesson-21-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 4.6 and 5.1 to 5.4 (pp. 86–87 and 91–103).
+
+## Lesson 22 (11/11/2026): Off-policy Monte Carlo and importance sampling; temporal-difference prediction, TD(0) and Sarsa; conclusions on tabular methods {#lesson-22}
+
+[RL]{.part .part-rl}
+
+The three answers to the **problem of exploration** in Monte Carlo control, first. Exploring starts; **on-policy** methods, where the policy used to run the experiments is the one being improved, with the ε-greedy policy in the improvement step and the GPI update $V(s) \leftarrow V(s) + \alpha\,[G(s) - V(s)]$ for every $s$ visited in the episode; and **off-policy** learning, with two policies: the **behavior policy** $\pi_b$, used to interact with the environment and collect the training data, which must ensure exploration so that every pair $(s,a)$ gets infinitely many sample returns, and the **target policy** $\pi$, the one that converges to $\pi^*$, which can be deterministic, since the end of the road is $\pi^*(s) = \arg\max_a q^*(s,a)$.
+
+**Policy evaluation off-policy.** The problem is $\pi \to v_\pi$ using data from $\pi_b$. Averaging the returns observed while following $\pi_b$ gives $v_{\pi_b}(s)$, not $v_\pi(s)$. Write the expected value in terms of trajectories: a **sample trajectory** $\tau = (S_t, A_t, R_{t+1}, S_{t+1}, \dots, S_T)$ has a sample return $G(\tau)$, and
+$$
+v_\pi(s) = \mathbb{E}_\pi\{G_t \mid S_t = s\} = \sum_{\tau} P_\pi(\tau)\, G(\tau),
+$$
+the sum over all the possible outcomes of the experiment, weighted by the probability of observing $\tau$ under $\pi$. That probability is a product along the trajectory, one factor from the policy and one from the environment at every step,
+$$
+P_\pi(\tau) = \prod_{k=t}^{T-1} \pi(A_k \mid S_k)\, p(S_{k+1} \mid S_k, A_k),
+$$
+and it cannot be computed, because $p$ is not known. The data give instead $v_{\pi_b}(s) = \sum_\tau P_{\pi_b}(\tau)\, G(\tau)$. Multiplying and dividing by $P_{\pi_b}(\tau)$,
+$$
+v_\pi(s) = \sum_{\tau} P_{\pi_b}(\tau)\, \frac{P_\pi(\tau)}{P_{\pi_b}(\tau)}\, G(\tau) = \sum_{\tau} P_{\pi_b}(\tau)\, \rho(\tau)\, G(\tau), \qquad \rho(\tau) \triangleq \frac{P_\pi(\tau)}{P_{\pi_b}(\tau)},
+$$
+which is the expected value *under $\pi_b$* of the weighted return $\rho(\tau)\, G(\tau)$: $v_\pi(s)$ is estimated by averaging the sample returns of the episodes run with $\pi_b$, each multiplied by its **importance sampling ratio** $\rho(\tau)$. The ratio can be computed, because the factors of the environment cancel,
+$$
+\rho(\tau) = \frac{\prod_{k=t}^{T-1} \pi(A_k \mid S_k)\, p(S_{k+1} \mid S_k, A_k)}{\prod_{k=t}^{T-1} \pi_b(A_k \mid S_k)\, p(S_{k+1} \mid S_k, A_k)} = \prod_{k=t}^{T-1} \frac{\pi(A_k \mid S_k)}{\pi_b(A_k \mid S_k)},
+$$
+and depends on the two policies only. The behavior policy must satisfy the **coverage** property, $\pi(a \mid s) > 0 \Rightarrow \pi_b(a \mid s) > 0$, otherwise there are no data to evaluate the pairs that $\pi$ would choose. A natural choice: $\pi_b$ ε-greedy and $\pi$ greedy.
+
+**Conclusions on Monte Carlo.** Sample updates of $V$ or $q$, against the expected updates of dynamic programming: the update $V(s) \leftarrow V(s) + \alpha\,[G - V(s)]$ uses the one return observed in the episode, and $\alpha$ makes it the iterative form of an average, simple, exponential or moving. Monte Carlo methods do not need $p$, do not bootstrap, learn from interaction with the environment; dynamic programming needs $p$, uses expected updates and bootstraps. The cost: in Monte Carlo the end of every episode has to be waited for before a single update can be made.
+
+**Temporal difference.** Is it necessary to wait until the end of the episode to update $V(s)$, the current estimate of $v_\pi(s)$? Along a trajectory, at $t+1$ we have $R_{t+1}$ and $S_{t+1}$, and the definition $v_\pi(s) = \mathbb{E}_\pi\{R_{t+1} + \gamma G_{t+1} \mid S_t = s\}$ suggests replacing the full return by the sample $R_{t+1}$ plus the current estimate of what follows: $G \approx R_{t+1} + \gamma V(S_{t+1})$. This gives **TD(0) prediction**,
+$$
+V(S_t) \leftarrow V(S_t) + \alpha\, \big[ R_{t+1} + \gamma\, V(S_{t+1}) - V(S_t) \big], \qquad V(S_T) = 0,
+$$
+the target being the sample reward plus the bootstrapped value of the next state: a sample update, as in Monte Carlo, that bootstraps, as in dynamic programming, and updates one step after the fact. The same concept for $q_\pi$: along the trajectory the value of the state–action node $(S_t, A_t)$ is updated towards $R_{t+1} + \gamma Q(S_{t+1}, A_{t+1})$, the value of the next state–action node, which needs the next action $A_{t+1}$ to have been chosen:
+$$
+Q(S_t, A_t) \leftarrow Q(S_t, A_t) + \alpha\, \big[ R_{t+1} + \gamma\, Q(S_{t+1}, A_{t+1}) - Q(S_t, A_t) \big],
+$$
+the **Sarsa** estimation algorithm, from the quintuple $(S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1})$ it uses.
+
+**Sarsa as a control algorithm** is the GPI scheme with this evaluation step. For every episode: select the starting state; until $S_T$, take $A_t$ according to the ε-greedy policy, observe $S_{t+1}$ and $R_{t+1}$, take $A_{t+1}$ according to the ε-greedy policy, update $Q(S_t, A_t)$ with the rule above. The ε-greedy policy with respect to $Q$ is the one of the last lesson: with $A^* = \arg\max_a Q(S_t, a)$, probability $\varepsilon/|\mathcal{A}(S_t)|$ for each $a \ne A^*$ and $1 - \varepsilon\,(|\mathcal{A}(S_t)| - 1)/|\mathcal{A}(S_t)|$ for $A^*$; as $\varepsilon \to 0$ it tends to the greedy deterministic policy $\pi^*$. It is an on-policy method: the policy that acts is the one being evaluated and improved.
+
+- [Blackboard notes](files/notes/lesson-22-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), section 5.5 up to the definition of the importance sampling ratio (pp. 103–105), sections 6.1 and 6.4 (pp. 119–124 and 129–131).
