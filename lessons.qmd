@@ -518,3 +518,40 @@ the **Sarsa** estimation algorithm, from the quintuple $(S_t, A_t, R_{t+1}, S_{t
 
 - [Blackboard notes](files/notes/lesson-22-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), section 5.5 up to the definition of the importance sampling ratio (pp. 103–105), sections 6.1 and 6.4 (pp. 119–124 and 129–131).
+
+## Lesson 23 (12/11/2026): Q-learning and double Q-learning; planning and learning; towards deep RL: neural networks as value-function approximators {#lesson-23}
+
+[RL]{.part .part-rl}
+
+**Sarsa, once more.** Along the trajectory the action $A_{t+1}$ is selected with the ε-greedy policy, and the target $R_{t+1} + \gamma Q(S_{t+1}, A_{t+1})$ is a sample whose expected value, given $S_t = s$ and $A_t = a$, is $\sum_{s', r} p(s', r \mid s, a)\,[r + \gamma \sum_{a'} \pi(a' \mid s')\, q_\pi(s', a')]$: the right-hand side of the Bellman equation for $q_\pi$. Sarsa estimates the action values of the policy it follows.
+
+**Q-learning** changes the target. The action $A_{t+1}$ is still taken with the ε-greedy policy, or with any behavior policy $\pi_b$, but the value bootstrapped at $S_{t+1}$ is that of the greedy action $A^* = \arg\max_a Q(S_{t+1}, a)$:
+$$
+Q(S_t, A_t) \leftarrow Q(S_t, A_t) + \alpha\, \big[ R_{t+1} + \gamma\, \max_{a} Q(S_{t+1}, a) - Q(S_t, A_t) \big].
+$$
+The target does not depend on the policy used to explore, and its expected value is the right-hand side of the Bellman optimality equation: $Q$ converges to $q^*$ directly, whatever the behavior policy, as long as every pair keeps being visited. It is the off-policy method of the last lesson in its simplest form, with no importance sampling ratio, because the target looks one step ahead only.
+
+**Overestimation and double Q-learning.** The target $R_{t+1} + \gamma \max_a Q(S_{t+1}, a) = R_{t+1} + \gamma\, Q(S_{t+1}, \arg\max_a Q(S_{t+1}, a))$ uses the same estimate both to select the best action and to evaluate it, and the maximum of noisy estimates is biased upwards. Double Q-learning keeps two estimates $Q_1$ and $Q_2$ and, at every transition $S_t, A_t \to R_{t+1}, S_{t+1}$, updates one of them at random, selecting the action with one and evaluating it with the other:
+$$
+Q_1(S_t, A_t) \leftarrow Q_1(S_t, A_t) + \alpha\, \big[ R_{t+1} + \gamma\, Q_1\big(S_{t+1}, \arg\max_a Q_2(S_{t+1}, a)\big) - Q_1(S_t, A_t) \big],
+$$
+and symmetrically for $Q_2$; the ε-greedy policy acts on $(Q_1 + Q_2)/2$. The separation between the estimate that chooses the action and the one that judges it is the seed of the **actor–critic** methods.
+
+**Final remarks on tabular methods.** Dynamic programming has the model $p$ and does **planning**: it uses the model to improve the policy, with expected updates over the distribution of $(s', r)$. **Learning** improves the policy with data from the interaction with the environment, real or simulated: real data are used to compute empirical, iterative averages of the returns, the value functions, and real data can also be used to **identify** a model of the environment, which is then used for planning, the subject of the next part of the course. The two combine: along a real trajectory, the observed transitions improve the model, planning steps update the values of the visited states with the current model, and Monte Carlo updates run on the simulated one. The observed transitions $(S_t, A_t, R_{t+1}, S_{t+1})$ are stored in a **replay buffer** $\mathcal{D}$ and reused to compute targets, which is how the deep methods below are trained.
+
+**Deep RL.** Tabular methods need a finite MDP small enough for $v$ and $q$ to be tables; with $|\mathcal{S}| = 10^{100}$, with $|\mathcal{S}|$, $|\mathcal{R}|$ or $|\mathcal{A}|$ too large, or with continuous states and actions, as in $x = (10.1, 12.1)$, no table can be built, and **parametrized approximations** of the value functions are used instead: $v_\pi(s, \mathbf{w}_v)$ and $q_\pi(s, a, \mathbf{w}_q)$, with $\mathbf{w}$ the parameters of the functional approximation. The approximator is a **feedforward neural network**: an input layer, hidden layers, an output layer; every neuron computes
+$$
+y = h\Big( \sum_{i=1}^{N} w_i\, u_i + b \Big),
+$$
+a linear combination of the outputs of the previous layer with the connection weights $w_i$, plus a bias $b$, passed through an **activation function** $h$, typically nonlinear: a step, a rectifier, a sigmoid. The number and width of the hidden layers, the weights $\mathbf{W}$ and the activation functions define a particular map from inputs to outputs, and neural networks are **universal approximators**: with a proper choice of structure and parameters they approximate any function. The **target function** is given through a training dataset of inputs $u^t_i$ and target outputs $y^t_i$; **training** is the selection of $\mathbf{W}$ by minimizing a **loss function**, the mean squared error between targets and predictions,
+$$
+\mathcal{L}(\mathbf{W}) = \frac{1}{M} \sum_{i=1}^{M} \big( y^t_i - \hat{y}_i(\mathbf{W}) \big)^2, \qquad \mathbf{W}^* = \arg\min_{\mathbf{W}} \mathcal{L}(\mathbf{W}),
+$$
+a nonlinear problem, because the $h$ are nonlinear, "solved" iteratively: from the current weights $\mathbf{W}^0$, the **gradient-based update rule** moves against the gradient of the loss,
+$$
+\mathbf{W}' = \mathbf{W}^0 - \alpha\, \nabla_{\mathbf{W}} \mathcal{L}(\mathbf{W}^0), \qquad \nabla_{\mathbf{W}} \mathcal{L} = \Big( \frac{\partial \mathcal{L}}{\partial w_1}, \dots, \frac{\partial \mathcal{L}}{\partial w_{|\mathbf{W}|}} \Big)^\top,
+$$
+the direction of steepest descent on the surface $\mathcal{L}(\mathbf{W})$, with $\alpha$ the step. How this is applied to the targets of Q-learning, with the replay buffer, is next lesson.
+
+- [Blackboard notes](files/notes/lesson-23-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 6.5 and 6.7 (pp. 131–136), section 8.1 (pp. 159–161), sections 9.1 to 9.3 (pp. 197–204) and 9.7 (pp. 223–228).

@@ -37,7 +37,7 @@ toc: false
 | 20 | Thu 05/11 | [RL]{.part .part-rl} | Dynamic programming: iterative policy evaluation, policy improvement, policy iteration, value iteration; introduction to Monte Carlo methods |
 | 21 | Mon 09/11 | [RL]{.part .part-rl} | Generalized policy iteration; Monte Carlo prediction and control: exploring starts, ε-soft policies, on-policy and off-policy learning |
 | 22 | Wed 11/11 | [RL]{.part .part-rl} | Off-policy Monte Carlo and importance sampling; temporal-difference prediction, TD(0) and Sarsa; conclusions on tabular methods |
-| 23 | Thu 12/11 | [ID]{.part .part-id} | Linear and weighted least squares; regularization |
+| 23 | Thu 12/11 | [RL]{.part .part-rl} | Q-learning and double Q-learning; planning and learning; towards deep RL: neural networks as value-function approximators, loss and gradient descent |
 | 24 | Mon 16/11 | [ID]{.part .part-id} | Maximum likelihood, Bayesian estimation, Cramér–Rao bound, nonlinear least squares |
 | 25 | Wed 18/11 | [ID]{.part .part-id} | Recursive least squares; dynamic models (ARX, output error), predictors |
 | 26 | Thu 19/11 | [ID]{.part .part-id} | Prediction error methods; experiment design; model validation |
