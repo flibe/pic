@@ -555,3 +555,43 @@ the direction of steepest descent on the surface $\mathcal{L}(\mathbf{W})$, with
 
 - [Blackboard notes](files/notes/lesson-23-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Sutton_Barto]](references.qmd#ref-Sutton_Barto), sections 6.5 and 6.7 (pp. 131–136), section 8.1 (pp. 159–161), sections 9.1 to 9.3 (pp. 197–204) and 9.7 (pp. 223–228).
+
+## Lesson 24 (16/11/2026): Deep Q-learning and DDPG: critic, target networks, actor; introduction to process identification: the resistance example {#lesson-24}
+
+[RL]{.part .part-rl} [ID]{.part .part-id}
+
+**Recap of neural-network training.** A network is a map $\hat{y} = \mathrm{NN}(u, \mathbf{W})$; a training set of inputs $u_i$ and target outputs $y^{train}_i$ defines the loss $\mathcal{L}(\mathbf{W}) = \frac{1}{N}\sum_{i=1}^{N} (y^{train}_i - \hat{y}_i)^2$, and training is $\mathbf{W}^* = \arg\min_{\mathbf{W}} \mathcal{L}(\mathbf{W})$, solved iteratively: the gradient $\nabla_{\mathbf{W}} \mathcal{L}$, the vector of the partial derivatives, is the direction of maximal increase of the loss at the current weights, and the update $\mathbf{W} \leftarrow \mathbf{W} - \alpha\, \nabla_{\mathbf{W}} \mathcal{L}$ moves against it.
+
+**Deep Q-learning.** DDPG, deep deterministic policy gradient, extends tabular Q-learning to continuous states and actions. The starting point is the Q-learning update from the transition $(S_t, A_t, R_{t+1}, S_{t+1})$, with the target $R_{t+1} + \gamma \max_a Q(S_{t+1}, a)$, whose expected value is the right-hand side of the Bellman optimality equation. With $s$ and $a$ continuous the table is replaced by a network $\hat{q}(s, a, \mathbf{w})$, the **critic**, with the vectors $s$ and $a$ as inputs and one number as output. Training uses samples $(s, a, r, s', t)$, with $t \in \{0, 1\}$ the **termination flag**, $t = 1$ when $s'$ is terminal; the target of the sample is
+$$
+y = r + \gamma\, (1 - t)\, \max_{a'} \hat{q}(s', a', \mathbf{w}),
+$$
+the loss of one sample is $\mathcal{L} = \tfrac{1}{2}\,(y - \hat{q}(s, a, \mathbf{w}))^2$, target against predicted value, and the weights follow the gradient rule $\mathbf{w} \leftarrow \mathbf{w} - \alpha\, \nabla_{\mathbf{w}} \mathcal{L}$. Differentiating, $\nabla_{\mathbf{w}} \mathcal{L} = (y - \hat{q})\,[\partial y / \partial \mathbf{w} - \partial \hat{q} / \partial \mathbf{w}]$, and the first term, the dependence of the target on the weights, is dropped: this is the **semi-gradient**, and the update becomes
+$$
+\mathbf{w} \leftarrow \mathbf{w} + \alpha\, \big[ y - \hat{q}(s, a, \mathbf{w}) \big]\, \nabla_{\mathbf{w}} \hat{q}(s, a, \mathbf{w}),
+$$
+the error term times the derivative of the network with respect to its weights, computed by **backpropagation**. It is the tabular update with $\nabla_{\mathbf{w}} \hat{q}$ in place of the indicator of the entry.
+
+**Two problems with the target**, and their remedies. First, the target is not fixed: it depends on $\mathbf{w}$, the quantity being trained, so the network chases itself. The remedy is a second network with the same structure, the **target network** $\hat{q}(s, a, \mathbf{w}^-)$, used only to compute the targets, $y_i = r_i + \gamma (1 - t_i) \max_{a'} \hat{q}(s'_i, a', \mathbf{w}^-)$: $\mathbf{w}^-$ stays fixed while $\mathbf{w}$ trains, and is refreshed periodically, $\mathbf{w}^- \leftarrow \mathbf{w}$, or smoothly with a **Polyak** average. Second, computing the target requires solving an optimization problem, $\max_{a'}$ over a continuous action, and the same maximization is needed to act ε-greedily, $A^* = \arg\max_a \hat{q}(s, a, \mathbf{w})$. The remedy is a third network, the **actor** $\pi(s, \theta)$, which estimates the greedy action from any state: ideally $\pi(s, \theta) = \arg\max_a \hat{q}(s, a, \mathbf{w})$, a map from the state vector to the action vector, for instance from five continuous states to three continuous controls. The actor is trained to make $\hat{q}(s, \pi(s, \theta), \mathbf{w})$ as large as possible: its objective is the value that the critic assigns to its own output, climbed by gradient ascent, $\theta \leftarrow \theta + \alpha\, \nabla_\theta\, \hat{q}(s, \pi(s, \theta), \mathbf{w})$, with the weights of the critic held fixed and the gradient flowing through the critic into the actor by the chain rule. A **target actor** $\pi(s, \theta^-)$ supplies the greedy action inside the target.
+
+**The DDPG scheme**, all together. Transitions are stored in the replay buffer; at every step a batch of $B$ of them, $\{(s_i, a_i, r_i, s'_i, t_i)\}$, is drawn, and the targets are computed with the two target networks,
+$$
+y_i = r_i + \gamma\, (1 - t_i)\, \hat{q}\big(s'_i, \pi(s'_i, \theta^-), \mathbf{w}^-\big);
+$$
+the critic is updated by descent on $\mathcal{L}(\mathbf{w}) = \frac{1}{B}\sum_{i=1}^{B} (y_i - \hat{q}(s_i, a_i, \mathbf{w}))^2$, the actor by ascent on $\mathcal{L}^\theta = \frac{1}{B}\sum_{i=1}^{B} \hat{q}(s_i, \pi(s_i, \theta), \mathbf{w})$ with $\mathbf{w}$ fixed; periodically $\mathbf{w}^- \leftarrow \mathbf{w}$ and $\theta^- \leftarrow \theta$. Four networks, two trained and two copies, and the loop of generalized policy iteration underneath: the critic evaluates, the actor improves.
+
+**Process identification, introduction.** The third part of the course processes experimental data to: **identify models** of the systems of interest, from experiments to data to a model, in state-space form $x_{k+1} = f(x_k, u_k)$, $y_k = h(x_k, u_k)$ or as a transfer function, which is what the MPC needs; **estimate parameters**, the true value of one or more parameters of a system from experiments, the resistance $R$ in $v = R\, i$; **predict future values of signals**, for instance a disturbance from its past values, the forecasts of the first part of the course; and **estimate the state**, when $x$ is not entirely measurable, from the inputs and the outputs, the Kalman filter. The closed loop shows where each enters: the MPC uses the model, identified from data, and the forecasts of the disturbance $w_k$; the sensors return $y^m_k = y_k + n_k$, output plus measurement noise; the Kalman filter processes $u$ and $y^m$ into the estimate $\hat{x}_k$ that the MPC starts from.
+
+**The resistance example.** A resistor of unknown $R$, the model $v = R\, i$, and $N$ experiments giving the pairs $(i_k, v_k)$, each affected by noise. Three ways to turn them into one number:
+$$
+\hat{R}^N_{SA} = \frac{1}{N} \sum_{k=1}^{N} \frac{v_k}{i_k}, \qquad
+\hat{R}^N_{EIV} = \frac{\frac{1}{N} \sum_{k=1}^{N} v_k}{\frac{1}{N} \sum_{k=1}^{N} i_k}, \qquad
+\hat{R}^N_{LS} = \frac{\frac{1}{N} \sum_{k=1}^{N} v_k\, i_k}{\frac{1}{N} \sum_{k=1}^{N} i_k^2},
+$$
+the **simple average** of the $N$ estimates $R_k = v_k / i_k$, the **error-in-variables** estimate, ratio of the average voltage to the average current, and the **least-squares** estimate. Plotted against $N$, the three settle, as $N$ grows, on three different values, and none is guaranteed to be $R^{true}$: which one is right, if any, is a question about the statistical properties of estimators, next lesson. Each is the solution of a least-squares problem: $\hat{R}_{SA}$ minimizes $J(R) = \sum_k (R - R_k)^2$, the sum of the squared distances from the $N$ estimates, and $dJ/dR = \sum_k 2(R - R_k) = 0$ gives $N R = \sum_k R_k$; $\hat{R}_{LS}$ minimizes the sum of the squared **residuals** $e_k(R) = v_k - R\, i_k$, the vertical distances of the points $(i_k, v_k)$ from the line $v = R\, i$,
+$$
+\hat{R}^N_{LS} = \arg\min_R \sum_{k=1}^{N} (R\, i_k - v_k)^2, \qquad \frac{dJ}{dR} = 0 \;\Rightarrow\; \hat{R}^N_{LS} = \frac{\sum_k v_k i_k}{\sum_k i_k^2}.
+$$
+
+- [Blackboard notes](files/notes/lesson-24-notes.pdf){target="_blank" rel="noopener"}
+- Study [[SpinningUp_DDPG]](references.qmd#ref-SpinningUp_DDPG) for DDPG: the page, up to and including the pseudocode. For identification, [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), chapter 1 (pp. 9–12), up to the end of the resistance example; chapter 2 comes with the next lesson.

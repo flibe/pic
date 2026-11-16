@@ -47,7 +47,7 @@ The few items that are not open access are still available to you: Sapienza subs
 - [**[Reiter_2025]**]{#ref-Reiter_2025} R. Reiter et al. "Synthesis of model predictive control and reinforcement learning: survey and classification." [arXiv:2502.02133](https://arxiv.org/abs/2502.02133).
 - [**[Gros_2020]**]{#ref-Gros_2020} S. Gros, M. Zanon. "Data-driven economic NMPC using reinforcement learning." *IEEE Transactions on Automatic Control* 65(2), 2020. Preprint on arXiv.
 - [**[Recht_2019]**]{#ref-Recht_2019} B. Recht. "A tour of reinforcement learning: the view from continuous control." *Annual Review of Control, Robotics, and Autonomous Systems*, 2019. [arXiv:1806.09460](https://arxiv.org/abs/1806.09460).
-- **DDPG:** [Spinning Up documentation](https://spinningup.openai.com/en/latest/algorithms/ddpg.html) and the original paper, [arXiv:1509.02971](https://arxiv.org/abs/1509.02971).
+- [**[SpinningUp_DDPG]**]{#ref-SpinningUp_DDPG} OpenAI, *Spinning Up in Deep RL*, [Deep Deterministic Policy Gradient](https://spinningup.openai.com/en/latest/algorithms/ddpg.html). The clearest short account of DDPG: the two networks, the target networks, the replay buffer and the pseudocode. Original paper: T. P. Lillicrap et al., "Continuous control with deep reinforcement learning", ICLR 2016, [arXiv:1509.02971](https://arxiv.org/abs/1509.02971).
 
 ## Process identification and state estimation [ID]{.part .part-id}
 
