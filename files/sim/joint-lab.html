@@ -80,6 +80,8 @@
   .slice { height: 190px; }
   .quad { height: 360px; }
   .mini { height: 190px; }
+  .surf { height: 470px; cursor: grab; touch-action: none; }
+  .surf:active { cursor: grabbing; }
   .chart-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
                  font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
                  color: var(--muted); margin-bottom: 4px; }
@@ -215,6 +217,29 @@
 
   <section class="panel">
     <div class="panel-head">
+      <h2>The surface p<sub>X,Y</sub>(x, y)</h2>
+      <span class="status" id="surf-status">&nbsp;</span>
+    </div>
+    <canvas id="surf" class="surf" aria-label="The joint density as a surface over the x-y plane, with the slice at x0 as a vertical curtain and the marginals drawn on the back walls"></canvas>
+    <div class="legend">
+      <span><span class="swatch" id="sw-surf"></span>the surface, height = p<sub>X,Y</sub>(x, y)</span>
+      <span><span class="key sun"></span>the slice at x<sub>0</sub>: a vertical cut, its area is p<sub>X</sub>(x<sub>0</sub>)</span>
+      <span><span class="key mpc"></span>p<sub>X</sub> and p<sub>Y</sub> on the back walls</span>
+      <span><span class="key limit"></span>&mu;<sub>X</sub>, &mu;<sub>Y</sub> on the floor</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="sliders" style="flex:1; min-width:260px">
+        <div class="slider"><label for="az"><span>turn</span> <span class="num" id="az-val">−35°</span></label><input type="range" id="az" min="-180" max="180" step="5" value="-35"></div>
+        <div class="slider"><label for="el"><span>tilt</span> <span class="num" id="el-val">30°</span></label><input type="range" id="el" min="5" max="85" step="5" value="30"></div>
+      </div>
+      <label class="pick"><input type="checkbox" id="surf-cut" checked> cut away the near side at x<sub>0</sub></label>
+      <label class="pick"><input type="checkbox" id="surf-mesh"> mesh only</label>
+      <p class="hint">Drag the surface to turn it. The slice follows x<sub>0</sub>, and the sweep leaves its trace of areas on the back wall, where it draws p<sub>X</sub>.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
       <h2>Same marginals, three different joints</h2>
       <span class="status">the two curves on the sides are identical in the three panels</span>
     </div>
@@ -241,6 +266,7 @@
           dot above the plane. The dots trace the top curve, p<sub>X</sub>(x) = &int; p<sub>X,Y</sub>(x, y) dy: the
           marginal of X is the joint with Y integrated out, one value of x at a time. The same for p<sub>Y</sub>, slicing
           at a value of y. The area of a slice never exceeds 1/(&radic;2&pi; &sigma;<sub>X</sub>), the peak of the marginal.</li>
+        <li><b>The surface is the same object as the heatmap.</b> The 3D view below the two panels shows p<sub>X,Y</sub>(x, y) as a surface over the plane: the heatmap is its view from above. The slice at x<sub>0</sub> is a vertical cut of the surface, drawn as an amber curtain, and the marginal p<sub>X</sub>(x<sub>0</sub>) is the area of that curtain. The two marginals are drawn on the back walls, scaled so that their peak matches the peak of the surface; sweep the slice and the trace of the areas lands on the wall curve. Turn the surface until you look along the diagonal of the ellipse: with &rho; close to one the ridge becomes a thin wall, with &rho; = 0 a round hill, and in the crossed case two ridges at right angles.</li>
         <li><b>The marginals do not determine the joint.</b> Move &rho; from &minus;0.95 to 0.95: the heatmap turns from
           a cloud tilted one way to a cloud tilted the other, the two marginal curves on the sides do not move at all.
           The bottom strip makes the point with three joints side by side: the independent one, the product
@@ -528,7 +554,7 @@ function sampleCov(S) {
   }
 
   function render() {
-    drawJoint(); drawSlice(); drawQuad(); drawMinis();
+    drawJoint(); drawSlice(); drawQuad(); drawMinis(); drawSurf();
     $("status").textContent = (kind === "cross" ? "crossed Gaussians" : "Gaussian, ρ = " + fmt(P.rho, 2)) + " · σX = " + P.sx.toFixed(2) + " · σY = " + P.sy.toFixed(2);
     $("sw-heat").style.background = "linear-gradient(90deg, " + css("--panel") + ", " + css("--mpc") + ")";
   }
@@ -539,9 +565,111 @@ function sampleCov(S) {
     sweepI += 2; if (sweepI >= G.n || G.xs[sweepI] > vx1()) { sweeping = false; $("sweep").textContent = "Sweep the slice"; render(); return; }
     x0 = G.xs[sweepI]; sweepTrace.push([x0, sliceAt(G, x0).area]);
     $("x0").value = Math.round((x0 - P.mx) / P.sx * 10); $("x0-val").textContent = fmt(x0, 2);
-    drawJoint(); drawSlice();
+    drawJoint(); drawSlice(); drawSurf();
     setTimeout(frame, 30);
   }
+
+  /* ------------------------------------------------------- the 3D surface ---- */
+  var AZ = -35, EL = 30, meshOnly = false, cutAway = true, surfDrag = null;
+  function drawSurf() {
+    var cv = $("surf"), c = setup(cv), g = c.g, n = G.n, sub = 2, i, j, k;
+    var az = AZ * Math.PI / 180, el = EL * Math.PI / 180, ca = Math.cos(az), sa = Math.sin(az), ce = Math.cos(el), se = Math.sin(el);
+    var x0v = vx0(), x1v = vx1(), y0v = vy0(), y1v = vy1(), zs = 0.6 / G.fmax; /* height of the peak in plane units */
+    var cx = c.w / 2, cy = c.h * 0.6, S = Math.min(c.w / 3.2, c.h / 2.05);
+    function proj(x, y, z) { /* plane coordinates in [-1,1]^2, z in plane units */
+      var u = (x - P.mx) / (x1v - x0v) * 2, v = (y - P.my) / (y1v - y0v) * 2, w = z * zs;
+      var u1 = u * ca - v * sa, v1 = u * sa + v * ca;
+      return [cx + u1 * S, cy - (w * ce + v1 * se) * S, -v1 * ce + w * se]; /* [sx, sy, nearness] */
+    }
+    var lo = hex(css("--panel")), hi = hex(css("--mpc")), inkc = css("--ink"), quads = [], P00, P10, P11, P01, z, t, nx, ny, nz, ax, ay, azz, bx, by, bz, light, col;
+    /* light direction in rotated space, from the upper left front */
+    var L = [-0.4, -0.5, 0.77];
+    var slx = sliceAt(G, x0).x, nearPlus = proj(x1v, P.my, 0)[2] > proj(x0v, P.my, 0)[2], showCut = cutAway && slx >= x0v && slx <= x1v;
+    for (i = 0; i < n - sub; i += sub) for (j = 0; j < n - sub; j += sub) {
+      if (G.xs[i] < x0v || G.xs[i + sub] > x1v || G.ys[j] < y0v || G.ys[j + sub] > y1v) continue;
+      if (showCut && (nearPlus ? G.xs[i] + 1e-9 >= slx : G.xs[i + sub] - 1e-9 <= slx)) continue;
+      P00 = proj(G.xs[i], G.ys[j], G.f[i][j]); P10 = proj(G.xs[i + sub], G.ys[j], G.f[i + sub][j]);
+      P11 = proj(G.xs[i + sub], G.ys[j + sub], G.f[i + sub][j + sub]); P01 = proj(G.xs[i], G.ys[j + sub], G.f[i][j + sub]);
+      z = (G.f[i][j] + G.f[i + sub][j] + G.f[i + sub][j + sub] + G.f[i][j + sub]) / 4;
+      /* normal in (u, v, w) space for shading */
+      ax = (G.xs[i + sub] - G.xs[i]) / (x1v - x0v) * 2; ay = 0; azz = (G.f[i + sub][j] - G.f[i][j]) * zs;
+      bx = 0; by = (G.ys[j + sub] - G.ys[j]) / (y1v - y0v) * 2; bz = (G.f[i][j + sub] - G.f[i][j]) * zs;
+      nx = ay * bz - azz * by; ny = azz * bx - ax * bz; nz = ax * by - ay * bx;
+      var nn = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= nn; ny /= nn; nz /= nn;
+      /* rotate the normal by the azimuth so the light is fixed to the viewer */
+      var rnx = nx * ca - ny * sa, rny = nx * sa + ny * ca;
+      light = Math.max(0, rnx * L[0] + rny * L[1] + nz * L[2]);
+      t = Math.pow(z / G.fmax, 0.6);
+      col = mix(lo, hi, t);
+      quads.push({ d: (P00[2] + P10[2] + P11[2] + P01[2]) / 4, p: [P00, P10, P11, P01], col: col, sh: 0.72 + 0.28 * light, kind: 0 });
+    }
+    /* the slice as a vertical curtain, one quad per step in y */
+    var sl = sliceAt(G, x0), sunc = css("--sun");
+    if (sl.x >= x0v && sl.x <= x1v) for (j = 0; j < n - 1; j++) {
+      if (G.ys[j] < y0v || G.ys[j + 1] > y1v) continue;
+      P00 = proj(sl.x, G.ys[j], 0); P10 = proj(sl.x, G.ys[j + 1], 0); P11 = proj(sl.x, G.ys[j + 1], sl.vals[j + 1]); P01 = proj(sl.x, G.ys[j], sl.vals[j]);
+      quads.push({ d: (P00[2] + P10[2] + P11[2] + P01[2]) / 4 + 1e-4, p: [P00, P10, P11, P01], col: sunc, sh: 1, kind: 1 });
+    }
+    quads.sort(function (a, b) { return a.d - b.d; });
+    /* floor: the view window with the lines of the means */
+    var F0 = proj(x0v, y0v, 0), F1 = proj(x1v, y0v, 0), F2 = proj(x1v, y1v, 0), F3 = proj(x0v, y1v, 0);
+    g.fillStyle = css("--panel-2"); g.strokeStyle = css("--line"); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(F0[0], F0[1]); g.lineTo(F1[0], F1[1]); g.lineTo(F2[0], F2[1]); g.lineTo(F3[0], F3[1]); g.closePath(); g.fill(); g.stroke();
+    g.strokeStyle = css("--grid");
+    for (k = -3; k <= 3; k++) {
+      var a = proj(P.mx + k * P.sx, y0v, 0), b = proj(P.mx + k * P.sx, y1v, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      a = proj(x0v, P.my + k * P.sy, 0); b = proj(x1v, P.my + k * P.sy, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+    }
+    g.strokeStyle = css("--limit"); g.setLineDash([4, 4]); g.lineWidth = 1.2;
+    var m0 = proj(G.mx, y0v, 0), m1 = proj(G.mx, y1v, 0), m2 = proj(x0v, G.my, 0), m3 = proj(x1v, G.my, 0);
+    g.beginPath(); g.moveTo(m0[0], m0[1]); g.lineTo(m1[0], m1[1]); g.moveTo(m2[0], m2[1]); g.lineTo(m3[0], m3[1]); g.stroke(); g.setLineDash([]);
+    /* back walls: the far y edge carries pX(x), the far x edge carries pY(y); far = smaller nearness */
+    var yFar = proj(0, y1v, 0)[2] < proj(0, y0v, 0)[2] ? y1v : y0v, xFar = proj(x1v, 0, 0)[2] < proj(x0v, 0, 0)[2] ? x1v : x0v;
+    var pmax = Math.max.apply(null, G.px), qmax = Math.max.apply(null, G.py), wallScale = G.fmax / pmax; /* marginal peak drawn at the surface peak */
+    function wall(ptsFn, count, color) {
+      g.strokeStyle = color; g.lineWidth = 2; g.globalAlpha = 0.9; g.beginPath();
+      var started = false; for (k = 0; k < count; k++) { var q = ptsFn(k); if (!q) continue; if (!started) { g.moveTo(q[0], q[1]); started = true; } else g.lineTo(q[0], q[1]); }
+      g.stroke(); g.globalAlpha = 1;
+    }
+    var mpcc = css("--mpc");
+    wall(function (k) { return (G.xs[k] < x0v || G.xs[k] > x1v) ? null : proj(G.xs[k], yFar, G.px[k] * wallScale); }, n, mpcc);
+    wall(function (k) { return (G.ys[k] < y0v || G.ys[k] > y1v) ? null : proj(xFar, G.ys[k], G.py[k] * G.fmax / qmax); }, n, mpcc);
+    /* the trace of the sweep on the back wall */
+    if (sweepTrace.length) { g.fillStyle = sunc; for (k = 0; k < sweepTrace.length; k++) { var q = proj(sweepTrace[k][0], yFar, sweepTrace[k][1] * wallScale); g.beginPath(); g.arc(q[0], q[1], 2.4, 0, 2 * Math.PI); g.fill(); } }
+    /* the surface, back to front */
+    for (k = 0; k < quads.length; k++) {
+      var Q = quads[k];
+      g.beginPath(); g.moveTo(Q.p[0][0], Q.p[0][1]); g.lineTo(Q.p[1][0], Q.p[1][1]); g.lineTo(Q.p[2][0], Q.p[2][1]); g.lineTo(Q.p[3][0], Q.p[3][1]); g.closePath();
+      if (Q.kind === 1) { g.fillStyle = Q.col; g.globalAlpha = showCut ? 0.85 : 0.35; g.fill(); g.globalAlpha = 1; g.strokeStyle = Q.col; g.lineWidth = 0.6; g.stroke(); continue; }
+      if (meshOnly) { g.strokeStyle = Q.col === mix(lo, hi, 0) ? css("--grid") : Q.col; g.lineWidth = 0.8; g.stroke(); continue; }
+      var rgb = hex(Q.col.indexOf("rgb") === 0 ? "#" + Q.col.match(/\d+/g).map(function (v) { v = parseInt(v, 10).toString(16); return v.length < 2 ? "0" + v : v; }).join("") : Q.col);
+      g.fillStyle = "rgb(" + Math.round(rgb[0] * Q.sh) + "," + Math.round(rgb[1] * Q.sh) + "," + Math.round(rgb[2] * Q.sh) + ")";
+      g.fill(); g.strokeStyle = g.fillStyle; g.lineWidth = 0.5; g.stroke();
+    }
+    /* the ridge of the slice on top of everything */
+    g.strokeStyle = sunc; g.lineWidth = 2.5; g.beginPath(); var st = false;
+    if (sl.x >= x0v && sl.x <= x1v) for (j = 0; j < n; j++) { if (G.ys[j] < y0v || G.ys[j] > y1v) continue; var r = proj(sl.x, G.ys[j], sl.vals[j]); if (!st) { g.moveTo(r[0], r[1]); st = true; } else g.lineTo(r[0], r[1]); }
+    g.stroke();
+    /* axis labels on the near edges */
+    g.fillStyle = css("--muted"); g.font = '11px "IBM Plex Mono", ui-monospace, monospace'; g.textAlign = "center"; g.textBaseline = "top";
+    var yNear = yFar === y1v ? y0v : y1v, xNear = xFar === x1v ? x0v : x1v;
+    for (k = -3; k <= 3; k += 1) { var lx = proj(P.mx + k * P.sx, yNear, 0); g.fillText(fmt(P.mx + k * P.sx, 1), lx[0], lx[1] + 4); }
+    g.textAlign = "left"; for (k = -3; k <= 3; k += 1) { var ly = proj(xNear, P.my + k * P.sy, 0); g.fillText(fmt(P.my + k * P.sy, 1), ly[0] + 6, ly[1] - 4); }
+    g.fillStyle = inkc; g.font = '12px "Source Sans 3", sans-serif'; var ex = proj(x1v, yNear, 0), ey = proj(xNear, y1v, 0), ez = proj(G.mx, G.my, G.fmax);
+    g.fillText("x", ex[0] + 10, ex[1] + 4); g.fillText("y", ey[0] + 10, ey[1] - 16); g.textAlign = "center"; g.fillText("peak " + G.fmax.toFixed(3), ez[0], ez[1] - 18);
+    $("surf-status").textContent = "turn " + AZ + "° · tilt " + EL + "° · slice at x0 = " + fmt(sl.x, 2) + ", area " + sl.area.toFixed(4);
+    $("sw-surf").style.background = "linear-gradient(90deg, " + css("--panel") + ", " + css("--mpc") + ")";
+  }
+  $("az").addEventListener("input", function (e) { AZ = parseInt(e.target.value, 10); $("az-val").textContent = fmt(AZ, 0) + "°"; drawSurf(); });
+  $("el").addEventListener("input", function (e) { EL = parseInt(e.target.value, 10); $("el-val").textContent = EL + "°"; drawSurf(); });
+  $("surf-cut").addEventListener("change", function (e) { cutAway = e.target.checked; drawSurf(); });
+  $("surf-mesh").addEventListener("change", function (e) { meshOnly = e.target.checked; drawSurf(); });
+  $("surf").addEventListener("mousedown", function (ev) { surfDrag = { x: ev.clientX, y: ev.clientY, az: AZ, el: EL }; ev.preventDefault(); });
+  window.addEventListener("mousemove", function (ev) { if (!surfDrag) return; AZ = Math.round(surfDrag.az + (ev.clientX - surfDrag.x) * 0.5); EL = Math.max(5, Math.min(85, Math.round(surfDrag.el + (ev.clientY - surfDrag.y) * 0.3))); if (AZ > 180) AZ -= 360; if (AZ < -180) AZ += 360; $("az").value = AZ; $("az-val").textContent = fmt(AZ, 0) + "°"; $("el").value = EL; $("el-val").textContent = EL + "°"; drawSurf(); });
+  window.addEventListener("mouseup", function () { surfDrag = null; });
+  $("surf").addEventListener("touchstart", function (ev) { var t = ev.touches[0]; surfDrag = { x: t.clientX, y: t.clientY, az: AZ, el: EL }; }, { passive: true });
+  $("surf").addEventListener("touchmove", function (ev) { if (!surfDrag) return; var t = ev.touches[0]; AZ = Math.round(surfDrag.az + (t.clientX - surfDrag.x) * 0.5); EL = Math.max(5, Math.min(85, Math.round(surfDrag.el + (t.clientY - surfDrag.y) * 0.3))); $("az").value = AZ; $("el").value = EL; $("az-val").textContent = fmt(AZ, 0) + "°"; $("el-val").textContent = EL + "°"; drawSurf(); }, { passive: true });
+  $("surf").addEventListener("touchend", function () { surfDrag = null; });
 
   /* controls */
   function bind(id, fn) { var el = $(id), out = $(id + "-val"); function upd() { var s = fn(parseFloat(el.value)); if (out) out.textContent = s; } el.addEventListener("input", function () { upd(); sweeping = false; $("sweep").textContent = "Sweep the slice"; recompute(); render(); }); upd(); }
@@ -550,7 +678,7 @@ function sampleCov(S) {
   bind("sy", function (v) { P.sy = v / 10; return P.sy.toFixed(2); });
   bind("mx", function (v) { P.mx = v / 10; return fmt(P.mx, 1); });
   bind("my", function (v) { P.my = v / 10; return fmt(P.my, 1); });
-  $("x0").addEventListener("input", function () { x0 = P.mx + parseFloat($("x0").value) / 10 * P.sx; $("x0-val").textContent = fmt(x0, 2); sweeping = false; drawJoint(); drawSlice(); });
+  $("x0").addEventListener("input", function () { x0 = P.mx + parseFloat($("x0").value) / 10 * P.sx; $("x0-val").textContent = fmt(x0, 2); sweeping = false; drawJoint(); drawSlice(); drawSurf(); });
   $("model").addEventListener("change", function (e) { kind = e.target.value; $("rho").disabled = kind === "cross"; recompute(); render(); });
   $("nsamp").addEventListener("change", function (e) { N = parseInt(e.target.value, 10); redraws(); render(); });
   $("redraw").addEventListener("click", function () { seed += 1; redraws(); render(); });
@@ -560,7 +688,7 @@ function sampleCov(S) {
     var cv = $("joint"), rect = cv.getBoundingClientRect(), c = { w: cv.clientWidth, h: cv.clientHeight }, ge = geom(c);
     var px = ev.clientX - rect.left; if (px < ge.x0 || px > ge.x0 + ge.s) return;
     x0 = fromPx(ge, px); $("x0").value = Math.round((x0 - P.mx) / P.sx * 10); $("x0-val").textContent = fmt(x0, 2);
-    sweeping = false; $("sweep").textContent = "Sweep the slice"; drawJoint(); drawSlice();
+    sweeping = false; $("sweep").textContent = "Sweep the slice"; drawJoint(); drawSlice(); drawSurf();
   }
   var dragging = false;
   $("joint").addEventListener("mousedown", function (ev) { dragging = true; pick(ev); });
