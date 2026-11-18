@@ -39,7 +39,7 @@ toc: false
 | 22 | Wed 11/11 | [RL]{.part .part-rl} | Off-policy Monte Carlo and importance sampling; temporal-difference prediction, TD(0) and Sarsa; conclusions on tabular methods |
 | 23 | Thu 12/11 | [RL]{.part .part-rl} | Q-learning and double Q-learning; planning and learning; towards deep RL: neural networks as value-function approximators, loss and gradient descent |
 | 24 | Mon 16/11 | [RL]{.part .part-rl} [ID]{.part .part-id} | Deep Q-learning and DDPG: critic, target networks, actor; introduction to process identification: the resistance example |
-| 25 | Wed 18/11 | [ID]{.part .part-id} | Recursive least squares; dynamic models (ARX, output error), predictors |
+| 25 | Wed 18/11 | [ID]{.part .part-id} | Recap of probability: events, Bayes, densities, joint and marginal densities, mean, variance, covariance and covariance matrix |
 | 26 | Thu 19/11 | [ID]{.part .part-id} | Prediction error methods; experiment design; model validation |
 | 27 | Mon 23/11 | [ID]{.part .part-id} | Lab: full identification workflow on real data |
 | 28 | Wed 25/11 | [ID]{.part .part-id} | Kalman filter, EKF, moving horizon estimation |

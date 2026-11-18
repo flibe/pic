@@ -595,3 +595,52 @@ $$
 
 - [Blackboard notes](files/notes/lesson-24-notes.pdf){target="_blank" rel="noopener"}
 - Study [[SpinningUp_DDPG]](references.qmd#ref-SpinningUp_DDPG) for DDPG: the page, up to and including the pseudocode. For identification, [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), chapter 1 (pp. 9–12), up to the end of the resistance example; chapter 2 comes with the next lesson.
+
+## Lesson 25 (18/11/2026): Recap of probability: events, conditional probability and Bayes, random variables and densities, joint and marginal densities, mean, variance, covariance {#lesson-25}
+
+[ID]{.part .part-id}
+
+**The error-in-variables estimator**, first, as an optimization problem: with the model $v = R\,i$ and the $N$ pairs $(i_k, v_k)$, average the currents and the voltages separately and divide; equivalently, look for the point $(\bar{i}, \bar{v})$ on the line $\bar{v} = \bar{R}\,\bar{i}$ closest to all the measurements in both coordinates,
+$$
+\hat{R}^N_{EIV} = \frac{\frac{1}{N}\sum_{k} v_k}{\frac{1}{N}\sum_{k} i_k}
+\quad \text{from} \quad
+\min_{i, v, R} \; \sum_{k=1}^{N} (i - i_k)^2 + \sum_{k=1}^{N} (v - v_k)^2 \quad \text{s.t.} \quad v = R\, i,
+$$
+the name coming from the fact that both the current and the voltage are treated as measured with error. To say which of the three estimators of the last lesson is right we need probability, hence the recap.
+
+**Events and probability.** A random variable is a map $X: \Omega \to \mathbb{R}$ from the space of the outcomes of an experiment; an **event** is a condition on random variables, $A = \{X \ge 2\}$, a subset of $\Omega$; the **probability** is a measure, $P(\Omega) = 1$ and $P(A) \in [0,1]$. Two events are **mutually exclusive** when they cannot happen together, and then $P(A \cup B) = P(A) + P(B)$; they are **independent** when $P(A \cap B) \equiv P(A, B) = P(A)\,P(B)$. When they are not independent, the **conditional probability** of $A$ given that $B$ occurred is
+$$
+P(A \mid B) = \frac{P(A, B)}{P(B)}, \qquad P(A, B) = P(A \mid B)\,P(B) = P(B \mid A)\,P(A),
+$$
+joint over marginal, and $P(A \mid B) = P(A)$ when they are independent. **Bayes' theorem** turns the a-priori probability $P(A)$ into the a-posteriori $P(A \mid B)$:
+$$
+P(A \mid B) = \frac{P(B \mid A)\,P(A)}{P(B)}.
+$$
+Example: $R$ = "it is raining", $O$ = "the person has an umbrella", $P(R) = 0.1$, $P(R^c) = 0.9$; seeing the umbrella, $P(R \mid O) = P(O \mid R)\,P(R)/P(O)$ with the denominator from the two mutually exclusive ways of having an umbrella, $P(O) = P(O, R) + P(O, R^c) = P(O \mid R)\,P(R) + P(O \mid R^c)\,P(R^c)$; the observation raises the probability of rain, $P(R \mid O) \ge P(R)$.
+
+**Random variables and densities.** A scalar random variable $X \in \mathbb{R}$ is described by its **probability density function** $p_X: \mathbb{R} \to \mathbb{R}$, $p_X(x) \ge 0$, with $\Pr\{X \in [a,b]\} = \int_a^b p_X(x)\,dx$, the area under the curve, and $\int_{-\infty}^{\infty} p_X(x)\,dx = 1$. Two random variables $X, Y$ are described by the **joint density** $p_{X,Y}(x,y): \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, a surface over the plane, with $\Pr\{X \in [a,b] \wedge Y \in [c,d]\} = \int_a^b \int_c^d p_{X,Y}(x,y)\,dy\,dx$, the volume under the surface over the rectangle. They are **independent** iff $p_{X,Y}(x,y) = p_X(x)\,p_Y(y)$, and otherwise the **conditional density**, the a-posteriori density of $X$ once $Y = y$ is known, is $p_{X \mid Y}(x \mid y) = p_{X,Y}(x,y)/p_Y(y)$, joint over marginal again. From the joint the **marginals** follow by integrating out the other variable,
+$$
+p_X(x) = \int_{-\infty}^{\infty} p_{X,Y}(x,y)\,dy, \qquad p_Y(y) = \int_{-\infty}^{\infty} p_{X,Y}(x,y)\,dx,
+$$
+the area of the slice of the surface at $x$, for every $x$; the joint determines the marginals, not the other way round.
+
+**Mean and variance.** The **expected value** of $X$ is $\mathbb{E}\{X\} \equiv \mu_X = \int x\,p_X(x)\,dx$, the centre of mass of the density, and for a function of $X$, $\mathbb{E}\{f(X)\} = \int f(x)\,p_X(x)\,dx$; for $f(x) = a + b\,x$, $\mathbb{E}\{f(X)\} = a + b\,\mu_X$. The **variance** is $\sigma_X^2 \equiv \mathrm{Var}(X) = \mathbb{E}\{(X - \mu_X)^2\} = \int (x - \mu_X)^2 p_X(x)\,dx$, a number that measures how spread the density is around the mean, with $\sigma_X$ the **standard deviation**; expanding the square,
+$$
+\sigma_X^2 = \mathbb{E}\{X^2\} - 2\,\mu_X\,\mathbb{E}\{X\} + \mu_X^2 = \mathbb{E}\{X^2\} - \mu_X^2, \qquad \mathbb{E}\{X^2\} = \sigma_X^2 + \mu_X^2.
+$$
+Two densities: the **uniform** on $[a,b]$, $p_X(x) = 1/(b-a)$ inside and $0$ outside, with mean $\mu_X = \frac{1}{b-a}\int_a^b x\,dx = \frac{1}{b-a}\,\frac{b^2 - a^2}{2} = \frac{a+b}{2}$ and the variance left as an exercise; the **normal** or Gaussian, $X \sim \mathcal{N}(\mu, \sigma)$,
+$$
+p_X(x) = \frac{1}{\sqrt{2\pi}\,\sigma}\, e^{-\frac{(x-\mu)^2}{2\sigma^2}}, \qquad \mu_X = \mu, \quad \sigma_X^2 = \sigma^2,
+$$
+the bell centred at $\mu$ with width $\sigma$.
+
+**Covariance.** For two random variables, $\mathrm{cov}(X,Y) = \sigma(X,Y) = \mathbb{E}\{(X - \mu_X)(Y - \mu_Y)\} = \iint (x - \mu_X)(y - \mu_Y)\,p_{X,Y}(x,y)\,dx\,dy$: the product is positive when $x$ and $y$ are on the same side of their means, negative when on opposite sides, so the covariance is positive when the probability mass of the joint concentrates in the quadrants above–above and below–below, as in the tilted ellipse of the lesson, and negative in the other two. It has the units of $X$ times the units of $Y$; the **correlation coefficient** $\rho(X,Y) = \sigma(X,Y)/(\sigma_X \sigma_Y) \in [-1, 1]$ is unitless. If $X$ and $Y$ are independent they are **uncorrelated**, $\mathrm{cov}(X,Y) = 0$ (prove it from the definition, using $p_{X,Y} = p_X\,p_Y$); the converse is false: $\mathrm{cov}(X,Y) = 0$ does not imply independence.
+
+**Vectors of random variables.** $[X\;Y]^\top \in \mathbb{R}^2$ is characterized by the joint density; its mean is the vector of the means, $\mathbb{E}\{[X\;Y]^\top\} = [\mu_X\;\mu_Y]^\top$, and the analogue of the variance for a vector $X = [X_1 \dots X_m]^\top$ is the **covariance matrix**
+$$
+\mathrm{cov}(X) = \Sigma_X = \mathbb{E}\{(X - \mu_X)(X - \mu_X)^\top\} \in \mathbb{R}^{m \times m}, \qquad (\Sigma_X)_{ij} = \mathbb{E}\{(X_i - \mu_{X_i})(X_j - \mu_{X_j})\} = \mathrm{cov}(X_i, X_j),
+$$
+a matrix of numbers, symmetric and positive semidefinite, $a^\top \Sigma_X a \ge 0$ for every $a$, with the variances $\sigma^2(X_i)$ on the diagonal and the covariances off it.
+
+- [Blackboard notes](files/notes/lesson-25-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), sections 2.1 to 2.3 (pp. 13–16): events, Bayes, scalar and multidimensional random variables, mean, variance, covariance matrix. Sections 2.4 and 2.5, on the estimators, come with the next lesson.
