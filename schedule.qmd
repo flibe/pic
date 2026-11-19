@@ -5,11 +5,11 @@ toc: false
 ---
 
 ```{=html}
-<div class="course-strip" role="img" aria-label="Course parts: MPC lessons 1-15, RL lessons 16-21, identification lessons 22-29, wrap-up lesson 30">
+<div class="course-strip" role="img" aria-label="Course parts: MPC lessons 1-15, RL lessons 16-23, identification lessons 24-29, wrap-up lesson 30">
   <div class="s-mpc">MPC</div><div class="s-rl">RL</div><div class="s-id">Identification</div><div class="s-end"></div>
 </div>
 <div class="strip-dates">
-  <span style="left:0">23/09</span><span style="left:50%">28/10</span><span style="left:70%">11/11</span><span style="left:96.7%">30/11</span>
+  <span style="left:0">23/09</span><span style="left:51.7%">28/10</span><span style="left:78.3%">16/11</span><span style="left:96.7%">30/11</span>
 </div>
 ```
 
@@ -41,9 +41,9 @@ toc: false
 | 24 | Mon 16/11 | [RL]{.part .part-rl} [ID]{.part .part-id} | Deep Q-learning and DDPG: critic, target networks, actor; introduction to process identification: the resistance example |
 | 25 | Wed 18/11 | [ID]{.part .part-id} | Recap of probability: events, Bayes, densities, joint and marginal densities, mean, variance, covariance and covariance matrix |
 | 26 | Thu 19/11 | [ID]{.part .part-id} | Estimators and their properties: unbiasedness, consistency, comparing covariances; the linear least-squares estimator |
-| 27 | Mon 23/11 | [ID]{.part .part-id} | Lab: full identification workflow on real data |
-| 28 | Wed 25/11 | [ID]{.part .part-id} | Kalman filter, EKF, moving horizon estimation |
-| 29 | Thu 26/11 | [ID]{.part .part-id} | Data-driven predictive control (Willems' lemma, DeePC); time series and advanced methods |
+| 27 | Mon 23/11 | [ID]{.part .part-id} | Weighted least squares; statistical analysis of the least-squares estimator: bias, covariance, the three resistance estimators compared |
+| 28 | Wed 25/11 | [ID]{.part .part-id} | Maximum likelihood and Bayesian estimation, the Cramér–Rao bound; recursive least squares; dynamic models (ARX) and the prediction error |
+| 29 | Thu 26/11 | [ID]{.part .part-id} | State estimation: the Kalman filter as a recursive least-squares estimator; model validation; identify-then-control with the MPC of the first part |
 | 30 | Mon 30/11 | [Wrap-up]{.part .part-gen} | Course recap, exam information, identify-then-control demo |
 
 : {.schedule tbl-colwidths="[5,15,15,65]"}
