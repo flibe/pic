@@ -649,3 +649,69 @@ a matrix of numbers, symmetric and positive semidefinite, $a^\top \Sigma_X a \ge
 
   [*Where this runs for real.* The covariance matrix is the object that the second half of this part of the course manipulates: the Kalman filter of [Kalman, 1960](https://doi.org/10.1115/1.3662552){target="_blank" rel="noopener"} carries no densities at all, only means and covariance matrices of the state estimate, and its gain is a ratio of covariances; the same matrices describe the noise of every sensor that an MPC reads. Outside control, the observation that the marginals do not determine the joint is the whole point of [Markowitz, 1952](https://doi.org/10.2307/2975974){target="_blank" rel="noopener"}: the risk of a portfolio is not the sum of the risks of its assets but a quadratic form in their covariance matrix, and diversification works exactly to the extent that the covariances are small or negative.]{.lab-real}
 - Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), sections 2.1 to 2.3 (pp. 13–16): events, Bayes, scalar and multidimensional random variables, mean, variance, covariance matrix. Sections 2.4 and 2.5, on the estimators, come with the next lesson.
+
+## Lesson 26 (19/11/2026): Estimators and their properties: unbiasedness, consistency, comparing covariances; the linear least-squares estimator {#lesson-26}
+
+[ID]{.part .part-id}
+
+**Estimators.** The unknown is a vector of deterministic parameters $\theta^{true} \in \mathbb{R}^d$; the data are $N$ scalar measurements collected in the random vector $y = (y_1, \dots, y_N)^\top$, each $y_i$ a scalar random variable. An **estimator** $\hat{\theta}(y)$ is a function of $y$, hence a random vector of dimension $d$ itself: it has a density, a mean $\mathbb{E}\{\hat{\theta}(y)\}$ and a covariance $\Sigma_{\hat{\theta}}$, and these two are what we analyse to say how good an estimator is.
+
+**Property 1, unbiasedness.** $\hat{\theta}(y)$ is **unbiased**, or centred, iff
+$$
+\mathbb{E}\{\hat{\theta}(y)\} = \theta^{true}.
+$$
+Example: estimating the expected value $\theta \equiv \mu_y$ of a random variable from $N$ measurements with the **sample mean** $M(y) = \frac{1}{N}\sum_{i=1}^{N} y_i$: $\mathbb{E}\{M(y)\} = \frac{1}{N}\sum_i \mathbb{E}\{y_i\} = \frac{1}{N}\sum_i \theta = \theta$, for every $N$, so the sample mean is unbiased with $N = 1$ as with $N = 100$. What changes with $N$ is the spread: $\hat{\theta}^{N=1}$ and $\hat{\theta}^{N=100}$ have the same mean $\mu_y$ but variances $\sigma_y^2$ and, for independent measurements, $\sigma_y^2/N$. Exercise: are $M(y)$ and $y_i$ correlated, and what is $\mathrm{cov}(M(y), y_i)$?
+
+**Asymptotic unbiasedness.** $\hat{\theta}(y_1, \dots, y_N)$ is asymptotically unbiased iff
+$$
+\lim_{N \to \infty} \mathbb{E}\{\hat{\theta}(y_1, \dots, y_N)\} = \theta^{true}.
+$$
+Example: estimating the variance $\sigma_y^2 = \mathbb{E}\{(y - \mu_y)^2\}$ from $N$ independent measurements with the natural estimator $\hat{\theta}(y) = \frac{1}{N}\sum_{i=1}^{N} (y_i - M(y))^2$, the sample mean of the squared deviations from the sample mean. Computing the expectation (exercise) gives
+$$
+\mathbb{E}\{\hat{\theta}(y)\} = \frac{N-1}{N}\,\sigma_y^2,
+$$
+biased, since the deviations are measured from $M(y)$ rather than from $\mu_y$, but asymptotically unbiased, since $(N-1)/N \to 1$. Multiplying by $N/(N-1)$ removes the bias: $\hat{\theta}'(y) = \frac{1}{N-1}\sum_{i=1}^{N} (y_i - M(y))^2$ is unbiased for every $N$.
+
+**Property 2, consistency.** $\hat{\theta}(y)$ is **consistent** iff, for every $\varepsilon > 0$,
+$$
+\lim_{N \to \infty} \Pr\big\{ \| \hat{\theta}(y) - \theta^{true} \| \le \varepsilon \big\} = 1:
+$$
+the density of the estimator, broad at $N = 1$, concentrates around $\theta^{true}$ as $N$ grows, so that all its mass ends inside any band $\pm\varepsilon$ around the true value. Mean and covariance together: an unbiased estimator whose covariance goes to zero is consistent.
+
+**Comparing estimators by their covariances.** Given two unbiased estimators $\hat{\theta}^1(y)$ and $\hat{\theta}^2(y)$ of the same $\theta$, compute $\Sigma_{\hat{\theta}^1} = \mathbb{E}\{(\hat{\theta}^1 - \mu_{\hat{\theta}^1})(\hat{\theta}^1 - \mu_{\hat{\theta}^1})^\top\}$ and $\Sigma_{\hat{\theta}^2}$. A fact first: for any random vector $x$ the covariance matrix is symmetric and positive semidefinite, $a^\top \Sigma_x a \ge 0$ for every $a$, because
+$$
+a^\top \Sigma_x a = a^\top \mathbb{E}\{(x - \mu_x)(x - \mu_x)^\top\} a = \mathbb{E}\{(a^\top x - a^\top \mu_x)^2\} = \mathrm{Var}(a^\top x) \ge 0.
+$$
+Then $\hat{\theta}^1$ is **better than** $\hat{\theta}^2$ when $\Sigma_{\hat{\theta}^1} \preceq \Sigma_{\hat{\theta}^2}$, meaning that $\Sigma_{\hat{\theta}^2} - \Sigma_{\hat{\theta}^1}$ is positive semidefinite. Applying the fact to the difference, $a^\top \Sigma_{\hat{\theta}^2} a \ge a^\top \Sigma_{\hat{\theta}^1} a$, that is $\mathrm{Var}(a^\top \hat{\theta}^2) \ge \mathrm{Var}(a^\top \hat{\theta}^1)$ for every $a$: every linear combination of the components is estimated with no larger variance by $\hat{\theta}^1$, and with $a = (1, 0, \dots, 0)$ and the other unit vectors, componentwise,
+$$
+\Sigma_{\hat{\theta}^1} \preceq \Sigma_{\hat{\theta}^2} \;\Rightarrow\; \mathrm{Var}(\hat{\theta}^1_i) \le \mathrm{Var}(\hat{\theta}^2_i), \quad i = 1, \dots, d.
+$$
+
+**The linear least-squares estimator (LSE).** The $N$ independent scalar measurements obey the **measurement equation**
+$$
+y_k = \phi_k^\top \theta^{true} + \varepsilon_k, \qquad k = 1, \dots, N,
+$$
+with $\phi_k \in \mathbb{R}^d$ the known **regression vector** of the $k$-th measurement and $\varepsilon_k$ a zero-mean measurement noise. The estimator chooses the $\theta$ that minimizes the sum of the squared errors between the measurements and the predicted measurements $\phi_k^\top \theta$, the residuals $e_k(\theta) = y_k - \phi_k^\top \theta$:
+$$
+\hat{\theta}_{LS}(y) = \arg\min_{\theta} \sum_{k=1}^{N} \big( y_k - \phi_k^\top \theta \big)^2 .
+$$
+In matrix form, with $\|x\|_2^2 = x^\top x = \sum_k x_k^2$, stacking the measurements in $y \in \mathbb{R}^N$ and the regression vectors as the rows of the **regressor matrix** $\Phi \in \mathbb{R}^{N \times d}$, so that $\Phi \theta = (\phi_1^\top \theta, \dots, \phi_N^\top \theta)^\top$ and $y = \Phi \theta^{true} + \varepsilon$,
+$$
+J(\theta) = \| y - \Phi \theta \|_2^2 = (y - \Phi\theta)^\top (y - \Phi\theta) = y^\top y + \theta^\top \Phi^\top \Phi\, \theta - 2\, y^\top \Phi\, \theta .
+$$
+The gradient $\partial J / \partial \theta$ is the vector of the partial derivatives; with $\partial(\theta^\top A \theta)/\partial\theta = 2 A \theta$ for symmetric $A$, the analogue of $d(ax^2)/dx = 2ax$, setting it to zero gives the **normal equations** and their solution,
+$$
+\frac{\partial J}{\partial \theta} = 2\, \Phi^\top \Phi\, \theta - 2\, \Phi^\top y = 0
+\quad \Rightarrow \quad
+\hat{\theta}_{LS}(y) = (\Phi^\top \Phi)^{-1} \Phi^\top y,
+$$
+with $(\Phi^\top \Phi)^{-1} \Phi^\top$ the **pseudo-inverse** of $\Phi$, which exists when $\Phi$ has full column rank, the typical case for a tall matrix with $N \gg d$.
+
+**Example 1, fitting a constant.** $y_k = 1 \cdot \theta^{true} + \varepsilon_k$, $\theta^{true} \in \mathbb{R}$, $\phi_k = 1$, $\Phi = (1, \dots, 1)^\top$: $\Phi^\top \Phi = N$, $\Phi^\top y = \sum_k y_k$, and $\hat{\theta}_{LS} = \frac{1}{N}\sum_{k=1}^{N} y_k$, the sample mean. **Example 2, fitting a line.** Measurements $y_k$ at times $t_k$, model $y_k = \theta_1 + \theta_2 t_k + \varepsilon_k = (1\;\; t_k)\,\theta + \varepsilon_k$, $\theta \in \mathbb{R}^2$, $\phi_k = (1, t_k)^\top$, $\Phi$ with rows $(1, t_k)$; then
+$$
+\Phi^\top \Phi = \begin{pmatrix} N & \sum_k t_k \\ \sum_k t_k & \sum_k t_k^2 \end{pmatrix}, \qquad \hat{\theta}_{LS} = (\Phi^\top \Phi)^{-1} \Phi^\top y,
+$$
+the best first-order polynomial through the data. **Weighted least squares**, started: when the noises $\varepsilon_k$ are zero-mean but with different standard deviations $\sigma_{\varepsilon_k}$, can that information give a better estimate? Next lesson.
+
+- [Blackboard notes](files/notes/lesson-26-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), section 2.4 (pp. 17–18) for the properties of estimators, and sections 4.1 and 4.2 (pp. 29–31) for the linear least-squares estimator.
