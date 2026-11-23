@@ -41,7 +41,7 @@ toc: false
 | 24 | Mon 16/11 | [RL]{.part .part-rl} [ID]{.part .part-id} | Deep Q-learning and DDPG: critic, target networks, actor; introduction to process identification: the resistance example |
 | 25 | Wed 18/11 | [ID]{.part .part-id} | Recap of probability: events, Bayes, densities, joint and marginal densities, mean, variance, covariance and covariance matrix |
 | 26 | Thu 19/11 | [ID]{.part .part-id} | Estimators and their properties: unbiasedness, consistency, comparing covariances; the linear least-squares estimator |
-| 27 | Mon 23/11 | [ID]{.part .part-id} | Weighted least squares; statistical analysis of the least-squares estimator: bias, covariance, the three resistance estimators compared |
+| 27 | Mon 23/11 | [ID]{.part .part-id} | Weighted least squares and the Markov estimator: unbiasedness, covariance, Gauss–Markov and efficiency; residuals, bad data detection and stealthy attacks |
 | 28 | Wed 25/11 | [ID]{.part .part-id} | Maximum likelihood and Bayesian estimation, the Cramér–Rao bound; recursive least squares; dynamic models (ARX) and the prediction error |
 | 29 | Thu 26/11 | [ID]{.part .part-id} | State estimation: the Kalman filter as a recursive least-squares estimator; model validation; identify-then-control with the MPC of the first part |
 | 30 | Mon 30/11 | [Wrap-up]{.part .part-gen} | Course recap, exam information, identify-then-control demo |

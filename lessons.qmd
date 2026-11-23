@@ -715,3 +715,52 @@ the best first-order polynomial through the data. **Weighted least squares**, st
 
 - [Blackboard notes](files/notes/lesson-26-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), section 2.4 (pp. 17–18) for the properties of estimators, and sections 4.1 and 4.2 (pp. 29–31) for the linear least-squares estimator.
+
+## Lesson 27 (23/11/2026): Weighted least squares and the Markov estimator: unbiasedness, covariance, Gauss–Markov and efficiency; residuals, bad data detection and stealthy attacks {#lesson-27}
+
+[ID]{.part .part-id}
+
+**A correction first.** The definition of asymptotic unbiasedness given last time was missing the expectation: $\hat{\theta}(y)$ is asymptotically unbiased iff $\lim_{N \to \infty} \mathbb{E}\{\hat{\theta}(y)\} = \theta^{true}$.
+
+**Where the LSE comes from, and what it ignores.** The measurement equation $y_k = \phi_k^\top \theta^{true} + \varepsilon_k$, $k = 1, \dots, N$, together with the assumption $\mathbb{E}\{\varepsilon_k\} = 0$, the sensors are unbiased, is the **a-priori** information; the data $\bar{y}$ are the **a-posteriori** information, and the LSE $\hat{\theta}_{LS}(y) = \arg\min_\theta \sum_k (y_k - \phi_k^\top \theta)^2$ combines the two through the **residuals** $r_k = y_k - \phi_k^\top \theta$, measurement minus predicted measurement. Suppose now that one more thing is known a priori: the variance $\sigma_{\varepsilon_k}^2$ of each noise, with the measurements independent, hence uncorrelated, so that the noise vector $\varepsilon = (\varepsilon_1, \dots, \varepsilon_N)^\top$ has the diagonal covariance
+$$
+\Sigma_\varepsilon = \mathrm{diag}\big(\sigma_{\varepsilon_1}^2, \dots, \sigma_{\varepsilon_N}^2\big), \qquad \Sigma_\varepsilon = \sigma_\varepsilon^2 I \;\text{ when all the variances are equal.}
+$$
+A measurement with a small noise variance, a density concentrated around $\phi_k^\top \theta^{true}$, deserves more trust than one with a large variance: the LSE treats them alike.
+
+**Weighted least squares (WLS).** Give each residual a weight $w_k$, large for the good sensors and small for the poor ones,
+$$
+\hat{\theta}_{WLS}(y) = \arg\min_{\theta} \sum_{k=1}^{N} w_k \big( y_k - \phi_k^\top \theta \big)^2 .
+$$
+In matrix form, with $y \in \mathbb{R}^N$, $\Phi \in \mathbb{R}^{N \times d}$ as before and $W = \mathrm{diag}(w_1, \dots, w_N)$, the objective is $J(\theta) = (y - \Phi\theta)^\top W (y - \Phi\theta) = y^\top W y + \theta^\top \Phi^\top W \Phi\, \theta - 2\, y^\top W \Phi\, \theta$, the LSE being the case $W = I$. Setting the gradient to zero,
+$$
+\frac{\partial J}{\partial \theta} = 2\, \Phi^\top W \Phi\, \theta - 2\, \Phi^\top W y = 0
+\quad \Rightarrow \quad
+\hat{\theta}_{WLS}(y) = (\Phi^\top W \Phi)^{-1} \Phi^\top W\, y,
+$$
+with $(\Phi^\top W \Phi)^{-1} \Phi^\top W$ the weighted pseudo-inverse of $\Phi$.
+
+**Unbiased, for every $W$.** Writing the measurement equation in matrix form, $y = \Phi \theta^{true} + \varepsilon$, and substituting,
+$$
+\mathbb{E}\{\hat{\theta}_{WLS}(y)\} = \mathbb{E}\big\{ (\Phi^\top W \Phi)^{-1} \Phi^\top W (\Phi \theta^{true} + \varepsilon) \big\} = \theta^{true} + (\Phi^\top W \Phi)^{-1} \Phi^\top W\, \mathbb{E}\{\varepsilon\} = \theta^{true},
+$$
+since the matrices are numbers, $(\Phi^\top W \Phi)^{-1} \Phi^\top W \Phi = I$ and $\mathbb{E}\{\varepsilon\} = 0$.
+
+**Covariance.** The **estimation error** is $e = \hat{\theta}(y) - \theta^{true}$, not to be confused with the residual $r$ or the noise $\varepsilon$; for an unbiased estimator $\mathbb{E}\{e\} = 0$ and the covariance of the estimator is the covariance of its error, $\Sigma_{\hat{\theta}} = \mathbb{E}\{(\hat{\theta} - \theta^{true})(\hat{\theta} - \theta^{true})^\top\} = \Sigma_e$, the width of the density of $\hat{\theta}$ around $\theta^{true}$. For the WLS the same substitution gives $e = (\Phi^\top W \Phi)^{-1} \Phi^\top W \varepsilon$, a matrix of numbers times the noise, so
+$$
+\mathrm{cov}(\hat{\theta}_{WLS}) = (\Phi^\top W \Phi)^{-1} \Phi^\top W\, \mathbb{E}\{\varepsilon \varepsilon^\top\}\, W \Phi\, (\Phi^\top W \Phi)^{-1}
+= (\Phi^\top W \Phi)^{-1} \Phi^\top W\, \Sigma_\varepsilon\, W \Phi\, (\Phi^\top W \Phi)^{-1},
+$$
+with $\mathbb{E}\{\varepsilon \varepsilon^\top\} = \Sigma_\varepsilon$ because $\mathbb{E}\{\varepsilon\} = 0$. The weights the intuition asked for, $w_k$ small when $\sigma_{\varepsilon_k}^2$ is large and large when it is small, are $w_k = 1/\sigma_{\varepsilon_k}^2$, that is $W = \Sigma_\varepsilon^{-1}$: this is the **Markov estimator**, and with this choice the covariance collapses to
+$$
+\Sigma_{\hat{\theta}} = \Sigma_e = \big( \Phi^\top \Sigma_\varepsilon^{-1} \Phi \big)^{-1}, \qquad \text{and for } \Sigma_\varepsilon = \sigma_\varepsilon^2 I: \quad \Sigma_{\hat{\theta}_{LS}} = \sigma_\varepsilon^2\, (\Phi^\top \Phi)^{-1}.
+$$
+
+**Two facts.** The WLS is a **linear estimator**, $\hat{\theta}(y) = A\, y$ with $A = (\Phi^\top W \Phi)^{-1} \Phi^\top W$. (1) Among all the linear unbiased estimators $\hat{\theta} = A\,y$, the Markov estimator has the smallest covariance, $\mathrm{cov}(\hat{\theta}_{WLS}) \preceq \mathrm{cov}(A\,y)$ for every such $A$: it is the best linear unbiased estimator. (2) If the noises $\varepsilon_k$ are **Gaussian**, the Markov estimator has the smallest covariance among all the unbiased estimators, linear or not: it is an **efficient estimator**, $\mathrm{cov}(\hat{\theta}(y)) \preceq \mathrm{cov}(\hat{\theta}'(y))$ for every other unbiased $\hat{\theta}'$. The intuition is that the data carry a finite amount of information about $\theta$, which translates into a lower bound on the covariance of every unbiased estimator, the **Cramér–Rao lower bound** on $\Sigma_e$; the unbiased estimators sit above it, and the Markov estimator, with Gaussian noise, reaches it.
+
+**Residuals and bad data detection.** With $\hat{\theta}_{WLS}$ in hand, the vector of residuals $r = y - \Phi \hat{\theta}_{WLS}(y)$, measurements minus predicted measurements, should be small, each $r_k$ of the order of the noise. If a sensor is faulty, its measurement is $y_k = \phi_k^\top \theta^{true} + \varepsilon_k + f_k$ with a fault $f_k$, the estimate is pulled away from $\theta^{true}$ and the residual of that sensor stands out: the typical **bad data detection** rule at the control centre is to flag the sensor $k$ with $|r_k| = |y_k - \phi_k^\top \hat{\theta}_{WLS}(y)| \ge \tau$, a detection threshold. The same scheme is the target of a **cyber attack**: an attacker who injects $a_k$ into the measurements, $y^a_k = \phi_k^\top \theta^{true} + \varepsilon_k + a_k$, moves the estimate, $\hat{\theta}_{WLS}(y^a) \ne \theta^{true}$, the controllers act on a wrong picture of the plant and damage follows; the attack is **stealthy** when the residuals do not change, $r^a = r$, and the detector sees nothing. How this is possible, next lesson.
+
+**Practical considerations.** With $\Sigma_\varepsilon = \sigma_\varepsilon^2 I$ the covariance of the LSE is $\sigma_\varepsilon^2 (\Phi^\top \Phi)^{-1}$. (1) If $\sigma_\varepsilon^2$ is not known it has to be estimated, from the residuals. (2) The formula gives the covariance as a function of $N$ and of the regression vectors, so it can be used to compute the number of measurements needed to reach a required quality, for instance $\Pr\{\|\hat{\theta} - \theta^{true}\| \le \varepsilon\} \ge 0.99$: the density of $\hat{\theta}$ narrows as $N$ grows. **Towards maximum likelihood**: the LSE used the a-priori information $\mathbb{E}\{\varepsilon_k\} = 0$, the WLS added the variances $\sigma_k^2$; the maximum likelihood estimator adds the whole density $p_{\varepsilon_k}(\varepsilon)$ of the noise. Next lesson.
+
+- [Blackboard notes](files/notes/lesson-27-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), section 4.3 (p. 31) for weighted least squares, section 4.5 (pp. 35–36) for the statistical analysis of the WLS estimator, and section 4.7 (pp. 37–38) for the estimate of the noise variance from the residuals.
