@@ -43,7 +43,7 @@ toc: false
 | 26 | Thu 19/11 | [ID]{.part .part-id} | Estimators and their properties: unbiasedness, consistency, comparing covariances; the linear least-squares estimator |
 | 27 | Mon 23/11 | [ID]{.part .part-id} | Weighted least squares and the Markov estimator: unbiasedness, covariance, Gauss–Markov and efficiency; residuals, bad data detection and stealthy attacks |
 | 28 | Wed 25/11 | [ID]{.part .part-id} | The maximum likelihood estimator; Gaussian noise and the Markov estimator; introduction to Bayesian estimation and the a-posteriori density |
-| 29 | Thu 26/11 | [ID]{.part .part-id} | Bayesian estimators (MAP, minimum variance); recursive least squares; state estimation and the Kalman filter; stealthy attacks on bad data detection |
+| 29 | Thu 26/11 | [ID]{.part .part-id} | Bayesian estimators: maximum a posteriori, conditional mean, cost functions; three worked exercises on estimation |
 | 30 | Mon 30/11 | [Wrap-up]{.part .part-gen} | Course recap, exam information, identify-then-control demo |
 
 : {.schedule tbl-colwidths="[5,15,15,65]"}
