@@ -764,3 +764,52 @@ $$
 
 - [Blackboard notes](files/notes/lesson-27-notes.pdf){target="_blank" rel="noopener"}
 - Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), section 4.3 (p. 31) for weighted least squares, section 4.5 (pp. 35–36) for the statistical analysis of the WLS estimator, and section 4.7 (pp. 37–38) for the estimate of the noise variance from the residuals.
+
+## Lesson 28 (25/11/2026): The maximum likelihood estimator; Gaussian noise and the Markov estimator; introduction to Bayesian estimation and the a-posteriori density {#lesson-28}
+
+[ID]{.part .part-id}
+
+**A-priori information, one step further.** The measurement model is either linear, $y_k = \phi_k^\top \theta + \varepsilon_k$, or **nonlinear**, $y_k = g_k(\theta) + \varepsilon_k$, $k = 1, \dots, N$, with $y_k \in \mathbb{R}$ and $\theta \in \mathbb{R}^d$ deterministic; in matrix form $y = \Phi \theta + \varepsilon$ or $y = G(\theta) + \varepsilon$. On the noise, the LSE used $\mathbb{E}\{\varepsilon_k\} = 0$, the WLS added the variances $\sigma_{\varepsilon_k}^2$; today the whole **density** $p_{\varepsilon_k}(\varepsilon)$ is assumed known, $\Pr\{\varepsilon_k \in [a,b]\} = \int_a^b p_{\varepsilon_k}(\varepsilon)\,d\varepsilon$, and the noises are independent, so that the joint density of the noise vector factorizes,
+$$
+p_\varepsilon(\varepsilon) = p_\varepsilon(\varepsilon_1, \dots, \varepsilon_N) = p_{\varepsilon_1}(\varepsilon_1)\, p_{\varepsilon_2}(\varepsilon_2) \cdots p_{\varepsilon_N}(\varepsilon_N).
+$$
+The a-posteriori information is the outcome of the experiments: $y_k$ is the random variable that represents measurement $k$, $\breve{y}_k$ the number actually read, and likewise $y \to \breve{y}$, $\hat{\theta}(y) \to \hat{\theta}(\breve{y})$, random vector and vector of numbers.
+
+**From the density of the noise to the density of the measurement.** Fix $\theta$: in $y_k = g_k(\theta) + \varepsilon_k$ the first term is a number and the second a random variable, so $y_k$ is $\varepsilon_k$ shifted by $g_k(\theta)$, and its density is the density of the noise shifted by the same amount, the **inversion theorem** in its simplest form:
+$$
+p_{y_k}(y_k) = p_{\varepsilon_k}\big( y_k - g_k(\theta) \big) \quad \text{(scalar)}, \qquad p_y(y) = p_\varepsilon\big( y - G(\theta) \big) \quad \text{(joint, vector form)}.
+$$
+The picture: $p_{\varepsilon_k}$ centred at $0$, $p_{y_k}$ the same bell centred at $g_k(\theta)$, and the measured number $\breve{y}_k$ somewhere under it.
+
+**The likelihood function and the MLE.** Read the joint density at the numbers actually measured, as a function of the parameters:
+$$
+L(\theta) = p_y(\breve{y}) = p_\varepsilon\big( \breve{y} - G(\theta) \big),
+$$
+the **likelihood** of $\theta$: how probable the data we got would have been, had the parameters been $\theta$. The **maximum likelihood estimator** picks the parameters that make the data most probable,
+$$
+\hat{\theta}_{MLE}(y) = \arg\max_{\theta} L(\theta) = \arg\max_{\theta}\, p_\varepsilon\big( \breve{y} - G(\theta) \big) = \arg\max_{\theta} \prod_{k=1}^{N} p_{\varepsilon_k}\big( \breve{y}_k - g_k(\theta) \big),
+$$
+the product coming from independence. The condition $\partial L / \partial \theta = 0$, the **likelihood equation**, can be hard to solve; two things make it tractable in practice, the independence just used and the fact that the noises are often Gaussian, and both suggest working with the **log-likelihood**: the logarithm is monotonic, $A < B \Rightarrow \ln A < \ln B$, so $L(\theta)$ and $\ln L(\theta)$ have the same maximizers, $\hat{\theta}_{MLE}(y) = \arg\max_\theta \ln L(\theta)$, and the logarithm turns the product into a sum.
+
+**The Gaussian case, which closes the circle.** Linear model $y_k = \phi_k^\top \theta + \varepsilon_k$, noises independent, zero-mean and Gaussian, $p_{\varepsilon_k}(\varepsilon) = \frac{1}{\sqrt{2\pi \sigma_{\varepsilon_k}^2}}\, e^{-\varepsilon^2/(2\sigma_{\varepsilon_k}^2)}$. Then
+$$
+\ln L(\theta) = \ln \prod_{k=1}^{N} p_{\varepsilon_k}\big( \breve{y}_k - \phi_k^\top \theta \big) = \sum_{k=1}^{N} \Big[ \ln \frac{1}{\sqrt{2\pi \sigma_{\varepsilon_k}^2}} - \frac{(\breve{y}_k - \phi_k^\top \theta)^2}{2\sigma_{\varepsilon_k}^2} \Big],
+$$
+and dropping the terms that do not depend on $\theta$, with $\ln e^{-x} = -x$,
+$$
+\hat{\theta}_{MLE}(y) = \arg\max_{\theta} \sum_{k=1}^{N} \Big[ -\frac{(\breve{y}_k - \phi_k^\top \theta)^2}{2\sigma_{\varepsilon_k}^2} \Big] = \arg\min_{\theta} \sum_{k=1}^{N} \frac{(\breve{y}_k - \phi_k^\top \theta)^2}{\sigma_{\varepsilon_k}^2} = \hat{\theta}_{WLS}(y) \text{ with } w_k = 1/\sigma_{\varepsilon_k}^2,
+$$
+the **Markov estimator**. Under these hypotheses, linear model, zero-mean independent Gaussian noise, the Markov estimator is the MLE, and it is efficient: it has the lowest possible covariance, which is reasonable, since a Gaussian density is completely defined by its mean and variance, so the WLS, which uses exactly these two, is using all the information there is.
+
+**Bayesian estimation.** A different point of view: $\theta$ is a **random vector**, not a deterministic unknown with a fixed a-priori value. Example: a production line subject to disturbances turns out batches $\breve{\theta}', \breve{\theta}'', \dots$ with parameters drawn from an **a-priori density** $p_\theta(\theta)$, and $N$ measurements $y$ are taken on one batch. The core object is the **a-posteriori density** of $\theta$ given the measurements, obtained with Bayes' rule, joint over marginal:
+$$
+p_{\theta \mid y}(\theta, y) = \frac{p_{\theta, y}(\theta, y)}{p_y(y)} = \frac{p_{y \mid \theta}(y, \theta)\, p_\theta(\theta)}{p_y(y)},
+$$
+three terms: $p_\theta(\theta)$, the a-priori density, known; $p_{y \mid \theta}(y, \theta) = p_\varepsilon(y - G(\theta))$, the density of the measurements given the parameters, by the inversion theorem, the same object as in the MLE, from $y_k = g_k(\theta) + \varepsilon_k$ with $p_{\varepsilon_k}$ known; and $p_y(y)$, the marginal of the measurements, obtained from the joint by integrating $\theta$ out over its domain $\Omega_\theta$,
+$$
+p_y(y) = \int_{\Omega_\theta} p_{y,\theta}(y, \theta)\, d\theta = \int_{\Omega_\theta} p_{y \mid \theta}(y, \theta)\, p_\theta(\theta)\, d\theta .
+$$
+So the a-posteriori density of $\theta$ conditioned on the measurements can be computed; different ways of extracting one estimate from it give the different Bayesian estimators, next lesson.
+
+- [Blackboard notes](files/notes/lesson-28-notes.pdf){target="_blank" rel="noopener"}
+- Study [[Diehl_MSI]](references.qmd#ref-Diehl_MSI), section 5.1 (pp. 41–43) for the maximum likelihood estimator and its Gaussian case, and the beginning of section 5.2 (p. 43), up to the a-posteriori density; the estimators derived from it come with the next lesson.
