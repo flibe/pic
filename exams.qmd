@@ -18,7 +18,19 @@ Written exam with exercises and open questions. **Closed book:** students can us
 This is an **extraordinary exam date, reserved to students of the past edition of the course**. Students attending the current edition cannot take it. As for any other exam, booking on Infostud is required.
 :::
 
-The exam dates are listed in the [official exam calendar](https://docs.google.com/spreadsheets/d/1BkAWoEPz3hPWghPz1_bymiKeNsjoIpmc/edit?gid=1655048598#gid=1655048598){target="_blank" rel="noopener"}, which is the reference for dates, times and classrooms: check it before booking, since it is updated by the Department.
+The exam dates of the academic year 2026/2027, from the [official exam calendar](https://docs.google.com/spreadsheets/d/1BkAWoEPz3hPWghPz1_bymiKeNsjoIpmc/edit?gid=1655048598#gid=1655048598){target="_blank" rel="noopener"} of the Department (sheets "Sessioni I-II" and "Sessioni III-IV-V"), are the following. Classrooms and times are still being assigned: they will appear in the calendar, which is the reference and is updated by the Department, so check it and the Infostud booking before every exam.
+
+| Session | Date | Classroom | Time |
+|---|---|---|---|
+| I | Wednesday 20 January 2027 | to be assigned | to be assigned |
+| II | Wednesday 10 February 2027 | to be assigned | to be assigned |
+| III | Friday 18 June 2027 | to be assigned | to be assigned |
+| IV | Friday 16 July 2027 | to be assigned | to be assigned |
+| V | Wednesday 15 September 2027 | to be assigned | to be assigned |
+
+: {tbl-colwidths="[12,38,25,25]"}
+
+Last checked against the calendar on 27 November 2026.
 
 ## Past exams
 
