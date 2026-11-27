@@ -10,14 +10,6 @@ Written exam with exercises and open questions. **Closed book:** students can us
 
 ## Exam dates
 
-::: {.callout-important}
-## Extraordinary exam: Friday 23/10/2026
-
-**Friday 23 October 2026, 14:00–17:00, classroom A3, DIAG.**
-
-This is an **extraordinary exam date, reserved to students of the past edition of the course**. Students attending the current edition cannot take it. As for any other exam, booking on Infostud is required.
-:::
-
 The exam dates of the academic year 2026/2027, from the [official exam calendar](https://docs.google.com/spreadsheets/d/1BkAWoEPz3hPWghPz1_bymiKeNsjoIpmc/edit?gid=1655048598#gid=1655048598){target="_blank" rel="noopener"} of the Department (sheets "Sessioni I-II" and "Sessioni III-IV-V"), are the following. Classrooms and times are still being assigned: they will appear in the calendar, which is the reference and is updated by the Department, so check it and the Infostud booking before every exam.
 
 | Session | Date | Classroom | Time |
